@@ -1,0 +1,24 @@
+{
+  "name": "tbn",
+  "version": "1.0.0",
+  "description": "",
+  "main": "vm.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TheGrandmother/TBN.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/TheGrandmother/TBN/issues"
+  },
+  "homepage": "https://github.com/TheGrandmother/TBN#readme",
+  "dependencies": {
+    "eslint": "^6.7.2",
+    "xxhash": "^0.3.0",
+    "xxhashjs": "^0.2.2"
+  }
+}
