@@ -36,6 +36,15 @@ class Process {
     }
   }
 
+  processSetLine(line) {
+    if (typeof line !== 'number' && line >= this.functions[this.frame.functionId].length) {
+      console.log('Tried to jump to silly line')
+      this.status = 'Invalid line'
+      this.halted = true
+    }
+    this.frame.line = line
+  }
+
   returnFromFunction() {
     console.log('returning')
     console.log(this.stack)
@@ -47,8 +56,6 @@ class Process {
       return
     }
     oldFrame.data[currentFrame.resLocation] = currentFrame.data[currentFrame.resLocation]
-    console.log('Going from frame:', currentFrame)
-    console.log('To frame:', oldFrame)
     this.frame = oldFrame
   }
 

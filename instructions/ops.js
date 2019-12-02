@@ -2,7 +2,6 @@ const {hash} = require('../util/hash.js')
 
 const ops = {
   [hash('move')] : {
-    argCount: 2,
     name: 'move',
     evaluate: (process, a1, a2) => {
       process.frame.data[a2] = process.frame.data[a1]
@@ -10,7 +9,6 @@ const ops = {
     }
   },
   [hash('imove')] : {
-    argCount: 2,
     name: 'imove',
     evaluate: (process, a1, a2) => {
       process.frame.data[a2] = a1
@@ -18,13 +16,48 @@ const ops = {
     }
   },
   [hash('add')] : {
-    aCount: 3,
     name: 'add',
     evaluate: (process, a1, a2, a3) => {
       const v1 = process.frame.data[a1]
       const v2 = process.frame.data[a2]
       process.frame.data[a3] = v1 + v2
       process.incrementLine()
+    }
+  },
+
+  [hash('op')] : {
+    name: 'op',
+    evaluate: (process, op, a1, a2, a3) => {
+      const v1 = process.frame.data[a1]
+      const v2 = process.frame.data[a2]
+      const res = Function(v1, v2, `return ${v1} ${op} ${v2}`)
+      process.frame.data[a3] = res
+      process.incrementLine()
+    }
+  },
+
+  [hash('jump')] : {
+    name: 'jump',
+    evaluate: (process, line) => {
+      process.setLine(line)
+    }
+  },
+
+  [hash('jmp_if_true')] : {
+    name: 'jump_if_true',
+    evaluate: (process, a1, line) => {
+      if (process.frame.data[a1]) {
+        process.setLine(line)
+      }
+    }
+  },
+
+  [hash('jmp_if_false')] : {
+    name: 'jump_if_true',
+    evaluate: (process, a1, line) => {
+      if (!process.frame.data[a1]) {
+        process.setLine(line)
+      }
     }
   },
 

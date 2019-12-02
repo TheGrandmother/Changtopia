@@ -18,6 +18,7 @@
   "homepage": "https://github.com/TheGrandmother/TBN#readme",
   "dependencies": {
     "eslint": "^6.7.2",
+    "nearley": "^2.19.0",
     "xxhash": "^0.3.0",
     "xxhashjs": "^0.2.2"
   }
