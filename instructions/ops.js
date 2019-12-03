@@ -1,21 +1,21 @@
 const {hash} = require('../util/hash.js')
 
 const ops = {
-  [hash('move')] : {
+  'move' : {
     name: 'move',
     evaluate: (process, a1, a2) => {
       process.frame.data[a2] = process.frame.data[a1]
       process.incrementLine()
     }
   },
-  [hash('imove')] : {
+  'imove' : {
     name: 'imove',
     evaluate: (process, a1, a2) => {
       process.frame.data[a2] = a1
       process.incrementLine()
     }
   },
-  [hash('add')] : {
+  'add' : {
     name: 'add',
     evaluate: (process, a1, a2, a3) => {
       const v1 = process.frame.data[a1]
@@ -25,7 +25,7 @@ const ops = {
     }
   },
 
-  [hash('op')] : {
+  'op' : {
     name: 'op',
     evaluate: (process, op, a1, a2, a3) => {
       const v1 = process.frame.data[a1]
@@ -36,14 +36,14 @@ const ops = {
     }
   },
 
-  [hash('jump')] : {
+  'jump' : {
     name: 'jump',
     evaluate: (process, line) => {
       process.setLine(line)
     }
   },
 
-  [hash('jmp_if_true')] : {
+  'jmp_if_true' : {
     name: 'jump_if_true',
     evaluate: (process, a1, line) => {
       if (process.frame.data[a1]) {
@@ -52,7 +52,7 @@ const ops = {
     }
   },
 
-  [hash('jmp_if_false')] : {
+  'jmp_if_false' : {
     name: 'jump_if_true',
     evaluate: (process, a1, line) => {
       if (!process.frame.data[a1]) {
@@ -61,7 +61,7 @@ const ops = {
     }
   },
 
-  [hash('return')] : {
+  'return' : {
     aCount: 0,
     name: 'return',
     evaluate: (process) => {
@@ -69,7 +69,7 @@ const ops = {
     }
   },
 
-  [hash('call')] : {
+  'call' : {
     name: 'call',
     evaluate: (process, functionId, returnLocation, ...args) => {
       const _args = {}

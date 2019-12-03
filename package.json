@@ -4,7 +4,9 @@
   "description": "",
   "main": "vm.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "compile_grammar": "nearleyc changlang/grammar.ne -o changlang/derp.js",
+    "compile": "yarn compile_grammar && node changlang/compiler.js"
   },
   "repository": {
     "type": "git",
