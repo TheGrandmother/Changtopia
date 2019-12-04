@@ -20,7 +20,7 @@ compound ->
 
 if -> "if" __ math _ "\n" _ block _ "\n" _ "end" {% helpers.makeIfStatement %}
 
-assignment -> identifier _ "=" _ math {% helpers.makeAssignment%}
+assignment -> identifier _ "=" _ expr {% helpers.makeAssignment%}
 
 
 expr -> math {%helpers.strip%}
@@ -44,16 +44,9 @@ thing ->
   | identifier {% helpers.strip %}
 
 
-
-number -> _number {% helpers.makeNumber %}
-_number ->
-  [1-9] {% id %}
-  | _name [\d] {% function(d) {return d[0] + d[1]; } %}
-
 identifier -> [a-zA-Z_] [\w]:* {% helpers.makeIdentifier %}
-_name ->
-  [a-zA-Z_] {% id %}
-  | _name [\w_] {% function(d) {return d[0] + d[1]; } %}
+number -> [\d]:+ {% helpers.makeNumber %}
+
 
 _  -> wschar:* {% function(d) {return null;} %}
 __ -> wschar:+ {% function(d) {return null;} %}

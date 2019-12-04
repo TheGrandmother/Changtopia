@@ -1,14 +1,10 @@
 const grammar = require('./derp.js')
-const {generate} = require('./codegen.js')
+const {generate} = require('./intermediate.js')
+const {generateCode} = require('./codegen.js')
 const nearley = require('nearley')
 const {inspect} = require('util')
 
 const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar))
-
-console.log('made parser, starting parsing')
-
-//console.log(inspect(parser.feed('def bob (anus) \n 7 \n end').results, false, null, true))
-//console.log(inspect(parser.feed('def  (anus) \n 7 \n end').results, false, null, true))
 
 function parse(string) {
   const result = parser.feed(string).results
@@ -26,12 +22,15 @@ function parse(string) {
 
 const functions = parse(`
 def bob(x)
-if 1 + 2
 a = 5
-end
-return a + 9
+return 0
 end
 `)
 console.log(inspect(functions, false, null, true))
-const code = generate(functions)
-console.log(inspect(code, false, null, true))
+const intermediateFunctions = generate(functions)
+console.log(inspect(intermediateFunctions, false, null, true))
+
+
+const compiledFunctions = Object.values(intermediateFunctions).map(generateCode)
+
+console.log(inspect(compiledFunctions, false, null, true))

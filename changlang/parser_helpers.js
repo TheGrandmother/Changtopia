@@ -16,25 +16,6 @@ function flattenAndStrip (arr) {
   return strip(arr.flat(Infinity))
 }
 
-// function makeBinop(d) {
-//   d = strip(d)
-//   return {
-//     type: 'binop',
-//     value: d[1][0],
-//     lhs: d[0][0],
-//     rhs: d[2][0],
-//   }
-// }
-
-function makeNumber(d) {
-  d = strip(d)
-  return {
-    type: 'number',
-    value: parseInt(d),
-  }
-
-}
-
 function makeAssignment(d) {
   d = strip(d)
   return {
@@ -65,6 +46,17 @@ function makeIdentifier(d) {
   }
 }
 
+function makeNumber(d) {
+  d = flattenAndStrip(d)
+  if (!Array.isArray(d)) {
+    d = [d]
+  }
+  return {
+    type: 'number',
+    value: parseInt(d.join('')),
+  }
+}
+
 function makeMath(d) {
   d = strip(d)
   if (!Array.isArray(d)) {
@@ -80,7 +72,7 @@ function makeMath(d) {
 }
 
 function makeBlock(d) {
-  d = strip(d)
+  d = flattenAndStrip(d)
   if (!Array.isArray(d)) {
     return d
   } else {

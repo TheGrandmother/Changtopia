@@ -1,117 +1,91 @@
-const { h } = require('../util/hash.js')
+const {inspect} = require('util')
 
-let __currentIndex = 0
+function resolveArgument(arg, labels) {
+  const {constant, intermediateRef, assignmentRef, lineLabel} = arg
 
-function makeName(node) {
-  __currentIndex += 1
-  return `${node.type}_${__currentIndex}`
-}
-
-function makeInterRef(node) {
-  __currentIndex += 1
-  return {intermediateRef: makeName(node) + '_intermediate'}
-}
-
-function makeAssignRef(node) {
-  __currentIndex += 1
-  return {assignmentRef: `${makeName(node)}_${node.name}_assign`, name: node.name}
-}
-
-function makeInstruction(id, args) {
-  return {instruction: {id, args}}
-}
-
-function makeLineLabel(node, name) {
-  return {lineLabel: `${makeName(node)}_${name}`}
-}
-
-const generators = {
-  'assignment': (state, node, code) => {
-    const {name, rhs} = node
-    const res_subtree = makeInterRef(node)
-    let assignRef = null
-    if (state.refs[name]) {
-      assignRef = state.refs[name]
-    } else {
-      assignRef = makeAssignRef(node)
-      state.refs[name] = assignRef
-    }
-    const subtreeCode = generators[rhs.type](state, rhs, [], res_subtree)
-    const myCode = [makeInstruction('move', [res_subtree, assignRef])]
-    return code.concat(subtreeCode).concat(myCode)
-  },
-
-  'number': (state, node, code, res) => {
-    return [makeInstruction('imove',[{constant: node.value}, res])]
-  },
-
-  'return': (state, node, code, res) => {
-    const {lhs} = node
-    const returnInterRef = makeInterRef(node)
-    const rhsCode = generators[node.rhs.type](state, node.rhs, [], returnRef)
-    const returnRef = 420
-    const myCode = rhsCode.concat([makeInstruction('ret', [])])
-    return 
-  },
-
-  'identifier': (state, node, code, res) => {
-    const varReference = state.refs[node.name]
-    if (!varReference) {
-      throw new Error(`Name ${node.name} has not been defined`)
-    }
-    return [{id: 'move', args: [varReference.assignmentRef, res]}]
-  },
-
-  'binop': (state, node, code, res) => {
-    const resLhs = makeInterRef(node)
-    const resRhs = makeInterRef(node)
-    const lhsCode = generators[node.lhs.type](state, node.lhs, [], resLhs)
-    const rhsCode = generators[node.rhs.type](state, node.rhs, [], resRhs)
-    const myCode = [makeInstruction('op', [node.operand, resLhs, resRhs, res])]
-    return code.concat(lhsCode).concat(rhsCode).concat(myCode)
-    // op res_lhs res_rhs res
-  },
-  'if': (state, node, code) => {
-    const {condition, body} = node
-    const conditionRes = makeInterRef(node)
-    const conditionCode = generators[condition.type](state, condition, [], conditionRes)
-    const bodyCode = generators[body.type](state, body, [])
-    const skipLabel = makeLineLabel(node, 'skip')
-    const myCode = [makeInstruction('jump_if_true', [conditionRes, skipLabel])]
-    return code.concat(conditionCode).concat(myCode).concat(bodyCode).concat(skipLabel)
-    // op res_lhs res_rhs res
-  },
-
-  'block': (state, node, code) => {
-    const lhsCode = generators[node.lhs.type](state, node.lhs, code)
-    const rhsCode = generators[node.rhs.type](state, node.rhs, code)
-    return code.concat(lhsCode).concat(rhsCode)
-  },
-
-}
-
-function generate(funcs) {
-  const state = {
-    functions: {},
-    refs: {},
-    labels: {}
+  if (constant !== undefined) {
+    return constant
   }
-  funcs.forEach((func) => {
-    const {name, body, args} = func
-    if (state.functions[name]) {
-      throw new Error(`A function named ${name} has already been defined`)
-    }
-    state.refs = {}
-    state.labels = {}
-    // TODO: Fiddle with args
-    // TODO: Fiddle with ret value
-    const bodyCode = generators[body.type](state, body, [])
-    state.functions[name] = {name, body: bodyCode, refs: state.refs}
-  })
-  return state.functions
 
+  if (intermediateRef !== undefined) {
+    return intermediateRef
+  }
+
+  if (assignmentRef !== undefined) {
+    return assignmentRef
+  }
+
+  if (lineLabel) {
+    if (labels[lineLabel]) {
+      return labels[lineLabel]
+    } else {
+      return {unresolved: lineLabel}
+    }
+  }
+
+  throw new Error(`${inspect(arg)} is a wierd fucking argument`)
+
+}
+
+function makeBasicInstruction(instruction, labels) {
+  const {id, args} = instruction
+  const unresolvedArgs = {}
+
+  const resolvedArgs = args.map( (arg, i) => {
+    const resolution = resolveArgument(arg, labels)
+    if (typeof resolution === 'object' && resolution.unresolved) {
+      unresolvedArgs[i] = resolution.unresolved
+      return resolution.unresolved
+    } else {
+      return resolution
+    }
+  })
+
+  return {inst: {id, args: resolvedArgs}, unresolvedArgs: unresolvedArgs}
+}
+
+function generateCode(indtermediateFunction) {
+  const {body, name, refs} = indtermediateFunction
+  const resolvedLabels = {}
+  const annotatedCode = []
+  let line = 0
+
+  body.forEach(pseudoInstruction => {
+    const {instruction, lineLabel} = pseudoInstruction
+
+    if (instruction) {
+      const {inst, unresolvedArgs} = makeBasicInstruction(instruction)
+      annotatedCode.push({pos: line, inst, unresolvedArgs})
+      line += 1
+      return
+    }
+
+    if (lineLabel) {
+      resolvedLabels[lineLabel] = line
+      return
+    }
+
+    throw new Error(`${inspect(instruction)} is a wierd fucking insruction`)
+
+  })
+
+  const code = annotatedCode.map((line) => {
+    console.log(line)
+    const {inst, unresolvedArgs} = line
+    const {id, args} = inst
+    Object.values(unresolvedArgs).forEach((label, i) => {
+      const val = resolvedLabels(label)
+      if(val === undefined) {
+        throw new Error(`The label ${label} has litteraly not been resolved`)
+      }
+      args[i] = val
+    })
+    return {id, args}
+  })
+
+  return code
 }
 
 module.exports = {
-  generate
+  generateCode
 }
