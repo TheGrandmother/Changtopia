@@ -1,20 +1,23 @@
-const { h } = require('../util/hash.js')
-
 let __currentIndex = 0
 
-function makeName(node) {
+function makeName() {
   __currentIndex += 1
-  return `${node.type}_${__currentIndex}`
+  return `${__currentIndex}`
 }
 
 function makeInterRef(node) {
   __currentIndex += 1
-  return {intermediateRef: makeName(node) + '_intermediate'}
+  return {ref: makeName(node) + '_i'}
 }
 
 function makeAssignRef(node) {
   __currentIndex += 1
-  return {assignmentRef: `${makeName(node)}_${node.name}_assign`, name: node.name}
+  return {ref: `${node.name}_a${__currentIndex}`, name: node.name}
+}
+
+function makeArgumentRef(name) {
+  __currentIndex += 1
+  return {ref: `${name}_arg${__currentIndex}`, name}
 }
 
 function makeInstruction(id, args) {
@@ -22,7 +25,7 @@ function makeInstruction(id, args) {
 }
 
 function makeLineLabel(node, name) {
-  return {lineLabel: `${makeName(node)}_${name}`}
+  return {lineLabel: `${name}_l`}
 }
 
 const generators = {
@@ -47,11 +50,8 @@ const generators = {
 
   'return': (state, node) => {
     const {rhs} = node
-    const returnInterRef = makeInterRef(node)
-    const rhsCode = generators[rhs.type](state, rhs, [], returnInterRef)
-    // TODO: Sort out arguments
-    const returnRef = {constant: 420}
-    const myCode = [makeInstruction('return', [returnRef])]
+    const rhsCode = generators[rhs.type](state, rhs, [], state.returnRef)
+    const myCode = [makeInstruction('return', [state.returnRef])]
     return rhsCode.concat(myCode)
   },
 
@@ -68,6 +68,8 @@ const generators = {
     const resRhs = makeInterRef(node)
     const lhsCode = generators[node.lhs.type](state, node.lhs, [], resLhs)
     const rhsCode = generators[node.rhs.type](state, node.rhs, [], resRhs)
+    console.log('res lhs:', resLhs)
+    console.log('res rhs:', resRhs)
     const myCode = [makeInstruction('op', [{constant: node.operand}, resLhs, resRhs, res])]
     return code.concat(lhsCode).concat(rhsCode).concat(myCode)
     // op res_lhs res_rhs res
@@ -105,12 +107,15 @@ function generate(funcs) {
     state.refs = {}
     state.labels = {}
     // TODO: Fiddle with args
-    // TODO: Fiddle with ret value
+    Object.values(args).forEach(argument => {
+      state.refs[argument.name] = makeArgumentRef(argument.name)
+    })
+    console.log(state.refs)
+    state.returnRef = {constant: '__return__'}
     const bodyCode = generators[body.type](state, body, [])
     state.functions[name] = {name, body: bodyCode, refs: state.refs}
   })
   return state.functions
-
 }
 
 module.exports = {

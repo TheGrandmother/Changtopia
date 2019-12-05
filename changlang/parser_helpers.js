@@ -1,5 +1,8 @@
 
 function strip (arr) {
+  if (typeof arr === 'object' && !Array.isArray(arr)) {
+    return arr
+  }
   if (arr.length === 1 && Array.isArray(arr[0])) {
     return strip(arr[0])
   } else {
@@ -28,6 +31,15 @@ function makeAssignment(d) {
 function stripAndLog(d) {
   console.log(strip(d))
   return strip(d)
+}
+
+function makeTuple(d) {
+  d = strip(d)
+  if (Array.isArray(d)) {
+    return {type: 'tuple', vars: d}
+  } else {
+    return {type: 'tuple', vars: [d]}
+  }
 }
 
 function log(d) {
@@ -86,11 +98,20 @@ function makeBlock(d) {
 
 function makeFunction(d) {
   d = strip(d)
-  return {
-    type: 'function',
-    name: d[1].name,
-    args: strip(d[3]),
-    body: d[6]
+  if(d.length === 9) {
+    return {
+      type: 'function',
+      name: d[1].name,
+      args: d[3].vars || [],
+      body: d[6]
+    }
+  } else {
+    return {
+      type: 'function',
+      name: d[1].name,
+      args: [],
+      body: d[5]
+    }
   }
 }
 
@@ -127,5 +148,6 @@ module.exports = {
   stripAndLog,
   makeIfStatement,
   makeReturn,
+  makeTuple,
   log
 }

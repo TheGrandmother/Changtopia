@@ -4,7 +4,7 @@
 
 main -> (function_def | any_wschar):+ {% helpers.flattenAndStrip %}
 
-function_def -> "def" _ identifier _ "(" _ (identifier:?) _ ")" _ "\n" _ block _ "\n" _ "end" {% helpers.makeFunction %}
+function_def -> "def" _ identifier "(" _ tuple:? _ ")" _ "\n" _ block _ "\n" _ "end" {% helpers.makeFunction %}
 
 
 block ->
@@ -18,12 +18,15 @@ compound ->
   | if
 
 
+
 if -> "if" __ math _ "\n" _ block _ "\n" _ "end" {% helpers.makeIfStatement %}
 
 assignment -> identifier _ "=" _ expr {% helpers.makeAssignment%}
 
 
-expr -> math {%helpers.strip%}
+expr ->
+    math {%helpers.strip%}
+  | function_call
 
 math -> comparison {% helpers.makeMath %}
 comparison ->
@@ -39,9 +42,19 @@ multiplicative ->
     multiplicative _ ("*" | "/") _ thing {% helpers.makeMath %}
   | thing {% helpers.makeMath %}
 
+
 thing ->
     number {% helpers.strip %}
   | identifier {% helpers.strip %}
+  | function_call
+
+
+tuple -> _tuple {%helpers.makeTuple%}
+function_call -> identifier left_paran _ tuple:? _ right_paran {% helpers.stripAndLog %}
+
+_tuple ->
+    identifier {% helpers.strip %}
+  | identifier _ list_delimiter _ _tuple {% helpers.strip %}
 
 
 identifier -> [a-zA-Z_] [\w]:* {% helpers.makeIdentifier %}
@@ -54,3 +67,8 @@ __ -> wschar:+ {% function(d) {return null;} %}
 any_wschar -> [ \t\n\v\f] {% helpers.skip %}
 wschar -> [ \t\v\f] {% id %}
 break -> [\n;]:+ {% function(d) {return null;} %}
+
+list_delimiter -> [,] {% helpers.skip %}
+left_paran -> "(" {% helpers.skip %}
+right_paran -> ")" {% helpers.skip %}
+list_delimiter -> [,] {% helpers.skip %}

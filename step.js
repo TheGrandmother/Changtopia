@@ -20,7 +20,7 @@ function run (process) {
   } else {
     //console.log('HALTED')
     //console.log('status')
-    //console.log(process.frame.data)
+    console.log(process.frame.data)
   }
 }
 
@@ -48,18 +48,10 @@ proc.bindFunction(1, 1, {})
 function main () {
   const [,, inFile] = process.argv
   const functions = JSON.parse(fs.readFileSync(inFile).toString())
-  let totalTime = 0
-  const count = 1000000
-  let start
-  for(let i = 0; i < count; i ++){
-    start = (new Date()).getTime()
-    const proc = new Process()
-    proc.addFunction(1, functions[0])
-    proc.bindFunction(1,1,{})
-    run(proc)
-    totalTime += (new Date()).getTime()- start
-  }
-  console.log(((totalTime * 1000)/(229*count)))
+  const proc = new Process()
+  proc.addFunction(1, functions[0])
+  proc.bindFunction(1,1,{})
+  run(proc)
 }
 
 main()

@@ -1,18 +1,14 @@
 const {inspect} = require('util')
 
 function resolveArgument(arg, labels) {
-  const {constant, intermediateRef, assignmentRef, lineLabel} = arg
+  const {constant, ref, lineLabel} = arg
 
   if (constant !== undefined) {
     return constant
   }
 
-  if (intermediateRef !== undefined) {
-    return intermediateRef
-  }
-
-  if (assignmentRef !== undefined) {
-    return assignmentRef
+  if (ref !== undefined) {
+    return ref
   }
 
   if (lineLabel) {
@@ -82,7 +78,7 @@ function generateCode(indtermediateFunction) {
     return {id, args}
   })
 
-  return code
+  return {name, code}
 }
 
 module.exports = {
