@@ -49,8 +49,9 @@ const generators = {
     const {rhs} = node
     const returnInterRef = makeInterRef(node)
     const rhsCode = generators[rhs.type](state, rhs, [], returnInterRef)
+    // TODO: Sort out arguments
     const returnRef = {constant: 420}
-    const myCode = [makeInstruction('ret', [returnRef])]
+    const myCode = [makeInstruction('return', [returnRef])]
     return rhsCode.concat(myCode)
   },
 
@@ -59,7 +60,7 @@ const generators = {
     if (!varReference) {
       throw new Error(`Name ${node.name} has not been defined`)
     }
-    return [{id: 'move', args: [varReference.assignmentRef, res]}]
+    return [makeInstruction('move', [varReference, res])]
   },
 
   'binop': (state, node, code, res) => {
@@ -67,7 +68,7 @@ const generators = {
     const resRhs = makeInterRef(node)
     const lhsCode = generators[node.lhs.type](state, node.lhs, [], resLhs)
     const rhsCode = generators[node.rhs.type](state, node.rhs, [], resRhs)
-    const myCode = [makeInstruction('op', [node.operand, resLhs, resRhs, res])]
+    const myCode = [makeInstruction('op', [{constant: node.operand}, resLhs, resRhs, res])]
     return code.concat(lhsCode).concat(rhsCode).concat(myCode)
     // op res_lhs res_rhs res
   },
@@ -77,7 +78,7 @@ const generators = {
     const conditionCode = generators[condition.type](state, condition, [], conditionRes)
     const bodyCode = generators[body.type](state, body, [])
     const skipLabel = makeLineLabel(node, 'skip')
-    const myCode = [makeInstruction('jump_if_true', [conditionRes, skipLabel])]
+    const myCode = [makeInstruction('jump_if_false', [conditionRes, skipLabel])]
     return code.concat(conditionCode).concat(myCode).concat(bodyCode).concat(skipLabel)
     // op res_lhs res_rhs res
   },

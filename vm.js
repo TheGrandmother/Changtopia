@@ -36,7 +36,7 @@ class Process {
     }
   }
 
-  processSetLine(line) {
+  setLine(line) {
     if (typeof line !== 'number' && line >= this.functions[this.frame.functionId].length) {
       console.log('Tried to jump to silly line')
       this.status = 'Invalid line'
@@ -46,8 +46,6 @@ class Process {
   }
 
   returnFromFunction() {
-    console.log('returning')
-    console.log(this.stack)
     const currentFrame = this.stack.frames.pop()
     const oldFrame = this.stack.frames.pop()
     if (!oldFrame) {

@@ -34,7 +34,7 @@ function makeBasicInstruction(instruction, labels) {
   const resolvedArgs = args.map( (arg, i) => {
     const resolution = resolveArgument(arg, labels)
     if (typeof resolution === 'object' && resolution.unresolved) {
-      unresolvedArgs[i] = resolution.unresolved
+      unresolvedArgs[resolution.unresolved] = i
       return resolution.unresolved
     } else {
       return resolution
@@ -54,7 +54,7 @@ function generateCode(indtermediateFunction) {
     const {instruction, lineLabel} = pseudoInstruction
 
     if (instruction) {
-      const {inst, unresolvedArgs} = makeBasicInstruction(instruction)
+      const {inst, unresolvedArgs} = makeBasicInstruction(instruction, resolvedLabels)
       annotatedCode.push({pos: line, inst, unresolvedArgs})
       line += 1
       return
@@ -65,20 +65,19 @@ function generateCode(indtermediateFunction) {
       return
     }
 
-    throw new Error(`${inspect(instruction)} is a wierd fucking insruction`)
+    throw new Error(`${inspect(pseudoInstruction)} is a wierd fucking insruction`)
 
   })
 
   const code = annotatedCode.map((line) => {
-    console.log(line)
     const {inst, unresolvedArgs} = line
     const {id, args} = inst
-    Object.values(unresolvedArgs).forEach((label, i) => {
-      const val = resolvedLabels(label)
+    Object.keys(unresolvedArgs).forEach((label) => {
+      const val = resolvedLabels[label]
       if(val === undefined) {
         throw new Error(`The label ${label} has litteraly not been resolved`)
       }
-      args[i] = val
+      args[unresolvedArgs[label]] = val
     })
     return {id, args}
   })

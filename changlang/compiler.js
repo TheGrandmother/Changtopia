@@ -3,6 +3,8 @@ const {generate} = require('./intermediate.js')
 const {generateCode} = require('./codegen.js')
 const nearley = require('nearley')
 const {inspect} = require('util')
+const process = require('process')
+const fs = require('fs')
 
 const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar))
 
@@ -20,17 +22,35 @@ function parse(string) {
 
 }
 
-const functions = parse(`
-def bob(x)
-a = 5
-return 0
-end
-`)
-console.log(inspect(functions, false, null, true))
-const intermediateFunctions = generate(functions)
-console.log(inspect(intermediateFunctions, false, null, true))
+function pretty(code) {
+  code.forEach((line, i) => {
+    console.log(`${i}:\t${line.id}\t${line.args.join(',\t')}`)
+  })
+}
 
+function compile() {
+  console.log('seriously?', process.argv)
+  const [,, inFile, outFile] = process.argv
+  if (!inFile) {
+    console.log(inFile)
+    console.log('Usage: node compile.js inFile <outFile>')
+  }
 
-const compiledFunctions = Object.values(intermediateFunctions).map(generateCode)
+  const input = fs.readFileSync(inFile).toString()
+  // console.log(input)
+  const functions = parse(input)
+  const intermediateFunctions = generate(functions)
+  // console.log(inspect(intermediateFunctions, false, null, true))
+  const compiledFunctions = Object.values(intermediateFunctions).map(generateCode)
 
-console.log(inspect(compiledFunctions, false, null, true))
+  if (outFile) {
+    fs.writeFileSync(outFile, JSON.stringify(compiledFunctions, undefined, 2))
+  } else {
+    console.log(inspect(compiledFunctions, false, null, true))
+  }
+
+  pretty(compiledFunctions[0])
+
+}
+
+compile()

@@ -1,12 +1,13 @@
 const {ops} = require('./instructions/ops.js')
 const {hash} = require('./util/hash')
 const {Process} = require('./vm.js')
+const fs = require('fs')
+const process = require('process')
 
 const h = hash
 
 function executeInstruction (process) {
   const inst = process.getCurrentInstruction()
-  console.log(ops[inst.id].name, inst.args)
   ops[inst.id].evaluate(process, ...inst.args)
 }
 
@@ -17,9 +18,9 @@ function run (process) {
     // console.log(process)
     run(process)
   } else {
-    console.log('HALTED')
-    console.log(process.frame)
-    console.log(process)
+    //console.log('HALTED')
+    //console.log('status')
+    //console.log(process.frame.data)
   }
 }
 
@@ -42,4 +43,23 @@ proc.addFunction(1, code1)
 proc.addFunction(2, code2)
 proc.bindFunction(1, 1, {})
 
-run(proc)
+//run(proc)
+
+function main () {
+  const [,, inFile] = process.argv
+  const functions = JSON.parse(fs.readFileSync(inFile).toString())
+  let totalTime = 0
+  const count = 1000000
+  let start
+  for(let i = 0; i < count; i ++){
+    start = (new Date()).getTime()
+    const proc = new Process()
+    proc.addFunction(1, functions[0])
+    proc.bindFunction(1,1,{})
+    run(proc)
+    totalTime += (new Date()).getTime()- start
+  }
+  console.log(((totalTime * 1000)/(229*count)))
+}
+
+main()
