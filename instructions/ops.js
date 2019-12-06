@@ -76,8 +76,8 @@ const ops = {
   'call' : {
     name: 'call',
     evaluate: (process, functionId, returnLocation, ...args) => {
-      const _args = {}
-      args.forEach(a => _args[a] = process.frame.data[a])
+      const _args = []
+      args.forEach(a => _args.push(process.frame.data[a]))
       process.incrementLine()
       process.bindFunction(functionId, returnLocation, _args)
     }

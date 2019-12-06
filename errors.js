@@ -1,9 +1,18 @@
-class LocationInvalidError extends Error {
-    constructor (location) {
-        super(`Could not find ${location}`)
-    }
+class CompilerError extends Error {
+  constructor(msg) {
+    super(msg)
+  }
 }
 
+class CodegenError extends CompilerError {
+  constructor(msg) {
+    super(msg)
+  }
+}
+
+
+
 module.exports = {
-    LocationInvalidError
+  CodegenError,
+  CompilerError
 }

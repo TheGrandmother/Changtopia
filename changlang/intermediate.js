@@ -1,3 +1,6 @@
+const {CompilerError} = require('../errors.js')
+const {inspect} = require('util')
+
 let __currentIndex = 0
 
 function makeName() {
@@ -17,7 +20,7 @@ function makeAssignRef(node) {
 
 function makeArgumentRef(name) {
   __currentIndex += 1
-  return {ref: `${name}_arg${__currentIndex}`, name}
+  return {ref: `${name}_arg${__currentIndex}`, name, arg: true}
 }
 
 function makeInstruction(id, args) {
@@ -25,7 +28,8 @@ function makeInstruction(id, args) {
 }
 
 function makeLineLabel(node, name) {
-  return {lineLabel: `${name}_l`}
+  __currentIndex += 1
+  return {lineLabel: `${name}_arg${__currentIndex}_l`}
 }
 
 const generators = {
@@ -39,7 +43,7 @@ const generators = {
       assignRef = makeAssignRef(node)
       state.refs[name] = assignRef
     }
-    const subtreeCode = generators[rhs.type](state, rhs, [], res_subtree)
+    const subtreeCode = generateNode(state, rhs, [], res_subtree)
     const myCode = [makeInstruction('move', [res_subtree, assignRef])]
     return code.concat(subtreeCode).concat(myCode)
   },
@@ -50,7 +54,7 @@ const generators = {
 
   'return': (state, node) => {
     const {rhs} = node
-    const rhsCode = generators[rhs.type](state, rhs, [], state.returnRef)
+    const rhsCode = generateNode(state, rhs, [], state.returnRef)
     const myCode = [makeInstruction('return', [state.returnRef])]
     return rhsCode.concat(myCode)
   },
@@ -63,13 +67,18 @@ const generators = {
     return [makeInstruction('move', [varReference, res])]
   },
 
+  'call': (state, node, code, res) => {
+    const {name, args} = node
+    const argRefs = args.map(() => makeInterRef())
+    const argCode = args.map((arg, i) => generateNode(state, arg, [], argRefs[i])).flat()
+    return argCode.concat([makeInstruction('call', [{constant: name}, res, ...argRefs])])
+  },
+
   'binop': (state, node, code, res) => {
     const resLhs = makeInterRef(node)
     const resRhs = makeInterRef(node)
-    const lhsCode = generators[node.lhs.type](state, node.lhs, [], resLhs)
-    const rhsCode = generators[node.rhs.type](state, node.rhs, [], resRhs)
-    console.log('res lhs:', resLhs)
-    console.log('res rhs:', resRhs)
+    const lhsCode = generateNode(state, node.lhs, [], resLhs)
+    const rhsCode = generateNode(state, node.rhs, [], resRhs)
     const myCode = [makeInstruction('op', [{constant: node.operand}, resLhs, resRhs, res])]
     return code.concat(lhsCode).concat(rhsCode).concat(myCode)
     // op res_lhs res_rhs res
@@ -77,8 +86,8 @@ const generators = {
   'if': (state, node, code) => {
     const {condition, body} = node
     const conditionRes = makeInterRef(node)
-    const conditionCode = generators[condition.type](state, condition, [], conditionRes)
-    const bodyCode = generators[body.type](state, body, [])
+    const conditionCode = generateNode(state, condition, [], conditionRes)
+    const bodyCode = generateNode(state, body, [])
     const skipLabel = makeLineLabel(node, 'skip')
     const myCode = [makeInstruction('jump_if_false', [conditionRes, skipLabel])]
     return code.concat(conditionCode).concat(myCode).concat(bodyCode).concat(skipLabel)
@@ -86,11 +95,17 @@ const generators = {
   },
 
   'block': (state, node, code) => {
-    const lhsCode = generators[node.lhs.type](state, node.lhs, code)
-    const rhsCode = generators[node.rhs.type](state, node.rhs, code)
+    const lhsCode = generateNode(state, node.lhs, code)
+    const rhsCode = generateNode(state, node.rhs, code)
     return code.concat(lhsCode).concat(rhsCode)
   },
+}
 
+function generateNode(state, node, code, res) {
+  if (!generators[node.type]) {
+    throw new CompilerError(`Unfortunatley I dont know what the hell to do with ${inspect(node)}`)
+  }
+  return generators[node.type](state, node, code, res)
 }
 
 function generate(funcs) {
@@ -110,10 +125,13 @@ function generate(funcs) {
     Object.values(args).forEach(argument => {
       state.refs[argument.name] = makeArgumentRef(argument.name)
     })
-    console.log(state.refs)
     state.returnRef = {constant: '__return__'}
+
     const bodyCode = generators[body.type](state, body, [])
-    state.functions[name] = {name, body: bodyCode, refs: state.refs}
+
+    const argLocations = Object.values(state.refs).filter(({arg}) => arg).map(({ref}) => ref)
+
+    state.functions[name] = {name, body: bodyCode, refs: state.refs, argLocations}
   })
   return state.functions
 }

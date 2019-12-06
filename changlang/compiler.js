@@ -16,8 +16,11 @@ const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar))
 
 function parse(string) {
   const result = parser.feed(string).results
+  if (!result || result.length === 0) {
+    throw new Error('Input didnt parse at all...')
+  }
   if (result.length > 1) {
-    throw new Error(`Ambigous parsing: ${inspect(result, false, null, true)}`)
+    throw new Error(`Ambigous parsing There were literally ${result.length} different parsings: ${inspect(result, false, null, true)}`)
   }
 
   if (!Array.isArray(result[0])) {
@@ -46,9 +49,12 @@ function compile() {
   // console.log(input)
   const functions = parse(input)
   if (argv.a) {
+    console.log('AST:')
     console.log(inspect(functions, false, null, true))
   }
+
   const intermediateFunctions = generate(functions)
+
   if (argv.n) {
     console.log(inspect(intermediateFunctions, false, null, true))
   }

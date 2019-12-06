@@ -1,4 +1,5 @@
 const {inspect} = require('util')
+const {CodegenError} = require('../errors.js')
 
 function resolveArgument(arg, labels) {
   const {constant, ref, lineLabel} = arg
@@ -19,7 +20,7 @@ function resolveArgument(arg, labels) {
     }
   }
 
-  throw new Error(`${inspect(arg)} is a wierd fucking argument`)
+  throw new CodegenError(`${inspect(arg)} is a wierd fucking argument`)
 
 }
 
@@ -41,7 +42,7 @@ function makeBasicInstruction(instruction, labels) {
 }
 
 function generateCode(indtermediateFunction) {
-  const {body, name, refs} = indtermediateFunction
+  const {body, name, argLocations} = indtermediateFunction
   const resolvedLabels = {}
   const annotatedCode = []
   let line = 0
@@ -61,7 +62,7 @@ function generateCode(indtermediateFunction) {
       return
     }
 
-    throw new Error(`${inspect(pseudoInstruction)} is a wierd fucking insruction`)
+    throw new CodegenError(`${inspect(pseudoInstruction)} is a wierd fucking insruction`)
 
   })
 
@@ -78,7 +79,7 @@ function generateCode(indtermediateFunction) {
     return {id, args}
   })
 
-  return {name, code}
+  return {name, code, argLocations, functionId: name}
 }
 
 module.exports = {

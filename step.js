@@ -1,47 +1,25 @@
 const {ops} = require('./instructions/ops.js')
 const {hash} = require('./util/hash')
-const {Process} = require('./vm.js')
+const {Process} = require('./process.js')
 const fs = require('fs')
 const process = require('process')
 
-const h = hash
+let instructionsEvaluated = 0
 
 function executeInstruction (process) {
   const inst = process.getCurrentInstruction()
   ops[inst.id].evaluate(process, ...inst.args)
+  instructionsEvaluated += 1
 }
+
 
 function run (process) {
-  if (!process.halted) {
+  while (!process.halted) {
     executeInstruction(process)
-    // console.log(process.frame)
-    // console.log(process)
-    run(process)
-  } else {
-    //console.log('HALTED')
-    //console.log('status')
-    console.log(process.frame.data)
   }
+  console.log(`Halted with status ${process.status}`)
+  console.log(`Function ${process.frame.functionId} last words are: ${process.frame.data['__return__']}`)
 }
-
-const code1 = [
-  {id: h('imove'), args: [5, 1]},
-  {id: h('imove'), args: [5, 2]},
-  {id: h('add'), args: [1, 2, 'arg']}, // 10 at arg
-  {id: h('call'), args: [2, 'ret', 'arg']},
-  {id: h('add'), args: [1, 'ret', 420]} // 20 at 420
-]
-
-const code2 = [
-  {id: h('imove'), args: [5, 1]},
-  {id: h('add'), args: [1, 'arg', 'ret']}, // 15 at ret
-  {id: h('return'), args: []}
-]
-
-const proc = new Process()
-proc.addFunction(1, code1)
-proc.addFunction(2, code2)
-proc.bindFunction(1, 1, {})
 
 //run(proc)
 
@@ -49,9 +27,14 @@ function main () {
   const [,, inFile] = process.argv
   const functions = JSON.parse(fs.readFileSync(inFile).toString())
   const proc = new Process()
-  proc.addFunction(1, functions[0])
-  proc.bindFunction(1,1,{})
+  functions.forEach((func) => proc.addFunction(func))
+  proc.bindFunction('_entry','program_result', [])
+  const start = (new Date()).getTime()
   run(proc)
+  const duration = (new Date()).getTime() - start
+  console.log(`We have evaluated: ${instructionsEvaluated} instructions`)
+  console.log(`It took us ${duration/1000} seconds`)
+  console.log(`Giving us about ${parseInt(instructionsEvaluated/(duration/1000))} instructions per second`)
 }
 
 main()

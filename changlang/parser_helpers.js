@@ -1,3 +1,8 @@
+const {inspect} = require('util')
+const _log = console.log
+console._log = (...args) => _log(args.map(arg => inspect(arg, false,null,true)).join(' '))
+
+const ignoreUs = [',', ';', '(', ')', '\n', 'def', 'end', 'if', null]
 
 function strip (arr) {
   if (typeof arr === 'object' && !Array.isArray(arr)) {
@@ -6,7 +11,7 @@ function strip (arr) {
   if (arr.length === 1 && Array.isArray(arr[0])) {
     return strip(arr[0])
   } else {
-    const stripped =  arr.filter(e => e !== null)
+    const stripped =  arr.filter(e => !ignoreUs.includes(e))
     if (stripped.length === 1) {
       return stripped[0]
     } else {
@@ -29,12 +34,12 @@ function makeAssignment(d) {
 }
 
 function stripAndLog(d) {
-  console.log(strip(d))
+  console._log(strip(d))
   return strip(d)
 }
 
 function makeTuple(d) {
-  d = strip(d)
+  d = flattenAndStrip(d)
   if (Array.isArray(d)) {
     return {type: 'tuple', vars: d}
   } else {
@@ -42,9 +47,12 @@ function makeTuple(d) {
   }
 }
 
-function log(d) {
-  console.log(d)
-  return d
+
+function annotateLog(mess) {
+  return (d) =>{
+    console._log(mess, d)
+    return d
+  }
 }
 
 function makeIdentifier(d) {
@@ -91,27 +99,27 @@ function makeBlock(d) {
     return {
       type: 'block',
       lhs: d[0],
-      rhs: d[2]
+      rhs: d[1]
     }
+  }
+}
+
+function makeFunctionCall(d) {
+  d = strip(d)
+  return {
+    type: 'call',
+    name: d[0].name,
+    args: d[1].vars,
   }
 }
 
 function makeFunction(d) {
   d = strip(d)
-  if(d.length === 9) {
-    return {
-      type: 'function',
-      name: d[1].name,
-      args: d[3].vars || [],
-      body: d[6]
-    }
-  } else {
-    return {
-      type: 'function',
-      name: d[1].name,
-      args: [],
-      body: d[5]
-    }
+  return {
+    type: 'function',
+    name: d[0].name,
+    args: d[1].vars || [],
+    body: d[2]
   }
 }
 
@@ -119,8 +127,8 @@ function makeIfStatement(d) {
   d = strip(d)
   return {
     type: 'if',
-    condition: d[1],
-    body: d[3]
+    condition: d[0],
+    body: d[1]
   }
 }
 
@@ -133,6 +141,10 @@ function makeReturn(d) {
 }
 
 function skip() { return null }
+function log(d) {
+  console._log(d)
+  return d
+}
 
 
 module.exports = {
@@ -149,5 +161,7 @@ module.exports = {
   makeIfStatement,
   makeReturn,
   makeTuple,
-  log
+  makeFunctionCall,
+  log,
+  annotateLog
 }

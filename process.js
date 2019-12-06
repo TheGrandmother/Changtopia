@@ -14,22 +14,28 @@ class Process {
   }
 
   bindFunction (functionId, returnLocation, args) {
-    const frame = new Frame(functionId, returnLocation, args)
+    const {argLocations} = this.functions[functionId]
+    if (argLocations.length !== args.length) {
+      throw new Error(`Argument length mismatch. You gave me ${args} but i need stuff to fill ${argLocations}`)
+    }
+    const argData = {}
+    argLocations.forEach((loc, i) => argData[loc] = args[i])
+    const frame = new Frame(functionId, returnLocation, argData)
     this.stack.addFrame(frame)
     this.frame = frame
   }
 
-  addFunction (functionId, code) {
-    this.functions[functionId] = code
+  addFunction (func) {
+    this.functions[func.functionId] = func
   }
 
   getCurrentInstruction () {
-    return this.functions[this.frame.functionId][this.frame.line]
+    return this.functions[this.frame.functionId].code[this.frame.line]
   }
 
   incrementLine() {
     this.frame.line += 1
-    if (this.frame.line >= this.functions[this.frame.functionId].length) {
+    if (this.frame.line >= this.functions[this.frame.functionId].code.length) {
       console.log('End of the code bruh')
       this.status = 'End of code'
       this.halted = true
@@ -37,7 +43,7 @@ class Process {
   }
 
   setLine(line) {
-    if (typeof line !== 'number' && line >= this.functions[this.frame.functionId].length) {
+    if (typeof line !== 'number' && line >= this.functions[this.frame.functionId].code.length) {
       console.log('Tried to jump to silly line')
       this.status = 'Invalid line'
       this.halted = true
@@ -53,7 +59,8 @@ class Process {
       this.status = 'Out of stack frames :/'
       return
     }
-    oldFrame.data[currentFrame.resLocation] = currentFrame.data[currentFrame.resLocation]
+    oldFrame.data[currentFrame.resLocation] = currentFrame.data['__return__']
+    this.stack.frames.push(oldFrame)
     this.frame = oldFrame
   }
 
@@ -86,7 +93,6 @@ class Frame {
     if (!this.data[location]) {
       throw LocationInvalidError(location)
     }
-
     return this.data[location]
   }
 }
