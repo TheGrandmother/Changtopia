@@ -6,19 +6,19 @@ def fac(x)
   return x * fac(new_x)
 end
 
-def approx(n)
-  if n == 0
-    return 0
-  end
-  term = n / fac(n)
-  new_n = n - 1
-  return term + approx(new_n)
+def messageHandler(sender, payload)
+  __log(sender, payload)
+  return fac(payload)
+end
+
+def listenerDude()
+  await messageHandler
 end
 
 def _entry()
-  x = 200
-  meh =  approx(x)
-  meh =  approx(x)
-  meh =  approx(x)
-  return meh
+  dudePid = spawn listenerDude()
+  __log(11111111)
+  __log(_request(dudePid, 5))
+  __log(22222222)
+  return 0
 end

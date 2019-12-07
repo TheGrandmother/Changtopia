@@ -1,6 +1,8 @@
 const {CompilerError} = require('../errors.js')
 const {inspect} = require('util')
 
+const DUMP = {constant: '__dump__'}
+
 let __currentIndex = 0
 
 function makeName() {
@@ -71,7 +73,22 @@ const generators = {
     const {name, args} = node
     const argRefs = args.map(() => makeInterRef())
     const argCode = args.map((arg, i) => generateNode(state, arg, [], argRefs[i])).flat()
+    if (!res) {
+      res = DUMP
+    }
     return argCode.concat([makeInstruction('call', [{constant: name}, res, ...argRefs])])
+  },
+
+  'spawn': (state, node, code, res) => {
+    const {name, args} = node
+    const argRefs = args.map(() => makeInterRef())
+    const argCode = args.map((arg, i) => generateNode(state, arg, [], argRefs[i])).flat()
+    return argCode.concat([makeInstruction('spawn', [{constant: name}, res, ...argRefs])])
+  },
+
+  'await': (state, node) => {
+    const {handler} = node
+    return [makeInstruction('await', [{constant: handler}])]
   },
 
   'binop': (state, node, code, res) => {

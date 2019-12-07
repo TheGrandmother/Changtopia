@@ -1,4 +1,5 @@
 const {hash} = require('../util/hash.js')
+const {inspect} = require('util')
 
 const ops = {
   'move' : {
@@ -81,9 +82,34 @@ const ops = {
       process.incrementLine()
       process.bindFunction(functionId, returnLocation, _args)
     }
+  },
+
+  'spawn' : {
+    name: 'spawn',
+    evaluate: (process, functionId, returnLocation, ...args) => {
+      const _args = []
+      args.forEach(a => _args.push(process.frame.data[a]))
+      process.incrementLine()
+      process.frame.data[returnLocation] = process.vm.spawnProcess(functionId, _args)
+    }
+  },
+
+  'await' : {
+    name: 'await',
+    evaluate: (process, handler) => {
+      process.await(handler)
+      process.incrementLine()
+    }
   }
 }
 
+function evaluateInstruction(process, instruction) {
+  if (!ops[instruction.id]) {
+    throw new Error(`I honestly dont know how to evaluate ${inspect(instruction)}`)
+  }
+  return ops[instruction.id].evaluate(process, ...instruction.args)
+}
+
 module.exports = {
-  ops
+  evaluateInstruction
 }

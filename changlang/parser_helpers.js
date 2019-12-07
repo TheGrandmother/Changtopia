@@ -2,7 +2,11 @@ const {inspect} = require('util')
 const _log = console.log
 console._log = (...args) => _log(args.map(arg => inspect(arg, false,null,true)).join(' '))
 
-const ignoreUs = [',', ';', '(', ')', '\n', 'def', 'end', 'if', null]
+const ignoreUs = [
+  ',', ';', '(', ')',
+  '\n', 'spawn', 'def',
+  'end', 'if', 'await',
+  '->', '!', null]
 
 function strip (arr) {
   if (typeof arr === 'object' && !Array.isArray(arr)) {
@@ -113,6 +117,23 @@ function makeFunctionCall(d) {
   }
 }
 
+function makeSpawn(d) {
+  d = strip(d)
+  return {
+    type: 'spawn',
+    name: d[0].name,
+    args: d[1].vars,
+  }
+}
+
+function makeAwait(d) {
+  d = strip(d)
+  return {
+    type: 'await',
+    handler: d.name,
+  }
+}
+
 function makeFunction(d) {
   d = strip(d)
   return {
@@ -162,6 +183,8 @@ module.exports = {
   makeReturn,
   makeTuple,
   makeFunctionCall,
+  makeSpawn,
+  makeAwait,
   log,
   annotateLog
 }
