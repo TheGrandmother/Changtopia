@@ -18,10 +18,8 @@ compound ->
   | spawn                                                                     {% helpers.strip%}
   | "return" _ expr                                                           {% helpers.makeReturn %}
   | if                                                                        {% helpers.makeIfStatement %}
-  | await
 
 if -> "if" __ math _ "\n" _ block _ "\n" _ "end"
-await -> "await" __ identifier                                                {% helpers.makeAwait %}
 
 assignment -> identifier __ "=" _ expr
 
@@ -47,14 +45,12 @@ parenthesized -> "(" expr ")"                                                 {%
 
 thing ->
     function_call                                                             {% helpers.strip %}
-  | spawn                                                                     {% helpers.strip %}
   | number                                                                    {% helpers.strip %}
   | identifier                                                                {% helpers.strip %}
   | parenthesized                                                             {% helpers.strip %}
 
 
 function_call -> identifier expr_tuple _                                      {% helpers.makeFunctionCall %}
-spawn -> "spawn" __ identifier _ expr_tuple                                   {% helpers.makeSpawn %}
 
 name_tuple ->
     "(" _ ident_list _ ")"                                                    {% helpers.makeTuple %}

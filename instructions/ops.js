@@ -82,24 +82,6 @@ const ops = {
       process.incrementLine()
       process.bindFunction(functionId, returnLocation, _args)
     }
-  },
-
-  'spawn' : {
-    name: 'spawn',
-    evaluate: (process, functionId, returnLocation, ...args) => {
-      const _args = []
-      args.forEach(a => _args.push(process.frame.data[a]))
-      process.incrementLine()
-      process.frame.data[returnLocation] = process.vm.spawnProcess(functionId, _args)
-    }
-  },
-
-  'await' : {
-    name: 'await',
-    evaluate: (process, handler) => {
-      process.await(handler)
-      process.incrementLine()
-    }
   }
 }
 

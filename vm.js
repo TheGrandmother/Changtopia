@@ -37,7 +37,15 @@ const hwFunctions = [
       return 0
     }
   },
-
+  {
+    functionId: '_spawn',
+    hwFunction: true,
+    exec: (process, returnLocation, functionId, ...args) => {
+      const _args = []
+      args.forEach(a => _args.push(process.frame.data[a]))
+      return process.vm.spawnProcess(functionId, _args)
+    }
+  }
 ]
 
 class Vm {

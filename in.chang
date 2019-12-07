@@ -22,7 +22,7 @@ def listenerDude()
 end
 
 def _entry()
-  dudePid = spawn listenerDude()
+  dudePid = _spawn(listenerDude)
   __log(11111111)
   __log(_request(dudePid, 5))
   __log(22222222)

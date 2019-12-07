@@ -24,8 +24,12 @@ class Process {
   }
 
   bindFunction (functionId, returnLocation, args) {
-    const {hwFunction} = this.functions[functionId]
-    if (hwFunction) {
+    const func = this.functions[functionId]
+    if (!func) {
+      throw new Error(`Bro we have litterally no function called ${functionId}`)
+    }
+
+    if (func.hwFunction) {
       const retval = this.functions[functionId].exec(this, returnLocation, ...args)
       this.frame.data[returnLocation] = retval
     } else {
@@ -102,12 +106,16 @@ class Process {
   }
 
   bindNormalFunction(functionId, returnLocation, args) {
-    const {argLocations} = this.functions[functionId]
-    if (argLocations.length !== args.length) {
-      throw new Error(`Argument length mismatch calling ${functionId}. You gave me [${args}] but i need stuff to fill [${argLocations}]`)
+    const func = this.functions[functionId]
+    if (!func) {
+      throw new Error(`Sorry dude, but there just ain't know ${functionId} function`)
+    }
+
+    if (func.argLocations.length !== args.length) {
+      throw new Error(`Argument length mismatch calling ${functionId}. You gave me [${args}] but i need stuff to fill [${func.argLocations}]`)
     }
     const argData = {}
-    argLocations.forEach((loc, i) => argData[loc] = args[i])
+    func.argLocations.forEach((loc, i) => argData[loc] = args[i])
     const frame = new Frame(functionId, returnLocation, argData)
     this.stack.addFrame(frame)
     this.frame = frame
