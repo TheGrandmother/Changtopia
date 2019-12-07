@@ -7,12 +7,18 @@ def fac(x)
 end
 
 def messageHandler(sender, payload)
+  if payload == 0
+    return 0
+  end
   __log(sender, payload)
   return fac(payload)
 end
 
 def listenerDude()
-  await messageHandler
+  if 0 != _await(messageHandler)
+    listenerDude()
+  end
+  return 0
 end
 
 def _entry()
@@ -20,5 +26,10 @@ def _entry()
   __log(11111111)
   __log(_request(dudePid, 5))
   __log(22222222)
+  __log(_request(dudePid, 50))
+  __log(33333333)
+  __log(_request(dudePid, 0))
+  __log(44444444)
+  __log(_request(dudePid, 0))
   return 0
 end

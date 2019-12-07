@@ -29,6 +29,14 @@ const hwFunctions = [
       return process.pid
     }
   },
+  {
+    functionId: '_await',
+    hwFunction: true,
+    exec: (process, returnLocation, functionId) => {
+      process.await(functionId, returnLocation)
+      return 0
+    }
+  },
 
 ]
 

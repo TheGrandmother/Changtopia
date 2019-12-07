@@ -40,6 +40,9 @@ const generators = {
     const res_subtree = makeInterRef(node)
     let assignRef = null
     if (state.refs[name]) {
+      if (state.refs[name].constant) {
+        throw new CompilerError(`${name} has already been decalred a constant, deal with it.`)
+      }
       assignRef = state.refs[name]
     } else {
       assignRef = makeAssignRef(node)
@@ -64,9 +67,14 @@ const generators = {
   'identifier': (state, node, code, res) => {
     const varReference = state.refs[node.name]
     if (!varReference) {
-      throw new Error(`Name ${node.name} has not been defined`)
+      throw new CompilerError(`Name ${node.name} has not been defined`)
+    } else {
+      if (varReference.constant) {
+        return [makeInstruction('imove', [varReference, res])]
+      } else {
+        return [makeInstruction('move', [varReference, res])]
+      }
     }
-    return [makeInstruction('move', [varReference, res])]
   },
 
   'call': (state, node, code, res) => {
@@ -131,14 +139,16 @@ function generate(funcs) {
     refs: {},
     labels: {}
   }
+
   funcs.forEach((func) => {
     const {name, body, args} = func
+
     if (state.functions[name]) {
       throw new Error(`A function named ${name} has already been defined`)
     }
     state.refs = {}
+    funcs.forEach(({name}) => state.refs[name] = {constant: name})
     state.labels = {}
-    // TODO: Fiddle with args
     Object.values(args).forEach(argument => {
       state.refs[argument.name] = makeArgumentRef(argument.name)
     })

@@ -1,7 +1,6 @@
 const {randomHash} = require('./util/hash')
 const {LocationInvalidError} = require('./errors.js')
 const {evaluateInstruction} = require('./instructions/ops.js')
-const {pretty} = require('./instructions/pretty.js')
 
 class Process {
   constructor (vm, pid) {
@@ -35,8 +34,8 @@ class Process {
 
   }
 
-  await(handler) {
-    this.handler = handler
+  await(handlerId, returnLocation) {
+    this.handler = {handlerId, returnLocation}
     this.waiting = true
     this.awaitingResponse = null
   }
@@ -49,13 +48,13 @@ class Process {
           this.frame.data[this.awaitingResponse.responseLocation] = message.payload
           this.awaitingResponse = null
           this.waiting = false
-          this.inbox.splice(i,i+1)
+          this.inbox.splice(i, i+1)
           return true
         }
       }
       return false
     } else {
-      const message = this.inbox.splice(0,1)[0]
+      const message = this.inbox.splice(0, 1)[0]
       if (message) {
         this.bindHandlerFunction(message)
         this.handler = null
@@ -83,19 +82,20 @@ class Process {
   bindHandlerFunction(message) {
     const {id, sender, payload, requiresResponse} = message
 
-    const {argLocations} = this.functions[this.handler]
+    const {handlerId, returnLocation} = this.handler
+    const {argLocations} = this.functions[handlerId]
     const args = [sender, ...payload]
     if (argLocations.length !== args.length) {
-      throw new Error(`Argument length mismatch. You gave me ${args} but i need stuff to fill ${argLocations}`)
+      throw new Error(`Argument length mismatch calling ${handlerId}. You gave me ${args} but I need stuff to fill ${argLocations}`)
     }
     const argData = {}
     argLocations.forEach((loc, i) => argData[loc] = args[i])
 
     let frame = null
     if (requiresResponse) {
-      frame = new Frame(this.handler, (res) => this.sendMessage({recipient: sender, payload: res, requestId: id}), argData)
+      frame = new Frame(handlerId, returnLocation, argData, (res) => this.sendMessage({recipient: sender, payload: res, requestId: id}))
     } else {
-      frame = new Frame(this.handler, '__dump__', argData)
+      frame = new Frame(handlerId, returnLocation, argData)
     }
     this.stack.addFrame(frame)
     this.frame = frame
@@ -104,7 +104,7 @@ class Process {
   bindNormalFunction(functionId, returnLocation, args) {
     const {argLocations} = this.functions[functionId]
     if (argLocations.length !== args.length) {
-      throw new Error(`Argument length mismatch. You gave me ${args} but i need stuff to fill ${argLocations}`)
+      throw new Error(`Argument length mismatch calling ${functionId}. You gave me [${args}] but i need stuff to fill [${argLocations}]`)
     }
     const argData = {}
     argLocations.forEach((loc, i) => argData[loc] = args[i])
@@ -147,11 +147,9 @@ class Process {
       return
     }
 
-    if (typeof currentFrame.resLocation === 'function') {
-      currentFrame.resLocation(currentFrame.data['__return__'])
-    }else {
-      oldFrame.data[currentFrame.resLocation] = currentFrame.data['__return__']
-    }
+    const returnValue = currentFrame.data['__return__']
+    currentFrame.returnCallback(returnValue)
+    oldFrame.data[currentFrame.resLocation] = returnValue
 
     this.stack.frames.push(oldFrame)
     this.frame = oldFrame
@@ -179,11 +177,12 @@ class Stack {
 }
 
 class Frame {
-  constructor (functionId, resLocation, data) {
+  constructor (functionId, resLocation, data, returnCallback = () => {}) {
     this.data = data
     this.resLocation = resLocation
     this.functionId = functionId
     this.line = 0
+    this.returnCallback = returnCallback
   }
 
   write (value, location) {
