@@ -10,26 +10,26 @@ def messageHandler(sender, payload)
   if payload == 0
     return 0
   end
-  __log(sender, payload)
+  _log(sender, payload)
   return fac(payload)
 end
 
 def listenerDude()
-  if 0 != _await(messageHandler)
+  if 0 != listen(messageHandler)
     listenerDude()
   end
   return 0
 end
 
 def _entry()
-  dudePid = _spawn(listenerDude)
-  __log(11111111)
-  __log(_request(dudePid, 5))
-  __log(22222222)
-  __log(_request(dudePid, 50))
-  __log(33333333)
-  __log(_request(dudePid, 0))
-  __log(44444444)
-  __log(_request(dudePid, 0))
+  dudePid = spawn(listenerDude)
+  _log(11111111)
+  _log(request(dudePid, 5))
+  _log(22222222)
+  _log(request(dudePid, 50))
+  _log(33333333)
+  _log(request(dudePid, 0))
+  _log(44444444)
+  _log(request(dudePid, 0))
   return 0
 end

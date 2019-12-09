@@ -2,35 +2,35 @@ const {Process} = require('./process.js')
 
 const hwFunctions = [
   {
-    functionId: '__log',
+    functionId: '_log',
     hwFunction: true,
     exec: (process, _, ...args) => {
       console.log(`DBG: ${process.pid}/${process.getCurrentFunctionId()}:\t ${args.join(' ')}`)
     }
   },
   {
-    functionId: '_send',
+    functionId: 'send',
     hwFunction: true,
     exec: (process, _, recipient, ...payload) => {
       process.sendMessage({recipient, payload})
     }
   },
   {
-    functionId: '_request',
+    functionId: 'request',
     hwFunction: true,
     exec: (process, responseLocation, recipient, ...payload) => {
       process.sendMessage({recipient, payload}, responseLocation)
     }
   },
   {
-    functionId: '_pid',
+    functionId: 'pid',
     hwFunction: true,
     exec: (process) => {
       return process.pid
     }
   },
   {
-    functionId: '_await',
+    functionId: 'listen',
     hwFunction: true,
     exec: (process, returnLocation, functionId) => {
       process.await(functionId, returnLocation)
@@ -38,7 +38,7 @@ const hwFunctions = [
     }
   },
   {
-    functionId: '_spawn',
+    functionId: 'spawn',
     hwFunction: true,
     exec: (process, returnLocation, functionId, ...args) => {
       const _args = []
