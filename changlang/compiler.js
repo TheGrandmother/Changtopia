@@ -1,4 +1,4 @@
-const grammar = require('./derp.js')
+const grammar = require('./compiled_grammar.js')
 const {generate} = require('./intermediate.js')
 const {generateCode} = require('./codegen.js')
 const nearley = require('nearley')

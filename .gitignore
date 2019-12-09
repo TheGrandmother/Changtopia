@@ -63,3 +63,4 @@ typings/
 *.swn
 *.tbn
 *.swo
+changlang/compiled_grammar.js
