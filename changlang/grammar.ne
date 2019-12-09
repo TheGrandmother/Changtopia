@@ -21,8 +21,8 @@ compound ->
 if -> "if" __ math _ "\n" _ block _ "\n" _ "end"
 
 assignment ->
-    array_deconstruct __ "=" _ expr                                             {% helpers.log %}
-  | identifier __ "=" _ expr                                                  {% helpers.makeAssignment%}
+    unpack __ "=" _ expr                                                      {% helpers.makeAssignment %}
+  | identifier __ "=" _ expr                                                  {% helpers.makeAssignment %}
 
 expr ->
     math                                                                      {% helpers.strip %}
@@ -49,43 +49,51 @@ thing ->
   | number                                                                    {% helpers.strip %}
   | identifier                                                                {% helpers.strip %}
   | parenthesized                                                             {% helpers.strip %}
+  | array_litteral
+  | array_indexing
 
 
 function_call -> identifier expr_tuple _                                      {% helpers.makeFunctionCall %}
+
+array_indexing -> identifier "#" expr                                         {% helpers.makeArrayIndexing %}
 
 name_tuple ->
     "(" _ ident_list _ ")"                                                    {% helpers.makeTuple %}
   | "(" _ ")"                                                                 {% helpers.makeTuple %}
 
 ident_list ->
-    _ident_list                                                               {% helpers.flattenAndStrip %}
-  | _ident_list _ ","                                                         {% helpers.flattenAndStrip %}
+    _ident_list                                                               {% helpers.makeIdentList %}
+  | _ident_list _ ","                                                         {% helpers.makeIdentList %}
 
 _ident_list ->
     identifier                                                                {% helpers.flattenAndStrip %}
   | _ident_list _ "," _ identifier                                            {% helpers.flattenAndStrip %}
 
 expr_tuple ->
-    "(" _ expr_list _ ")"                                                    {% helpers.makeTuple %}
+    "(" _ expr_list _ ")"                                                     {% helpers.makeTuple %}
   | "(" _ ")"                                                                 {% helpers.makeTuple %}
 
-array_create ->
-    "[" _ expr_list _ "]"                                                    {% helpers.log %}
-  | "[" _ "]"                                                                {% helpers.log %}
+array_litteral ->
+    "[" _ expr_list _ "]"                                                     {% helpers.makeArrayLitteral %}
+  | "[" _ "]"                                                                 {% helpers.makeArrayLitteral %}
 
-array_deconstruct ->
-    "[" _ ident_list _ "]"                                                    {% helpers.strip %}
-  |  "[" _ identifier _ "|" _ ident_list _ "]"                                                    {% helpers.strip %}
-  |  "[" _ ident_list _ "|" _ identifier _ "]"                                                    {% helpers.strip %}
-  |  "[" _ ident_list _ "|" _ identifier _ "|" _ ident_list _ "]"                                                    {% helpers.strip %}
+unpack ->
+     "[" _ _unpack _ "]"                                                      {% helpers.makeUnpack %}
+
+_unpack ->
+    ident_list                                                                {% helpers.strip %}
+  |  (_ident_list):? _ ("<" _ identifier _ ">" {% helpers.strip %}):? _ (_ident_list):?           {% helpers.strip %}
+
+
+
 
 expr_list ->
-    _expr_list                                                               {% helpers.flattenAndStrip %}
-  | _expr_list _ ","                                                         {% helpers.flattenAndStrip %}
+    _expr_list                                                                {% helpers.makeExprList %}
+  | _expr_list _ ","                                                          {% helpers.makeExprList %}
 
 _expr_list ->
     expr
-  | _expr_list _ "," _ expr                                            {% helpers.flattenAndStrip %}
+  | _expr_list _ "," _ expr                                                   {% helpers.flattenAndStrip %}
 
 identifier -> [a-zA-Z_] [\w]:* {% helpers.makeIdentifier %}
 number -> [\d]:+ {% helpers.makeNumber %}
