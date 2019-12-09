@@ -16,7 +16,9 @@
 - [ ] Types?
 - [ ] IO stuff for PID 0
 - [ ] Basic compiler optimizations
-  - [ ] Remove uncesseray moves
   - [ ] Bulk moves
+  - [ ] Use hashes instead of strings
   - [ ] Inline?
+  - [ ] Stop doing the Function stuff, it is ~32 times slower than the otherone
+  - [ ] Remove uncesseray moves
 
