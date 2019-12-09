@@ -38,8 +38,8 @@ class Process {
 
   }
 
-  await(handlerId, returnLocation) {
-    this.handler = {handlerId, returnLocation}
+  await(handlerId, returnLocation, additionalArgs) {
+    this.handler = {handlerId, returnLocation, additionalArgs}
     this.waiting = true
     this.awaitingResponse = null
   }
@@ -86,9 +86,9 @@ class Process {
   bindHandlerFunction(message) {
     const {id, sender, payload, requiresResponse} = message
 
-    const {handlerId, returnLocation} = this.handler
+    const {handlerId, returnLocation, additionalArgs} = this.handler
     const {argLocations} = this.functions[handlerId]
-    const args = [sender, ...payload]
+    const args = [...additionalArgs, sender, ...payload]
     if (argLocations.length !== args.length) {
       throw new Error(`Argument length mismatch calling ${handlerId}. You gave me ${args} but I need stuff to fill ${argLocations}`)
     }

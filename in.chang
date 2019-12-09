@@ -6,7 +6,8 @@ def fac(x)
   return x * fac(new_x)
 end
 
-def messageHandler(sender, payload)
+def messageHandler(lol, sender, payload)
+  _log(9999999999,lol)
   if payload == 0
     return 0
   end
@@ -15,7 +16,7 @@ def messageHandler(sender, payload)
 end
 
 def listenerDude()
-  if 0 != listen(messageHandler)
+  if 0 != listen(messageHandler, 420)
     listenerDude()
   end
   return 0

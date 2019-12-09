@@ -32,8 +32,8 @@ const hwFunctions = [
   {
     functionId: 'listen',
     hwFunction: true,
-    exec: (process, returnLocation, functionId) => {
-      process.await(functionId, returnLocation)
+    exec: (process, returnLocation, functionId, ...args) => {
+      process.await(functionId, returnLocation, args)
       return 0
     }
   },

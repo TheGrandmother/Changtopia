@@ -1,6 +1,6 @@
 ## TODO
 
-- [ ] Pass arguments to listen
+- [x] Pass arguments to listen
 - [ ] Add arrays
   - [ ] Creating
   - [ ] Indexing
