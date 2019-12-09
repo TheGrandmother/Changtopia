@@ -15,7 +15,6 @@ block ->
 compound ->
     assignment                                                                {% helpers.makeAssignment%}
   | function_call
-  | spawn                                                                     {% helpers.strip%}
   | "return" _ expr                                                           {% helpers.makeReturn %}
   | if                                                                        {% helpers.makeIfStatement %}
 
@@ -86,11 +85,3 @@ __ -> wschar:+ {% helpers.skip %}
 any_wschar -> [ \t\n\v\f] {% helpers.skip %}
 wschar -> [ \t\v\f] {% helpers.skip %}
 break -> [\n;]:+ {% helpers.skip %}
-
-list_delimiter -> [,] {% helpers.skip %}
-left_paran -> "(" {% helpers.skip %}
-right_paran -> ")" {% helpers.skip %}
-list_delimiter -> "," {% helpers.skip %}
-def -> "def" {% helpers.skip %}
-end -> "end" {% helpers.skip %}
-nl -> "\n" {% helpers.skip %}

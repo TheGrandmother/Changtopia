@@ -23,7 +23,6 @@ var grammar = {
     {"name": "block", "symbols": ["compound", "_", "block$subexpression$1", "_", "block"], "postprocess": helpers.makeBlock},
     {"name": "compound", "symbols": ["assignment"], "postprocess": helpers.makeAssignment},
     {"name": "compound", "symbols": ["function_call"]},
-    {"name": "compound", "symbols": ["spawn"], "postprocess": helpers.strip},
     {"name": "compound$string$1", "symbols": [{"literal":"r"}, {"literal":"e"}, {"literal":"t"}, {"literal":"u"}, {"literal":"r"}, {"literal":"n"}], "postprocess": function joiner(d) {return d.join('');}},
     {"name": "compound", "symbols": ["compound$string$1", "_", "expr"], "postprocess": helpers.makeReturn},
     {"name": "compound", "symbols": ["if"], "postprocess": helpers.makeIfStatement},
@@ -89,16 +88,7 @@ var grammar = {
     {"name": "wschar", "symbols": [/[ \t\v\f]/], "postprocess": helpers.skip},
     {"name": "break$ebnf$1", "symbols": [/[\n;]/]},
     {"name": "break$ebnf$1", "symbols": ["break$ebnf$1", /[\n;]/], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
-    {"name": "break", "symbols": ["break$ebnf$1"], "postprocess": helpers.skip},
-    {"name": "list_delimiter", "symbols": [/[,]/], "postprocess": helpers.skip},
-    {"name": "left_paran", "symbols": [{"literal":"("}], "postprocess": helpers.skip},
-    {"name": "right_paran", "symbols": [{"literal":")"}], "postprocess": helpers.skip},
-    {"name": "list_delimiter", "symbols": [{"literal":","}], "postprocess": helpers.skip},
-    {"name": "def$string$1", "symbols": [{"literal":"d"}, {"literal":"e"}, {"literal":"f"}], "postprocess": function joiner(d) {return d.join('');}},
-    {"name": "def", "symbols": ["def$string$1"], "postprocess": helpers.skip},
-    {"name": "end$string$1", "symbols": [{"literal":"e"}, {"literal":"n"}, {"literal":"d"}], "postprocess": function joiner(d) {return d.join('');}},
-    {"name": "end", "symbols": ["end$string$1"], "postprocess": helpers.skip},
-    {"name": "nl", "symbols": [{"literal":"\n"}], "postprocess": helpers.skip}
+    {"name": "break", "symbols": ["break$ebnf$1"], "postprocess": helpers.skip}
 ]
   , ParserStart: "main"
 }
