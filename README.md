@@ -8,12 +8,13 @@
   - [ ] Nesting
   - [ ] Fancy clone if shared and modified
 - [ ] Error handling?
-- [ ] IO stuff for PID 0
+- [ ] Timeout?
 - [ ] Atoms
 - [ ] Loops
 - [ ] Modules
 - [ ] Pattern Matching
 - [ ] Types?
+- [ ] IO stuff for PID 0
 - [ ] Basic compiler optimizations
   - [ ] Remove uncesseray moves
   - [ ] Bulk moves
