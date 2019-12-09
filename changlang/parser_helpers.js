@@ -6,6 +6,7 @@ const ignoreUs = [
   ',', ';', '(', ')',
   '\n', 'spawn', 'def',
   'end', 'if', 'await',
+  '[', ']', '|',
   '->', '!', null]
 
 function strip (arr) {

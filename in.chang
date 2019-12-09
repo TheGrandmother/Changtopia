@@ -1,36 +1,4 @@
-def fac(x)
-  if x == 1
-    return 1
-  end
-  new_x = x - 1
-  return x * fac(new_x)
-end
-
-def messageHandler(lol, sender, payload)
-  _log(9999999999,lol)
-  if payload == 0
-    return 0
-  end
-  _log(sender, payload)
-  return fac(payload)
-end
-
-def listenerDude()
-  if 0 != listen(messageHandler, 420)
-    listenerDude()
-  end
-  return 0
-end
-
 def _entry()
-  dudePid = spawn(listenerDude)
-  _log(11111111)
-  _log(request(dudePid, 5))
-  _log(22222222)
-  _log(request(dudePid, 50))
-  _log(33333333)
-  _log(request(dudePid, 0))
-  _log(44444444)
-  _log(request(dudePid, 0))
+  [a, b, c | aron | d, e, f] = b
   return 0
 end

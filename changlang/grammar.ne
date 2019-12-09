@@ -13,14 +13,16 @@ block ->
 
 
 compound ->
-    assignment                                                                {% helpers.makeAssignment%}
+    assignment
   | function_call
   | "return" _ expr                                                           {% helpers.makeReturn %}
   | if                                                                        {% helpers.makeIfStatement %}
 
 if -> "if" __ math _ "\n" _ block _ "\n" _ "end"
 
-assignment -> identifier __ "=" _ expr
+assignment ->
+    array_deconstruct __ "=" _ expr                                             {% helpers.log %}
+  | identifier __ "=" _ expr                                                  {% helpers.makeAssignment%}
 
 expr ->
     math                                                                      {% helpers.strip %}
@@ -66,6 +68,16 @@ _ident_list ->
 expr_tuple ->
     "(" _ expr_list _ ")"                                                    {% helpers.makeTuple %}
   | "(" _ ")"                                                                 {% helpers.makeTuple %}
+
+array_create ->
+    "[" _ expr_list _ "]"                                                    {% helpers.log %}
+  | "[" _ "]"                                                                {% helpers.log %}
+
+array_deconstruct ->
+    "[" _ ident_list _ "]"                                                    {% helpers.strip %}
+  |  "[" _ identifier _ "|" _ ident_list _ "]"                                                    {% helpers.strip %}
+  |  "[" _ ident_list _ "|" _ identifier _ "]"                                                    {% helpers.strip %}
+  |  "[" _ ident_list _ "|" _ identifier _ "|" _ ident_list _ "]"                                                    {% helpers.strip %}
 
 expr_list ->
     _expr_list                                                               {% helpers.flattenAndStrip %}
