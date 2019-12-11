@@ -10,6 +10,13 @@ const ignoreUs = [
   '->', '!', null,
   '#', '<', '>']
 
+
+/*
+ * ==================================
+ * HELPERS
+ * ==================================
+ */
+
 function strip (arr) {
   if (typeof arr === 'object' && !Array.isArray(arr)) {
     return arr
@@ -30,6 +37,33 @@ function flattenAndStrip (arr) {
   return strip(arr.flat(Infinity))
 }
 
+function wrapInArray(d) {
+  if (!Array.isArray(d)) {
+    return [d]
+  } else {
+    return d
+  }
+}
+
+function stripAndLog(d) {
+  return strip(d)
+}
+
+
+function skip() { return null }
+
+function log(d) {
+  console._log(d)
+  return d
+}
+
+function annotateLog(mess) {
+  return (d) =>{
+    console._log(mess, d)
+    return d
+  }
+}
+
 function makeAssignment(d) {
   d = strip(d)
   if (d[0].type === 'unpack') {
@@ -46,22 +80,106 @@ function makeAssignment(d) {
   }
 }
 
-function stripAndLog(d) {
-  return strip(d)
+
+/*
+ * ==================================
+ * Tuples and lists
+ * ==================================
+ */
+
+
+function makeIdentList(d) {
+  d = flattenAndStrip(d)
+  return {
+    type: 'identList',
+    entries: wrapInArray(d)
+  }
+}
+
+function makeExprList(d) {
+  d = strip(d)
+  return {
+    type: 'exprList',
+    entries: wrapInArray(d)
+  }
 }
 
 function makeTuple(d) {
   d = flattenAndStrip(d)
-  return {type: 'tuple', entries: d}
-}
-
-
-function annotateLog(mess) {
-  return (d) =>{
-    console._log(mess, d)
-    return d
+  if (d.length === 0) {
+    return {type: 'emptyTuple', body: {type: 'emptyList', entries: []}}
+  } else {
+    return {type: 'tuple', body: d}
   }
 }
+
+/*
+ * ==================================
+ * functions Stuff
+ * ==================================
+ */
+
+function makeFunctionCall(d) {
+  d = strip(d)
+  return {
+    type: 'call',
+    name: d[0].name,
+    args: d[1].body.entries
+  }
+}
+
+function makeFunction(d) {
+  d = strip(d)
+  console.log(d)
+  return {
+    type: 'function',
+    name: d[0].name,
+    args: d[1].body.entries,
+    body: d[2]
+  }
+}
+
+/*
+ * ==================================
+ * Array Stuff
+ * ==================================
+ */
+
+function makeArrayLitteral(d) {
+  d = strip(d)
+  return {
+    type: 'array',
+    entries: d.entries
+  }
+}
+
+function makeArrayIndexing(d) {
+  d = strip(d)
+  return {
+    type: 'arrayIndexing',
+    name: d[0],
+    index: d[1]
+  }
+}
+
+function makeUnpack(d) {
+  d = strip(d)
+  d = d.flat()
+  return {
+    type: 'unpack',
+    lhs: d[0],
+    middle: d[1],
+    rhs: d[2]
+  }
+}
+
+/*
+ * ==================================
+ * The rest
+ * ==================================
+ */
+
+
 
 function makeIdentifier(d) {
   d = flattenAndStrip(d)
@@ -99,22 +217,6 @@ function makeMath(d) {
   }
 }
 
-function makeArrayLitteral(d) {
-  d = strip(d)
-  return {
-    type: 'array',
-    entries: d.entries
-  }
-}
-
-function makeArrayIndexing(d) {
-  d = strip(d)
-  return {
-    type: 'arrayIndexing',
-    name: d[0],
-    index: d[1]
-  }
-}
 
 function makeBlock(d) {
   d = flattenAndStrip(d)
@@ -129,24 +231,6 @@ function makeBlock(d) {
   }
 }
 
-function makeFunctionCall(d) {
-  d = strip(d)
-  return {
-    type: 'call',
-    name: d[0].name,
-    args: d[1].entries,
-  }
-}
-
-function makeFunction(d) {
-  d = strip(d)
-  return {
-    type: 'function',
-    name: d[0].name,
-    args: d[1].entries || [],
-    body: d[2]
-  }
-}
 
 function makeIfStatement(d) {
   d = strip(d)
@@ -165,39 +249,7 @@ function makeReturn(d) {
   }
 }
 
-function makeIdentList(d) {
-  d = flattenAndStrip(d)
-  return {
-    type: 'identList',
-    entries: d
-  }
-}
 
-function makeExprList(d) {
-  d = flattenAndStrip(d)
-  return {
-    type: 'exprList',
-    entries: d
-  }
-}
-
-function makeUnpack(d) {
-  d = strip(d)
-  d = d.flat()
-  return {
-    type: 'unpack',
-    lhs: d[0],
-    middle: d[1],
-    rhs: d[2]
-  }
-}
-
-function skip() { return null }
-
-function log(d) {
-  console._log(d)
-  return d
-}
 
 
 module.exports = {
