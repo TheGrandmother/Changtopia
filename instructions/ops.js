@@ -74,6 +74,69 @@ const ops = {
     }
   },
 
+  'arrayCreate' : {
+    name: 'arrayCreate',
+    evaluate: (process, location, ...elementLocations) => {
+      const array = elementLocations.map(location => process.frame.read(location))
+      process.frame.write(location, array)
+      process.incrementLine()
+    }
+  },
+
+  'arrayIndexAssign' : {
+    name: 'arrayIndexAssign',
+    evaluate: (process, location, index, value) => {
+      const array = process.frame.read(location)
+      if (!Array.isArray(array)) {
+        throw new Error(`Data at location ${location} is not an array, it is ${array}`)
+      }
+      if (index > array.length) {
+        throw  new Error(`Array index ${index} is out of bounds, Array is only ${array.length} long`)
+      }
+      array[index] = value
+      process.incrementLine()
+    }
+  },
+
+  'arrayIndexGet' : {
+    name: 'arrayIndexGet',
+    evaluate: (process, location, indexLocation, res) => {
+      const array = process.frame.read(location)
+      const index = process.frame.read(indexLocation)
+      if (!Array.isArray(array)) {
+        throw new Error(`Data at location ${location} is not an array, it is ${array}`)
+      }
+      if (index > array.length) {
+        throw  new Error(`Array index ${index} is out of bounds, Array is only ${array.length} long`)
+      }
+      process.frame.write(res, array[index])
+      process.incrementLine()
+    }
+  },
+
+  'arrayUnpack' : {
+    name: 'arrayUnpack',
+    evaluate: (process, location, leadingLocations, trailingLocations, bodyLocation ) => {
+      const array = process.read(location)
+      if (!Array.isArray(array)) {
+        throw new Error(`Data at location ${location} is not an array, it is ${array}`)
+      }
+      if (leadingLocations.length + trailingLocations.length > array.length) {
+        throw  new Error(`To many values to unpack. Trying to unpack ${leadingLocations.length + trailingLocations.length} but array contains ${array.length} elements`)
+      }
+
+      leadingLocations.forEach((location, i) => process.write(location, array[i]))
+      const tailArray = array.slice(-1*trailingLocations.length)
+      trailingLocations.forEach((location, i) => process.write(location, tailArray[i]))
+      if (bodyLocation) {
+        const bodyArray = array.slice(leadingLocations.length).slice(0, array.length - leadingLocations.length - trailingLocations.length)
+        process.frame.write(bodyLocation, bodyArray)
+      }
+
+      process.incrementLine()
+    }
+  },
+
   'call' : {
     name: 'call',
     evaluate: (process, functionId, returnLocation, ...args) => {

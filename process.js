@@ -31,7 +31,7 @@ class Process {
 
     if (func.hwFunction) {
       const retval = this.functions[functionId].exec(this, returnLocation, ...args)
-      this.frame.data[returnLocation] = retval
+      this.frame.write(returnLocation, retval)
     } else {
       this.bindNormalFunction(...arguments)
     }
@@ -155,9 +155,9 @@ class Process {
       return
     }
 
-    const returnValue = currentFrame.data['__return__']
+    const returnValue = currentFrame.read('__return__')
     currentFrame.returnCallback(returnValue)
-    oldFrame.data[currentFrame.resLocation] = returnValue
+    oldFrame.write(currentFrame.resLocation, returnValue)
 
     this.stack.frames.push(oldFrame)
     this.frame = oldFrame
@@ -193,7 +193,7 @@ class Frame {
     this.returnCallback = returnCallback
   }
 
-  write (value, location) {
+  write (location, value) {
     this.data[location] = value
     return location
   }

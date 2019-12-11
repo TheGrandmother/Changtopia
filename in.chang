@@ -1,5 +1,6 @@
 def _entry()
-  a = [45 ,  7+9]
-  b = a#2
+  a = [45 ,  7+9, 42 * 10]
+  _log(a)
+  _log(a#2)
   return 0
 end

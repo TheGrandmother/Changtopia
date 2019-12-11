@@ -130,7 +130,6 @@ function makeFunctionCall(d) {
 
 function makeFunction(d) {
   d = strip(d)
-  console.log(d)
   return {
     type: 'function',
     name: d[0].name,
@@ -148,7 +147,7 @@ function makeFunction(d) {
 function makeArrayLitteral(d) {
   d = strip(d)
   return {
-    type: 'array',
+    type: 'arrayLitterall',
     entries: d.entries
   }
 }

@@ -119,6 +119,25 @@ const _generators = {
     // op res_lhs res_rhs res
   },
 
+  'arrayLitterall': (state, node, res) => {
+    const {entries} = node
+    const resultLocations = entries.map(() => makeInterRef())
+    const valueCodes = entries.map((entry, i) => generateNode(state, entry, resultLocations[i]))
+    const myCode = [makeInstruction('arrayCreate', [res, ...resultLocations])]
+    return valueCodes.flat().concat(myCode)
+  },
+
+  'arrayIndexing': (state, node, res) => {
+    const {name, index} = node
+    const arrayRef = state.refs[name.name]
+    const indexRef = makeInterRef()
+    const indexCode = generateNode(state, index, indexRef)
+    if (!arrayRef) {
+      throw new CompilerError(`Name ${node.name} has not been defined`)
+    }
+    return indexCode.concat([makeInstruction('arrayIndexGet', [arrayRef, indexRef, res])])
+  },
+
   'block': (state, node) => {
     const lhsCode = generateNode(state, node.lhs)
     const rhsCode = generateNode(state, node.rhs)
