@@ -2,8 +2,9 @@
 
 - [x] Pass arguments to listen
 - [ ] Add arrays
-  - [ ] Creating
-  - [ ] Indexing
+  - [x] Creating
+  - [x] IndexingGet
+  - [ ] IndexingAssign
   - [ ] Deconstructing
   - [ ] Nesting
   - [ ] Fancy clone if shared and modified

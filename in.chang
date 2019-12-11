@@ -1,6 +1,10 @@
 def _entry()
-  a = [45 ,  7+9, 42 * 10]
+  a = [45 ,  7+9, 42 * 10, 789, 1337]
   _log(a)
   _log(a#2)
+  [x <body> y, z] = a
+  _log(x)
+  _log(body)
+  _log(y, z)
   return 0
 end

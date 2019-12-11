@@ -138,6 +138,17 @@ const _generators = {
     return indexCode.concat([makeInstruction('arrayIndexGet', [arrayRef, indexRef, res])])
   },
 
+  'unpack': (state, node, res) => {
+    const {name, index} = node
+    const arrayRef = state.refs[name.name]
+    const indexRef = makeInterRef()
+    const indexCode = generateNode(state, index, indexRef)
+    if (!arrayRef) {
+      throw new CompilerError(`Name ${node.name} has not been defined`)
+    }
+    return indexCode.concat([makeInstruction('arrayIndexGet', [arrayRef, indexRef, res])])
+  },
+
   'block': (state, node) => {
     const lhsCode = generateNode(state, node.lhs)
     const rhsCode = generateNode(state, node.rhs)
