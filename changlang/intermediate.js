@@ -34,8 +34,8 @@ function makeLineLabel(node, name) {
   return {lineLabel: `${name}_arg${__currentIndex}_l`}
 }
 
-const generators = {
-  'assignment': (state, node, code) => {
+const _generators = {
+  'assignment': (state, node) => {
     const {name, rhs} = node
     const res_subtree = makeInterRef(node)
     let assignRef = null
@@ -48,23 +48,23 @@ const generators = {
       assignRef = makeAssignRef(node)
       state.refs[name] = assignRef
     }
-    const subtreeCode = generateNode(state, rhs, [], res_subtree)
+    const subtreeCode = generateNode(state, rhs, res_subtree)
     const myCode = [makeInstruction('move', [res_subtree, assignRef])]
-    return code.concat(subtreeCode).concat(myCode)
+    return subtreeCode.concat(myCode)
   },
 
-  'number': (state, node, code, res) => {
+  'number': (state, node, res) => {
     return [makeInstruction('imove',[{constant: node.value}, res])]
   },
 
   'return': (state, node) => {
     const {rhs} = node
-    const rhsCode = generateNode(state, rhs, [], state.returnRef)
+    const rhsCode = generateNode(state, rhs, state.returnRef)
     const myCode = [makeInstruction('return', [state.returnRef])]
     return rhsCode.concat(myCode)
   },
 
-  'identifier': (state, node, code, res) => {
+  'identifier': (state, node, res) => {
     const varReference = state.refs[node.name]
     if (!varReference) {
       throw new CompilerError(`Name ${node.name} has not been defined`)
@@ -77,20 +77,20 @@ const generators = {
     }
   },
 
-  'call': (state, node, code, res) => {
+  'call': (state, node, res) => {
     const {name, args} = node
     const argRefs = args.map(() => makeInterRef())
-    const argCode = args.map((arg, i) => generateNode(state, arg, [], argRefs[i])).flat()
+    const argCode = args.map((arg, i) => generateNode(state, arg, argRefs[i])).flat()
     if (!res) {
       res = DUMP
     }
     return argCode.concat([makeInstruction('call', [{constant: name}, res, ...argRefs])])
   },
 
-  'spawn': (state, node, code, res) => {
+  'spawn': (state, node, res) => {
     const {name, args} = node
     const argRefs = args.map(() => makeInterRef())
-    const argCode = args.map((arg, i) => generateNode(state, arg, [], argRefs[i])).flat()
+    const argCode = args.map((arg, i) => generateNode(state, arg, argRefs[i])).flat()
     return argCode.concat([makeInstruction('spawn', [{constant: name}, res, ...argRefs])])
   },
 
@@ -99,38 +99,55 @@ const generators = {
     return [makeInstruction('await', [{constant: handler}])]
   },
 
-  'binop': (state, node, code, res) => {
+  'binop': (state, node, res) => {
     const resLhs = makeInterRef(node)
     const resRhs = makeInterRef(node)
-    const lhsCode = generateNode(state, node.lhs, [], resLhs)
-    const rhsCode = generateNode(state, node.rhs, [], resRhs)
+    const lhsCode = generateNode(state, node.lhs, resLhs)
+    const rhsCode = generateNode(state, node.rhs, resRhs)
     const myCode = [makeInstruction('op', [{constant: node.operand}, resLhs, resRhs, res])]
-    return code.concat(lhsCode).concat(rhsCode).concat(myCode)
+    return lhsCode.concat(rhsCode).concat(myCode)
     // op res_lhs res_rhs res
   },
-  'if': (state, node, code) => {
+  'if': (state, node) => {
     const {condition, body} = node
     const conditionRes = makeInterRef(node)
-    const conditionCode = generateNode(state, condition, [], conditionRes)
-    const bodyCode = generateNode(state, body, [])
+    const conditionCode = generateNode(state, condition, conditionRes)
+    const bodyCode = generateNode(state, body)
     const skipLabel = makeLineLabel(node, 'skip')
     const myCode = [makeInstruction('jump_if_false', [conditionRes, skipLabel])]
-    return code.concat(conditionCode).concat(myCode).concat(bodyCode).concat(skipLabel)
+    return conditionCode.concat(myCode).concat(bodyCode).concat(skipLabel)
     // op res_lhs res_rhs res
   },
 
-  'block': (state, node, code) => {
-    const lhsCode = generateNode(state, node.lhs, code)
-    const rhsCode = generateNode(state, node.rhs, code)
-    return code.concat(lhsCode).concat(rhsCode)
+  'block': (state, node) => {
+    const lhsCode = generateNode(state, node.lhs)
+    const rhsCode = generateNode(state, node.rhs)
+    return lhsCode.concat(rhsCode)
   },
 }
 
-function generateNode(state, node, code, res) {
+function wrapGenerators() {
+  const generators = {}
+  Object.keys(_generators).forEach(key => {
+    generators[key] = (state, node, ...args) => {
+      try {
+        return _generators[key](state, node, ...args)
+      } catch (err) {
+        throw new CompilerError(`I encountered the error:\n${err.name}: \n${err.message}\n` +
+                                `Whilst trying to generate the code for:\n${inspect(node,false,null,true)}`)
+      }
+    }
+  })
+  return generators
+}
+
+const generators = wrapGenerators()
+
+function generateNode(state, node, res) {
   if (!generators[node.type]) {
     throw new CompilerError(`Unfortunatley I dont know what the hell to do with ${inspect(node)}`)
   }
-  return generators[node.type](state, node, code, res)
+  return generators[node.type](state, node, res)
 }
 
 function generate(funcs) {
@@ -154,7 +171,7 @@ function generate(funcs) {
     })
     state.returnRef = {constant: '__return__'}
 
-    const bodyCode = generators[body.type](state, body, [])
+    const bodyCode = generators[body.type](state, body)
 
     const argLocations = Object.values(state.refs).filter(({arg}) => arg).map(({ref}) => ref)
 
