@@ -80,6 +80,15 @@ class Process {
       this.waiting = true
     }
 
+    message.payload = message.payload.map(e => {
+      if (Array.isArray(e)) {
+        // TODO: Speeed this up
+        return JSON.parse(JSON.stringify(e))
+      } else {
+        return e
+      }
+    })
+
     this.vm.dispatchMessage(message)
   }
 
@@ -199,8 +208,8 @@ class Frame {
   }
 
   read (location) {
-    if (!this.data[location]) {
-      throw LocationInvalidError(location)
+    if (this.data[location] === undefined) {
+      throw new LocationInvalidError(location)
     }
     return this.data[location]
   }

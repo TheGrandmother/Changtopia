@@ -5,8 +5,9 @@
   - [x] Creating
   - [x] IndexingGet
   - [ ] IndexingAssign
-  - [ ] Deconstructing
-  - [ ] Nesting
+  - [x] Deconstructing
+  - [x] Nesting
+  - [x] Clone if shared
   - [ ] Fancy clone if shared and modified
 - [ ] Error handling?
 - [ ] Timeout?

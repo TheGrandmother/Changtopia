@@ -1,10 +1,16 @@
+def otto(sender, payload)
+  _log(sender, payload)
+  return 0
+end
+
+def bob()
+  listen(otto)
+  return 0
+end
+
 def _entry()
-  a = [45 ,  7+9, 42 * 10, 789, 1337]
-  _log(a)
-  _log(a#2)
-  [x <body> y, z] = a
-  _log(x)
-  _log(body)
-  _log(y, z)
+  x = [7,8,[4,2,0]]
+  glenn = spawn(bob)
+  send(glenn, x)
   return 0
 end
