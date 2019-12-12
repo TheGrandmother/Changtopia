@@ -15,9 +15,9 @@ function makeInterRef(node) {
   return {ref: makeName(node) + '_i'}
 }
 
-function makeAssignRef(node) {
+function makeAssignRef(name) {
   __currentIndex += 1
-  return {ref: `${node.name}_a${__currentIndex}`, name: node.name}
+  return {ref: `${name}_a${__currentIndex}`, name: name}
 }
 
 function makeArgumentRef(name) {
@@ -34,20 +34,26 @@ function makeLineLabel(node, name) {
   return {lineLabel: `${name}_arg${__currentIndex}_l`}
 }
 
+function createAssignment(state, name) {
+  let assignRef = null
+  if (state.refs[name]) {
+    if (state.refs[name].constant) {
+      throw new CompilerError(`${name} has already been decalred a constant, deal with it.`)
+    }
+    assignRef = state.refs[name]
+  } else {
+    assignRef = makeAssignRef(name)
+    state.refs[name] = assignRef
+  }
+  return assignRef
+
+}
+
 const _generators = {
   'assignment': (state, node) => {
     const {name, rhs} = node
     const res_subtree = makeInterRef(node)
-    let assignRef = null
-    if (state.refs[name]) {
-      if (state.refs[name].constant) {
-        throw new CompilerError(`${name} has already been decalred a constant, deal with it.`)
-      }
-      assignRef = state.refs[name]
-    } else {
-      assignRef = makeAssignRef(node)
-      state.refs[name] = assignRef
-    }
+    const assignRef = createAssignment(state, name)
     const subtreeCode = generateNode(state, rhs, res_subtree)
     const myCode = [makeInstruction('move', [res_subtree, assignRef])]
     return subtreeCode.concat(myCode)
@@ -138,15 +144,24 @@ const _generators = {
     return indexCode.concat([makeInstruction('arrayIndexGet', [arrayRef, indexRef, res])])
   },
 
-  'unpack': (state, node, res) => {
-    const {name, index} = node
-    const arrayRef = state.refs[name.name]
-    const indexRef = makeInterRef()
-    const indexCode = generateNode(state, index, indexRef)
-    if (!arrayRef) {
-      throw new CompilerError(`Name ${node.name} has not been defined`)
-    }
-    return indexCode.concat([makeInstruction('arrayIndexGet', [arrayRef, indexRef, res])])
+  'unpackingAssignment': (state, node) => {
+    const {rhs, unpack} = node
+    const {leading, body, trailing} = unpack
+    const rhsRes = makeInterRef()
+    const rhsCode = generateNode(state, rhs, rhsRes)
+    const leadingRefs = leading.map(({name}) => createAssignment(state, name))
+    const trailingRefs = trailing.map(({name}) => createAssignment(state, name))
+    const bodyRef = body && createAssignment(state, body.name)
+    return rhsCode.concat([makeInstruction('arrayUnpack',
+      [
+        rhsRes,
+        {constant: !!body},
+        {constant: leadingRefs.length},
+        {constant: trailingRefs.length},
+        ...leadingRefs,
+        ...trailingRefs,
+        bodyRef]
+    )])
   },
 
   'block': (state, node) => {

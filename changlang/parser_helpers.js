@@ -166,9 +166,9 @@ function makeUnpack(d) {
   d = d.flat()
   return {
     type: 'unpack',
-    lhs: d[0],
-    middle: d[1],
-    rhs: d[2]
+    leading: wrapInArray(d[0]),
+    body: d[1],
+    trailing: wrapInArray(d[2])
   }
 }
 

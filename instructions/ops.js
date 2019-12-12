@@ -116,18 +116,22 @@ const ops = {
 
   'arrayUnpack' : {
     name: 'arrayUnpack',
-    evaluate: (process, location, leadingLocations, trailingLocations, bodyLocation ) => {
-      const array = process.read(location)
+    evaluate: (process, location, hasBody, leadingCount, trailingCount, ...args ) => {
+      const array = process.frame.read(location)
       if (!Array.isArray(array)) {
         throw new Error(`Data at location ${location} is not an array, it is ${array}`)
       }
-      if (leadingLocations.length + trailingLocations.length > array.length) {
-        throw  new Error(`To many values to unpack. Trying to unpack ${leadingLocations.length + trailingLocations.length} but array contains ${array.length} elements`)
+      if (leadingCount + trailingCount > array.length) {
+        throw  new Error(`To many values to unpack. Trying to unpack ${leadingCount + trailingCount} but array contains ${array.length} elements`)
       }
 
-      leadingLocations.forEach((location, i) => process.write(location, array[i]))
+      const leadingLocations = args.slice(0, leadingCount)
+      const trailingLocations = args.slice(-1 * trailingCount - 1)
+      const bodyLocation = hasBody ? trailingLocations.pop() : undefined
+
+      leadingLocations.forEach((location, i) => process.frame.write(location, array[i]))
       const tailArray = array.slice(-1*trailingLocations.length)
-      trailingLocations.forEach((location, i) => process.write(location, tailArray[i]))
+      trailingLocations.forEach((location, i) => process.frame.write(location, tailArray[i]))
       if (bodyLocation) {
         const bodyArray = array.slice(leadingLocations.length).slice(0, array.length - leadingLocations.length - trailingLocations.length)
         process.frame.write(bodyLocation, bodyArray)
