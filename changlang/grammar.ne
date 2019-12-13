@@ -22,6 +22,7 @@ if -> "if" __ math _ "\n" _ block _ "\n" _ "end"
 
 assignment ->
     unpack __ "=" _ expr                                                      {% helpers.makeAssignment %}
+  | array_indexed __ "=" _ expr                                               {% helpers.makeAssignment %}
   | identifier __ "=" _ expr                                                  {% helpers.makeAssignment %}
 
 expr ->
@@ -50,12 +51,12 @@ thing ->
   | identifier                                                                {% helpers.strip %}
   | parenthesized                                                             {% helpers.strip %}
   | array_litteral
-  | array_indexing
+  | array_indexed
 
 
 function_call -> identifier expr_tuple _                                      {% helpers.makeFunctionCall %}
 
-array_indexing -> identifier "#" expr                                         {% helpers.makeArrayIndexing %}
+array_indexed -> identifier "#" parenthesized                                 {% helpers.makeArrayIndexing %}
 
 name_tuple ->
     "(" _ ident_list _ ")"                                                    {% helpers.makeTuple %}
@@ -94,6 +95,8 @@ expr_list ->
 _expr_list ->
     expr
   | _expr_list _ "," _ expr                                                   {% helpers.flattenAndStrip %}
+
+crazy_identifier -> identifier | array_indexed
 
 identifier -> [a-zA-Z_] [\w]:* {% helpers.makeIdentifier %}
 number -> [\d]:+ {% helpers.makeNumber %}

@@ -9,14 +9,16 @@
   - [x] Nesting
   - [x] Clone if shared
   - [ ] Fancy clone if shared and modified
+- [ ] ...else clauses
 - [ ] Error handling?
 - [ ] Timeout?
 - [ ] Atoms
 - [ ] Loops
+- [ ] IO stuff for PID 0
 - [ ] Modules
+- [ ] Refactor whole grammar and AST generation
 - [ ] Pattern Matching
 - [ ] Types?
-- [ ] IO stuff for PID 0
 - [ ] Basic compiler optimizations
   - [ ] Bulk moves
   - [ ] Use hashes instead of strings
