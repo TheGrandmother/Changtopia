@@ -63,6 +63,10 @@ const _generators = {
     return [makeInstruction('imove',[{constant: node.value}, res])]
   },
 
+  'atom': (state, node, res) => {
+    return [makeInstruction('imove',[{constant: node.value}, res])]
+  },
+
   'return': (state, node) => {
     const {rhs} = node
     const rhsCode = generateNode(state, rhs, state.returnRef)
@@ -131,6 +135,12 @@ const _generators = {
     const valueCodes = entries.map((entry, i) => generateNode(state, entry, resultLocations[i]))
     const myCode = [makeInstruction('arrayCreate', [res, ...resultLocations])]
     return valueCodes.flat().concat(myCode)
+  },
+
+  'arrayLitterallImmediate': (state, node, res) => {
+    const {entries} = node
+    const myCode = [makeInstruction('arrayCreateImmediate', [res, entries])]
+    return myCode
   },
 
   'arrayIndexing': (state, node, res) => {

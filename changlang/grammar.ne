@@ -52,7 +52,10 @@ thing ->
   | parenthesized                                                             {% helpers.strip %}
   | array_litteral
   | array_indexed
+  | atom
+  | string
 
+atom -> "$" identifier                                                        {% helpers.makeAtom %}
 
 function_call -> identifier expr_tuple _                                      {% helpers.makeFunctionCall %}
 
@@ -83,10 +86,31 @@ unpack ->
 
 _unpack ->
     ident_list                                                                {% helpers.strip %}
-  |  (_ident_list):? _ ("<" _ identifier _ ">" {% helpers.strip %}):? _ (_ident_list):?           {% helpers.strip %}
+  | (_ident_list):? _
+    ("<" _ identifier _ ">" {% helpers.strip %}):?
+    _ (_ident_list):?                                                         {% helpers.strip %}
 
 
+string ->
+    "'" _string "'"                                                           {% helpers.makeString %}
+_string ->
+    null
+  | _string _stringchar
 
+_stringchar ->
+    [^\\']
+  | "\\'" {% () => ["'"] %}
+
+
+  # String -> "\"" _string "\"" {% function(d) {return {'literal':d[1]}; } %}
+  #  
+  # _string ->
+  # 	null {% function() {return ""; } %}
+  # 	| _string _stringchar {% function(d) {return d[0] + d[1];} %}
+  #  
+  # _stringchar ->
+  # 	[^\\"] {% id %}
+  # 	| "\\" [^] {% function(d) {return JSON.parse("\"" + d[0] + d[1] + "\""); } %}
 
 expr_list ->
     _expr_list                                                                {% helpers.makeExprList %}

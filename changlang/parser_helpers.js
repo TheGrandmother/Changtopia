@@ -1,4 +1,5 @@
 const {inspect} = require('util')
+const {h} = require('../util/hash.js')
 const _log = console.log
 console._log = (...args) => _log(args.map(arg => inspect(arg, false,null,true)).join(' '))
 
@@ -8,7 +9,8 @@ const ignoreUs = [
   'end', 'if', 'await',
   '[', ']', '|',
   '->', '!', null,
-  '#', '<', '>']
+  '#', '<', '>',
+  '$', '\'']
 
 
 /*
@@ -256,7 +258,23 @@ function makeReturn(d) {
   }
 }
 
+function makeAtom(d) {
+  d = strip(d)
+  return {
+    type: 'atom',
+    name: d.name,
+    value: h(d.name)
+  }
+}
 
+function makeString(d) {
+  d = strip(d)
+  d = d.flat(Infinity)
+  return {
+    type: 'arrayLitterallImmediate',
+    entries: {array: d.map(c => c.charCodeAt(0))}
+  }
+}
 
 
 module.exports = {
@@ -279,6 +297,8 @@ module.exports = {
   makeExprList,
   makeArrayLitteral,
   makeArrayIndexing,
+  makeAtom,
+  makeString,
   log,
   annotateLog
 }

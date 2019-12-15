@@ -83,6 +83,15 @@ const ops = {
     }
   },
 
+  'arrayCreateImmediate' : {
+    name: 'arrayCreateImmediate',
+    evaluate: (process, location, entries) => {
+      const array = entries
+      process.frame.write(location, array)
+      process.incrementLine()
+    }
+  },
+
   'arrayIndexAssign' : {
     name: 'arrayIndexAssign',
     evaluate: (process, location, indexLocation, valueLocation) => {

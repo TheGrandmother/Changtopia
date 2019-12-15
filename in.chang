@@ -1,6 +1,5 @@
 def _entry()
-  x = [7,8,[4,2,0]]
-  _log(x)
-  x#(0) = 452
-  _log(x)
+  bob = [1,2,3,5]
+  bob = 'fhasdjk fj \'ks adflkadsjf'
+  _log(bob)
 end

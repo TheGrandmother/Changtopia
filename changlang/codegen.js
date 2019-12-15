@@ -2,10 +2,14 @@ const {inspect} = require('util')
 const {CodegenError} = require('../errors.js')
 
 function resolveArgument(arg, labels) {
-  const {constant, ref, lineLabel} = arg
+  const {array, constant, ref, lineLabel} = arg
 
   if (constant !== undefined) {
     return constant
+  }
+
+  if (array !== undefined) {
+    return array
   }
 
   if (ref !== undefined) {

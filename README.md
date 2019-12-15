@@ -9,12 +9,13 @@
   - [x] Nesting
   - [x] Clone if shared
   - [ ] Fancy clone if shared and modified
+- [x] Atoms
+- [x] Strings
+- [ ] IO stuff for PID 0
 - [ ] ...else clauses
 - [ ] Error handling?
 - [ ] Timeout?
-- [ ] Atoms
 - [ ] Loops
-- [ ] IO stuff for PID 0
 - [ ] Modules
 - [ ] Refactor whole grammar and AST generation
 - [ ] Pattern Matching
