@@ -1,4 +1,4 @@
-const {hash} = require('../util/hash.js')
+const {h} = require('../util/hash.js')
 const {inspect} = require('util')
 
 const ops = {

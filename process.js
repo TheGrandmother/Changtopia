@@ -1,6 +1,7 @@
 const {randomHash} = require('./util/hash')
 const {LocationInvalidError} = require('./errors.js')
 const {evaluateInstruction} = require('./instructions/ops.js')
+const {pretty} = require('./instructions/pretty.js')
 
 class Process {
   constructor (vm, pid) {
@@ -173,8 +174,14 @@ class Process {
   }
 
   executeInstruction() {
-    // pretty(this.pid, this.frame.functionId, this.frame.line, this.getCurrentInstruction())
-    evaluateInstruction(this, this.getCurrentInstruction())
+    try {
+      evaluateInstruction(this, this.getCurrentInstruction())
+    } catch (err) {
+      console.log('This be our data:', this.frame.data)
+      console.log('Shit went down when fiddlin with:')
+      pretty(this.pid, this.frame.functionId, this.frame.line, this.getCurrentInstruction())
+      throw err
+    }
   }
 
   cleanup() {

@@ -1,3 +1,7 @@
+const {
+  isMainThread, parentPort, workerData
+} = require('worker_threads')
+
 const {Process} = require('./process.js')
 
 const hwFunctions = [
@@ -57,9 +61,23 @@ class Vm {
     this.taskQueue = []
     this.waitingTasks = []
     this.quantum = 5
+    this.openWindow = 1000
+    parentPort.on('message', (message) => this.handleExternalMessage(message))
+  }
+
+  sendExternal(message) {
+    parentPort.postMessage(message)
+  }
+
+  handleExternalMessage(message) {
+    this.dispatchMessage(message)
   }
 
   dispatchMessage(message) {
+    if (message.recipient === 0) {
+      this.sendExternal(message)
+      return
+    }
     const recipient = this.processes[message.recipient]
     if (!recipient) {
       throw new Error(`There is no process ${message.recipient} to read this message`)
@@ -122,19 +140,41 @@ class Vm {
     }
     this.spawnProcess('_entry', args)
 
-    while (this.taskQueue.length !== 0 || this.waitingTasks.length !== 0) {
-      if (this.waitingTasks.length !== 0){
-        this.processWaitingTasks()
+    let countSinceLastOpen = 0
+
+    const runner = () => {
+      while ((this.taskQueue.length !== 0 || this.waitingTasks.length !== 0) && countSinceLastOpen < this.openWindow) {
+        if (this.waitingTasks.length !== 0){
+          this.processWaitingTasks()
+        }
+        if (this.taskQueue.length !== 0) {
+          this.runHead()
+        }
+        countSinceLastOpen += 1
       }
-      if (this.taskQueue.length !== 0) {
-        this.runHead()
+      if(this.taskQueue.length !== 0 || this.waitingTasks.length !== 0){
+        countSinceLastOpen = 0
+        setImmediate(() => {runner() && process.exit(1)})
+        return false
+      } else {
+        console.log('Seriously, how the fuck can this not be exit?')
+        return true
       }
     }
+
+    runner()
 
   }
 
 }
 
-module.exports = {
-  Vm
+if (isMainThread) {
+  module.exports = {
+    Vm
+  }
+} else {
+  const functions = workerData
+  const vm = new Vm()
+  vm.loadFunctions(functions)
+  vm.start('_entry', [])
 }

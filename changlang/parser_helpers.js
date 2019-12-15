@@ -40,7 +40,9 @@ function flattenAndStrip (arr) {
 }
 
 function wrapInArray(d) {
-  if (!Array.isArray(d)) {
+  if (d === undefined){
+    return []
+  } else if (!Array.isArray(d)) {
     return [d]
   } else {
     return d

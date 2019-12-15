@@ -11,7 +11,7 @@
   - [ ] Fancy clone if shared and modified
 - [x] Atoms
 - [x] Strings
-- [ ] IO stuff for PID 0
+- [x] IO stuff for PID 0
 - [ ] ...else clauses
 - [ ] Error handling?
 - [ ] Timeout?
