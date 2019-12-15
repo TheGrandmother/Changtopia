@@ -85,8 +85,10 @@ const ops = {
 
   'arrayIndexAssign' : {
     name: 'arrayIndexAssign',
-    evaluate: (process, location, index, value) => {
+    evaluate: (process, location, indexLocation, valueLocation) => {
       const array = process.frame.read(location)
+      const index = process.frame.read(indexLocation)
+      const value = process.frame.read(valueLocation)
       if (!Array.isArray(array)) {
         throw new Error(`Data at location ${location} is not an array, it is ${array}`)
       }

@@ -73,6 +73,14 @@ function makeAssignment(d) {
       rhs: d[2],
     }
   }
+  if (d[0].type === 'arrayIndexing') {
+    return {
+      type: 'indexingAssign',
+      arrayName: d[0].name,
+      index: d[0].index,
+      rhs: d[2],
+    }
+  }
   return {
     type: 'assignment',
     name: d[0].name,

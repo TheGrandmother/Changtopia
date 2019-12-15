@@ -4,7 +4,7 @@
 - [ ] Add arrays
   - [x] Creating
   - [x] IndexingGet
-  - [ ] IndexingAssign
+  - [x] IndexingAssign
   - [x] Deconstructing
   - [x] Nesting
   - [x] Clone if shared
