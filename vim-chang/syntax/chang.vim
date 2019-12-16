@@ -23,7 +23,7 @@ syntax case match
 
 syntax keyword changBlocks def if end
 syntax keyword changBif print _log print_raw readline
-syntax keyword changCommunicate send listen request
+syntax keyword changCommunicate send listen request spawn
 syntax keyword changReturn return
 syntax keyword changBoolean true false
 "syntax keyword changModifier passive require
@@ -50,12 +50,13 @@ syntax match changNumber "\d\+"
 syntax match changIdentifier /\w\+/
 syntax match changAtom /$\w\+/
 
-highlight link changBlock Keyword
+highlight link changBlocks Keyword
+highlight link changReturn Keyword
 highlight link changIdentifier Identifier
-highlight link changCommunicate Exception
+highlight link changCommunicate Error
 highlight link changBif Label
 highlight link changBoolean Boolean
-highlight link changAtom Typedef
+highlight link changAtom Boolean
 highlight link changNumber Number
 highlight link changString String
 highlight link changChar String
