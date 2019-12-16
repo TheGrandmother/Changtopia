@@ -15,15 +15,23 @@
 - [ ] ...else clauses
 - [ ] Error handling?
 - [ ] Timeout?
-- [ ] Loops
 - [ ] Modules
-- [ ] Refactor whole grammar and AST generation
-- [ ] Pattern Matching
-- [ ] Types?
+  - [ ] Dynamic module loading
+  - [ ] Namespacing? (Good namespacing could allow for hotloading)
+- [ ] Loops
+- [ ] Runnable in browser
+- [ ] Semi nice io thing for browser
+- [ ] Basic backend
+  - [ ] Basic file system
+  - [ ] Basic message passing between clients
+  - [ ] Basic user system
 - [ ] Basic compiler optimizations
   - [ ] Bulk moves
   - [ ] Use hashes instead of strings
   - [ ] Inline?
   - [ ] Stop doing the Function stuff, it is ~32 times slower than the otherone
   - [ ] Remove uncesseray moves
-
+- [ ] Scalable load parameters (Adapt scheduling constants based on load)
+- [ ] Pattern Matching
+- [ ] Refactor whole grammar and AST generation
+- [ ] Types?
