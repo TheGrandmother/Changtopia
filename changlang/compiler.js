@@ -10,6 +10,7 @@ const argv = require('yargs')
   .option('input', {alias: 'i', description: 'Input file', type: 'string', default: 'in.chang'})
   .option('output', {alias: 'o', description: 'output file', type: 'string', default: 'out.tbn'})
   .option('p', {alias: 'p', description: 'Print machinecode', type: 'boolean', default: false})
+  .option('verbose', {alias: 'v', description: 'Print verbose errors', type: 'boolean', default: false})
   .argv
 
 const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar))
@@ -20,7 +21,7 @@ function parse(string) {
     throw new Error('Input didnt parse at all...')
   }
   if (result.length > 1) {
-    throw new Error(`Ambigous parsing There were literally ${result.length} different parsings: ${inspect(result, false, null, true)}`)
+    throw new Error(`Ambigous parsing There were literally ${result.length} different parsings. ${argv.v && inspect(result, false, null, true)}`)
   }
 
   if (!Array.isArray(result[0])) {

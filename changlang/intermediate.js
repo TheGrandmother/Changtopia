@@ -175,16 +175,16 @@ const _generators = {
     const leadingRefs = leading.map(({name}) => createAssignment(state, name))
     const trailingRefs = trailing.map(({name}) => createAssignment(state, name))
     const bodyRef = body && createAssignment(state, body.name)
-    return rhsCode.concat([makeInstruction('arrayUnpack',
-      [
-        rhsRes,
-        {constant: !!body},
-        {constant: leadingRefs.length},
-        {constant: trailingRefs.length},
-        ...leadingRefs,
-        ...trailingRefs,
-        bodyRef]
-    )])
+    const args = [
+      rhsRes,
+      {constant: !!body},
+      {constant: leadingRefs.length},
+      {constant: trailingRefs.length},
+      ...leadingRefs,
+      ...trailingRefs,
+    ]
+    body && args.push(bodyRef)
+    return rhsCode.concat([makeInstruction('arrayUnpack', args)])
   },
 
   'block': (state, node) => {

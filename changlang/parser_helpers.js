@@ -13,6 +13,8 @@ const ignoreUs = [
   '$', '\'']
 
 
+// TODO: Allm of this is an inconsistent mess. Redo and do right
+
 /*
  * ==================================
  * HELPERS
@@ -175,12 +177,20 @@ function makeArrayIndexing(d) {
 
 function makeUnpack(d) {
   d = strip(d)
-  d = d.flat()
-  return {
-    type: 'unpack',
-    leading: wrapInArray(d[0]),
-    body: d[1],
-    trailing: wrapInArray(d[2])
+  if (Array.isArray(d)) {
+    d = d.flat()
+    return {
+      type: 'unpack',
+      leading: wrapInArray(d[0]),
+      body: d[1],
+      trailing: wrapInArray(d[2])
+    }
+  } else {
+    return {
+      type: 'unpack',
+      leading: d.entries,
+      trailing: []
+    }
   }
 }
 

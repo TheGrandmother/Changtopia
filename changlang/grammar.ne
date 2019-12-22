@@ -87,7 +87,7 @@ unpack ->
 _unpack ->
     ident_list                                                                {% helpers.strip %}
   | (_ident_list):? _
-    ("<" _ identifier _ ">" {% helpers.strip %}):?
+    ("<" _ identifier _ ">" {% helpers.strip %})
     _ (_ident_list):?                                                         {% helpers.strip %}
 
 
