@@ -25,6 +25,7 @@ class Process {
     this.accepting = false
     this.handler = null
     this.linkedProcesses = []
+    this.handlingRequest = null
   }
 
   link(pid) {
@@ -110,6 +111,9 @@ class Process {
 
   bindHandlerFunction(message) {
     const {id, sender, payload, requiresResponse} = message
+    if(requiresResponse) {
+      this.handlingRequest = {sender, id}
+    }
 
     const {handlerId, returnLocation, additionalArgs} = this.handler
     const {argLocations} = this.functions[handlerId]
@@ -122,7 +126,11 @@ class Process {
 
     let frame = null
     if (requiresResponse) {
-      frame = new Frame(handlerId, returnLocation, argData, (res) => this.sendMessage({recipient: sender, payload: res, requestId: id}))
+      frame = new Frame(handlerId, returnLocation, argData,
+        (res) => {
+          this.handlingRequest = null
+          this.sendMessage({recipient: sender, payload: res, requestId: id})
+        })
     } else {
       frame = new Frame(handlerId, returnLocation, argData)
     }
@@ -192,23 +200,30 @@ class Process {
       evaluateInstruction(this, this.getCurrentInstruction())
     } catch (err) {
       if (err instanceof RuntimeError) {
-        if (this.linkedProcesses.length > 0 || this.inbox.length > 0) {
+        if (this.linkedProcesses.length > 0 || this.inbox.length > 0 || this.handlingRequest) {
+          const msg = err.message.split('').map(c => c.charCodeAt(0))
           this.linkedProcesses.forEach(linkedPid => {
             this.sendMessage({
               recipient: linkedPid,
-              payload: [h('error'), err.errorAtom, err.msg]})
+              payload: [h('error'), err.errorAtom, msg]})
           })
           this.inbox.forEach(message => {
             if (message.requiresResponse) {
               this.sendMessage({
                 recipient: message.sender,
                 requestId: message.id,
-                payload: [h('error'), err.errorAtom, err.msg]})
+                payload: [h('error'), err.errorAtom, msg]})
             }
           })
+          if (this.handlingRequest) {
+            this.sendMessage({
+              recipient: this.handlingRequest.sender,
+              requestId: this.handlingRequest.id,
+              payload: [h('error'), err.errorAtom, this.pid, msg]})
+          }
           this.finished = true
         } else {
-          console.error('Ebncountered runtime error but there was no dude there to do stuff')
+          console.error('Encountered runtime error but there was no dude there to do stuff')
           throw err
         }
       } else {

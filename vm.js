@@ -1,6 +1,6 @@
 const {Process} = require('./process.js')
 const {builtins} = require('./builtins/builtins.js')
-const {Errors} = require('./errors.js')
+const {NoSuchPidError, NameSpaceError} = require('./errors.js')
 
 
 const {
@@ -15,8 +15,8 @@ class Vm {
     this.functions = builtins
     this.processes = {}
     this.pidCounter = 0
-    this.taskQueue = []
-    this.waitingTasks = []
+    this.runningProcesses = []
+    this.waitingProcesses = []
     this.quantum = 5
     this.openWindow = 1000
     parentPort.on('message', (message) => this.handleExternalMessage(message))
@@ -37,14 +37,14 @@ class Vm {
     }
     const recipient = this.processes[message.recipient]
     if (!recipient) {
-      throw new Errors.NoSuchPidError(`There is no process ${message.recipient} to read this message`)
+      throw new NoSuchPidError(`There is no process ${message.recipient} to read this message`)
     }
     recipient.inbox.push(message)
   }
 
   loadFunctions(funcs) {
     if (Object.values(funcs).some(({functionId}) => Object.keys(this.functions).includes(functionId))) {
-      throw new Errors.NameSpaceError('Could not load functions there were collisions')
+      throw new NameSpaceError('Could not load functions there were collisions')
     }
     this.functions = this.functions.concat(funcs)
   }
@@ -56,39 +56,39 @@ class Vm {
     this.functions.forEach((func) => process.addFunction(func))
     process.bindFunction(entryPoint,'program_result', args)
     this.processes[pid] = process
-    this.taskQueue.push(pid)
+    this.runningProcesses.push(pid)
     return pid
   }
 
-  runHead() {
-    const pid = this.taskQueue[0]
-    this.taskQueue = this.taskQueue.slice(1)
-    const process = this.processes[pid]
+  runProcess() {
+    const processPid = this.runningProcesses[0]
+    this.runningProcesses = this.runningProcesses.slice(1)
+    const process = this.processes[processPid]
     for (let i = 0; i < this.quantum && !process.finished && !process.waiting; i++) {
       process.executeInstruction()
     }
     if (!process.finished && !process.waiting) {
-      this.taskQueue.push(pid)
+      this.runningProcesses.push(processPid)
     } else if (process.waiting) {
-      this.waitingTasks.push(pid)
+      this.waitingProcesses.push(processPid)
     } else if (process.finished) {
       process.cleanup()
-      delete this.processes[pid]
+      delete this.processes[processPid]
     }
   }
 
   processWaitingTasks() {
     const newWaiting = []
-    for (let i = 0; i < this.waitingTasks.length; i++) {
-      const process = this.processes[this.waitingTasks[i]]
+    for (let i = 0; i < this.waitingProcesses.length; i++) {
+      const process = this.processes[this.waitingProcesses[i]]
       const released = process.checkInbox()
       if (released) {
-        this.taskQueue.push(process.pid)
+        this.runningProcesses.push(process.pid)
       } else {
         newWaiting.push(process.pid)
       }
     }
-    this.waitingTasks = newWaiting
+    this.waitingProcesses = newWaiting
   }
 
   start (entryFunction, args) {
@@ -100,16 +100,16 @@ class Vm {
     let countSinceLastOpen = 0
 
     const runner = () => {
-      while ((this.taskQueue.length !== 0 || this.waitingTasks.length !== 0) && countSinceLastOpen < this.openWindow) {
-        if (this.waitingTasks.length !== 0){
+      while ((this.runningProcesses.length !== 0 || this.waitingProcesses.length !== 0) && countSinceLastOpen < this.openWindow) {
+        if (this.waitingProcesses.length !== 0){
           this.processWaitingTasks()
         }
-        if (this.taskQueue.length !== 0) {
-          this.runHead()
+        if (this.runningProcesses.length !== 0) {
+          this.runProcess()
         }
         countSinceLastOpen += 1
       }
-      if(this.taskQueue.length !== 0 || this.waitingTasks.length !== 0){
+      if(this.runningProcesses.length !== 0 || this.waitingProcesses.length !== 0){
         countSinceLastOpen = 0
         setImmediate(() => {runner() && process.exit(0)}) // eslint-disable-line
         return false

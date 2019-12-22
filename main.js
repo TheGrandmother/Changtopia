@@ -7,7 +7,7 @@ const {h, randomHash} = require('./util/hash.js')
 
 
 const ioRoutines = {
-  [h('raw_print')]: (worker, message) => {
+  [h('print_raw')]: (worker, message) => {
     console.log(`Printing: From ${message.sender}: ${message.payload}`)
   },
   [h('print')]: (worker, message) => {
@@ -33,7 +33,12 @@ class IoHandler {
   handleMessage(worker, message) {
     const [kind, ...payload] = message.payload
     message.payload = payload
-    ioRoutines[kind](worker, message)
+    try {
+      ioRoutines[kind](worker, message)
+    } catch(err) {
+      console.error(`Chaos happened when trying to process IO message:\n ${kind}, ${payload}`)
+      throw err
+    }
   }
 }
 
