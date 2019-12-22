@@ -1,5 +1,6 @@
 const {h} = require('../util/hash.js')
 const {inspect} = require('util')
+const Errors = require('../errors.js')
 
 const ops = {
   'move' : {
@@ -9,6 +10,7 @@ const ops = {
       process.incrementLine()
     }
   },
+
   'imove' : {
     name: 'imove',
     evaluate: (process, a1, a2) => {
@@ -16,6 +18,7 @@ const ops = {
       process.incrementLine()
     }
   },
+
   'add' : {
     name: 'add',
     evaluate: (process, a1, a2, a3) => {
@@ -99,10 +102,10 @@ const ops = {
       const index = process.frame.read(indexLocation)
       const value = process.frame.read(valueLocation)
       if (!Array.isArray(array)) {
-        throw new Error(`Data at location ${location} is not an array, it is ${array}`)
+        throw new Errors.ArrayTypeError(`Data at location ${location} is not an array, it is ${array}`)
       }
       if (index > array.length) {
-        throw  new Error(`Array index ${index} is out of bounds, Array is only ${array.length} long`)
+        throw  new Errors.ArrayIndexError(`Array index ${index} is out of bounds, Array is only ${array.length} long`)
       }
       array[index] = value
       process.incrementLine()
@@ -115,10 +118,10 @@ const ops = {
       const array = process.frame.read(location)
       const index = process.frame.read(indexLocation)
       if (!Array.isArray(array)) {
-        throw new Error(`Data at location ${location} is not an array, it is ${array}`)
+        throw new Errors.ArrayTypeError(`Data at location ${location} is not an array, it is ${array}`)
       }
       if (index > array.length) {
-        throw  new Error(`Array index ${index} is out of bounds, Array is only ${array.length} long`)
+        throw  new Errors.ArrayIndexError(`Array index ${index} is out of bounds, Array is only ${array.length} long`)
       }
       process.frame.write(res, array[index])
       process.incrementLine()
@@ -130,10 +133,10 @@ const ops = {
     evaluate: (process, location, hasBody, leadingCount, trailingCount, ...args ) => {
       const array = process.frame.read(location)
       if (!Array.isArray(array)) {
-        throw new Error(`Data at location ${location} is not an array, it is ${array}`)
+        throw new Errors.ArrayTypeError(`Data at location ${location} is not an array, it is ${array}`)
       }
       if (leadingCount + trailingCount > array.length) {
-        throw  new Error(`To many values to unpack. Trying to unpack ${leadingCount + trailingCount} but array contains ${array.length} elements`)
+        throw new Errors.ArrayIndexError(`To many values to unpack. Trying to unpack ${leadingCount + trailingCount} but array contains ${array.length} elements`)
       }
 
       const leadingLocations = args.slice(0, leadingCount)
@@ -165,7 +168,7 @@ const ops = {
 
 function evaluateInstruction(process, instruction) {
   if (!ops[instruction.id]) {
-    throw new Error(`I honestly dont know how to evaluate ${inspect(instruction)}`)
+    throw new Errors.StrangeInstructionError(`I honestly dont know how to evaluate ${inspect(instruction)}`)
   }
   return ops[instruction.id].evaluate(process, ...instruction.args)
 }

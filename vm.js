@@ -1,5 +1,6 @@
 const {Process} = require('./process.js')
 const {builtins} = require('./builtins/builtins.js')
+const {Errors} = require('./errors.js')
 
 
 const {
@@ -36,14 +37,14 @@ class Vm {
     }
     const recipient = this.processes[message.recipient]
     if (!recipient) {
-      throw new Error(`There is no process ${message.recipient} to read this message`)
+      throw new Errors.NoSuchPidError(`There is no process ${message.recipient} to read this message`)
     }
     recipient.inbox.push(message)
   }
 
   loadFunctions(funcs) {
     if (Object.values(funcs).some(({functionId}) => Object.keys(this.functions).includes(functionId))) {
-      throw new Error('Could not load functions there were collisions')
+      throw new Errors.NameSpaceError('Could not load functions there were collisions')
     }
     this.functions = this.functions.concat(funcs)
   }
@@ -110,7 +111,7 @@ class Vm {
       }
       if(this.taskQueue.length !== 0 || this.waitingTasks.length !== 0){
         countSinceLastOpen = 0
-        setImmediate(() => {runner() && process.exit(1)}) // eslint-disable-line
+        setImmediate(() => {runner() && process.exit(0)}) // eslint-disable-line
         return false
       } else {
         console.log('Seriously, how the fuck can this not be exit?')

@@ -1,7 +1,13 @@
-const {randomHash} = require('./util/hash')
-const {LocationInvalidError} = require('./errors.js')
+const {randomHash, h} = require('./util/hash')
 const {evaluateInstruction} = require('./instructions/ops.js')
 const {pretty} = require('./instructions/pretty.js')
+const {
+  LocationInvalidError,
+  UnknownFunctionError,
+  ArgumentCountError,
+  OddLineError,
+  RuntimeError
+} = require('./errors.js')
 
 class Process {
   constructor (vm, pid) {
@@ -18,6 +24,15 @@ class Process {
     this.awaitingResponse = null
     this.accepting = false
     this.handler = null
+    this.linkedProcesses = []
+  }
+
+  link(pid) {
+    this.linkedProcesses.push(pid)
+  }
+
+  unlink(pid) {
+    this.linkedProcesses = this.linkedProcesses.filter(linkedPid => linkedPid !== pid)
   }
 
   getCurrentFunctionId() {
@@ -27,10 +42,10 @@ class Process {
   bindFunction (functionId, returnLocation, args) {
     const func = this.functions[functionId]
     if (!func) {
-      throw new Error(`Bro we have litterally no function called ${functionId}`)
+      throw new UnknownFunctionError(`Bro we have litterally no function called ${functionId}`)
     }
 
-    if (func.hwFunction) {
+    if (func.bif) {
       const retval = this.functions[functionId].exec(this, returnLocation, ...args)
       this.frame.write(returnLocation, retval)
     } else {
@@ -100,7 +115,7 @@ class Process {
     const {argLocations} = this.functions[handlerId]
     const args = [...additionalArgs, sender, ...payload]
     if (argLocations.length !== args.length) {
-      throw new Error(`Argument length mismatch calling ${handlerId}. You gave me ${args} but I need stuff to fill ${argLocations}`)
+      throw new ArgumentCountError(`Argument length mismatch calling ${handlerId}. You gave me ${args} but I need stuff to fill ${argLocations}`)
     }
     const argData = {}
     argLocations.forEach((loc, i) => argData[loc] = args[i])
@@ -118,11 +133,11 @@ class Process {
   bindNormalFunction(functionId, returnLocation, args) {
     const func = this.functions[functionId]
     if (!func) {
-      throw new Error(`Sorry dude, but there just ain't know ${functionId} function`)
+      throw new UnknownFunctionError(`Sorry dude, but there just ain't know ${functionId} function`)
     }
 
     if (func.argLocations.length !== args.length) {
-      throw new Error(`Argument length mismatch calling ${functionId}. You gave me [${args}] but i need stuff to fill [${func.argLocations}]`)
+      throw new ArgumentCountError(`Argument length mismatch calling ${functionId}. You gave me [${args}] but i need stuff to fill [${func.argLocations}]`)
     }
     const argData = {}
     func.argLocations.forEach((loc, i) => argData[loc] = args[i])
@@ -142,7 +157,6 @@ class Process {
   incrementLine() {
     this.frame.line += 1
     if (this.frame.line >= this.functions[this.frame.functionId].code.length) {
-      console.log('End of the code bruh')
       this.status = 'End of code'
       this.finished = true
     }
@@ -150,7 +164,7 @@ class Process {
 
   setLine(line) {
     if (typeof line !== 'number' && line >= this.functions[this.frame.functionId].code.length) {
-      throw new Error(`Process ${this.pid} tried to jump to line ${line} which isnt even real`)
+      throw new OddLineError(`Process ${this.pid} tried to jump to line ${line} which isnt even real`)
     }
     this.frame.line = line
   }
@@ -177,10 +191,33 @@ class Process {
     try {
       evaluateInstruction(this, this.getCurrentInstruction())
     } catch (err) {
-      console.log('This be our data:', this.frame.data)
-      console.log('Shit went down when fiddlin with:')
-      pretty(this.pid, this.frame.functionId, this.frame.line, this.getCurrentInstruction())
-      throw err
+      if (err instanceof RuntimeError) {
+        if (this.linkedProcesses.length > 0 || this.inbox.length > 0) {
+          this.linkedProcesses.forEach(linkedPid => {
+            this.sendMessage({
+              recipient: linkedPid,
+              payload: [h('error'), err.errorAtom, err.msg]})
+          })
+          this.inbox.forEach(message => {
+            if (message.requiresResponse) {
+              this.sendMessage({
+                recipient: message.sender,
+                requestId: message.id,
+                payload: [h('error'), err.errorAtom, err.msg]})
+            }
+          })
+          this.finished = true
+        } else {
+          console.error('Ebncountered runtime error but there was no dude there to do stuff')
+          throw err
+        }
+      } else {
+        pretty(this.pid, this.frame.functionId, this.frame.line, this.getCurrentInstruction())
+        console.log('Pesant error')
+        console.log('This be our data:', this.frame.data)
+        console.log('Shit went down when fiddlin with:')
+        throw err
+      }
     }
   }
 

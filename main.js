@@ -1,4 +1,4 @@
-var readline = require('readline');
+const readline = require('readline')
 const fs = require('fs')
 
 const process = require('process')
@@ -42,14 +42,15 @@ const ioHandler = new IoHandler()
 
 function spawnVm(functions) {
   return new Promise((resolve, reject) => {
-    console.log('spawning VM')
     const worker = new Worker('./vm.js', {workerData: functions})
     console.log('VM spawned')
     worker.on('error', reject)
     worker.on('message', (message) => ioHandler.handleMessage(worker, message))
     worker.on('exit', (code) => {
-      if (code !== 0)
+      if (code !== 0) {
         reject(new Error(`Worker stopped with exit code ${code}`))
+      }
+      resolve()
     })
 
   })
@@ -60,7 +61,8 @@ function main () {
   const [,, inFile] = process.argv
   const functions = JSON.parse(fs.readFileSync(inFile).toString())
   spawnVm(functions)
-
+    .then(() => console.log('Things are cool and we are done'))
+    .catch((err) => { console.error(`VM died in a non chill way: ${err.message}`); throw err})
 }
 
 main()

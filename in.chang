@@ -1,17 +1,10 @@
 def bob()
-  [a, b <tail>] = request(0, $readline)
-  _log(a)
-  if a == 101
-    send(0, $print, 'Exiting')
-    return 420
-  end
-  send(0, $print, tail)
-  bob()
   return 0
 end
 
 def _entry()
-  bob()
-  send(0, $print, 'How can i not be exiting???')
-  return 420
+  send(0, $print, 'So we should crash')
+  bob(1,2,3,5,6)
+  send(0, $print, 'But we didnt')
+  return 0
 end
