@@ -1,61 +1,17 @@
+const {Process} = require('./process.js')
+const {builtins} = require('./builtins/builtins.js')
+
+
 const {
   isMainThread, parentPort, workerData
 } = require('worker_threads')
 
-const {Process} = require('./process.js')
 
-const hwFunctions = [
-  {
-    functionId: '_log',
-    hwFunction: true,
-    exec: (process, _, ...args) => {
-      console.log(`DBG: ${process.pid}/${process.getCurrentFunctionId()}:\t ${args.join(' ')}`)
-    }
-  },
-  {
-    functionId: 'send',
-    hwFunction: true,
-    exec: (process, _, recipient, ...payload) => {
-      process.sendMessage({recipient, payload})
-    }
-  },
-  {
-    functionId: 'request',
-    hwFunction: true,
-    exec: (process, responseLocation, recipient, ...payload) => {
-      process.sendMessage({recipient, payload}, responseLocation)
-    }
-  },
-  {
-    functionId: 'pid',
-    hwFunction: true,
-    exec: (process) => {
-      return process.pid
-    }
-  },
-  {
-    functionId: 'listen',
-    hwFunction: true,
-    exec: (process, returnLocation, functionId, ...args) => {
-      process.await(functionId, returnLocation, args)
-      return 0
-    }
-  },
-  {
-    functionId: 'spawn',
-    hwFunction: true,
-    exec: (process, returnLocation, functionId, ...args) => {
-      const _args = []
-      args.forEach(a => _args.push(process.frame.data[a]))
-      return process.vm.spawnProcess(functionId, _args)
-    }
-  }
-]
 
 class Vm {
 
   constructor() {
-    this.functions = hwFunctions
+    this.functions = builtins
     this.processes = {}
     this.pidCounter = 0
     this.taskQueue = []
@@ -154,7 +110,7 @@ class Vm {
       }
       if(this.taskQueue.length !== 0 || this.waitingTasks.length !== 0){
         countSinceLastOpen = 0
-        setImmediate(() => {runner() && process.exit(1)})
+        setImmediate(() => {runner() && process.exit(1)}) // eslint-disable-line
         return false
       } else {
         console.log('Seriously, how the fuck can this not be exit?')
