@@ -1,0 +1,32 @@
+def otto()
+  return $ok
+end
+
+def bob_listener(sender, payload)
+  send(0, $print, 'bob got message')
+  return otto(4,2,3)
+end
+
+def bob()
+  derp = listen(bob_listener)
+  return derp
+end
+
+def _entry()
+  send(0, $print, 'So we should crash')
+  otto_pid = spawn(bob)
+  send(0, $print, 'Sending to otto')
+  bob_resp = request(otto_pid, $whatevs)
+  [x, error_atom, errory_pid, msg] = bob_resp
+  if x == $error
+    send(0, $print, 'We really got dat error yall')
+  end
+  if error_atom == $argument_count_error
+    send(0, $print, 'We got that dank dank error')
+  end
+  send(0, $print, 'We got a sweeet error from')
+  send(0, $print_raw, errory_pid)
+  send(0, $print, 'And this was the crazy message!')
+  send(0, $print, msg)
+  return 0
+end

@@ -24,7 +24,7 @@ const processControlFunctions = [
     functionId: 'listen',
     bif: true,
     exec: (process, returnLocation, functionId, ...args) => {
-      process.await(functionId, returnLocation, args)
+      process.listen(functionId, returnLocation, args)
       return 0
     }
   },
@@ -50,6 +50,22 @@ const processControlFunctions = [
     bif: true,
     exec: (process, returnLocation, pid) => {
       process.unlink(pid)
+      return 0
+    }
+  },
+  {
+    functionId: 'zeit_aus',
+    bif: true,
+    exec: (process, returnLocation, duration) => {
+      process.setTimeout(duration)
+      return 0
+    }
+  },
+  {
+    functionId: 'zeit_in',
+    bif: true,
+    exec: (process) => {
+      process.unsetTimeout()
       return 0
     }
   }

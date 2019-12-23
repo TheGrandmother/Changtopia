@@ -22,6 +22,10 @@ class Vm {
     parentPort.on('message', (message) => this.handleExternalMessage(message))
   }
 
+  pidExists(pid) {
+    return !!this.processes[pid]
+  }
+
   sendExternal(message) {
     parentPort.postMessage(message)
   }
@@ -39,7 +43,7 @@ class Vm {
     if (!recipient) {
       throw new NoSuchPidError(`There is no process ${message.recipient} to read this message`)
     }
-    recipient.inbox.push(message)
+    recipient.addMessage(message)
   }
 
   loadFunctions(funcs) {
@@ -81,8 +85,8 @@ class Vm {
     const newWaiting = []
     for (let i = 0; i < this.waitingProcesses.length; i++) {
       const process = this.processes[this.waitingProcesses[i]]
-      const released = process.checkInbox()
-      if (released) {
+      process.checkInbox()
+      if (!process.waiting) {
         this.runningProcesses.push(process.pid)
       } else {
         newWaiting.push(process.pid)

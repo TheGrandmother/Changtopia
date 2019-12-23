@@ -26,6 +26,8 @@ class Process {
     this.handler = null
     this.linkedProcesses = []
     this.handlingRequest = null
+    this.timeout = null
+    this.abandonedRequests = []
   }
 
   link(pid) {
@@ -55,13 +57,50 @@ class Process {
 
   }
 
-  await(handlerId, returnLocation, additionalArgs) {
+  listen(handlerId, returnLocation, additionalArgs) {
     this.handler = {handlerId, returnLocation, additionalArgs}
     this.waiting = true
     this.awaitingResponse = null
   }
 
+  addMessage(message) {
+    if (message.requestId) {
+      const abandonMessage = !!this.abandonedRequests.find(id => id === message.requestId)
+      if (abandonMessage) {
+        this.abandonedRequests = this.abandonedRequests.filter(id => id !== message.requestId)
+        return
+      }
+    }
+    this.inbox.push(message)
+  }
+
+  unsetTimeout() {
+    this.timeout = null
+  }
+
+  setTimeout(duration) {
+    this.timeout =  {start: (new Date()).getTime(), duration}
+  }
+
   checkInbox() {
+    if (this.timeout) {
+      const diff = (new Date()).getTime() - this.timeout.start
+      if (diff > this.timeout.duration) {
+        // Timeout Occured
+        if (this.awaitingResponse) {
+          this.frame.write(this.awaitingResponse.responseLocation, h('timeout'))
+          this.abandonedRequests.push(this.awaitingResponse.id)
+          this.awaitingResponse = null
+        } else {
+          this.frame.write(this.handler.responseLocation, h('timeout'))
+          this.handler = null
+        }
+        this.unsetTimeout()
+        this.waiting = false
+        return
+      }
+    }
+
     if (this.awaitingResponse) {
       for (let i = 0; i < this.inbox.length; i++) {
         const message = this.inbox[i]
@@ -70,19 +109,14 @@ class Process {
           this.awaitingResponse = null
           this.waiting = false
           this.inbox.splice(i, i+1)
-          return true
         }
       }
-      return false
     } else {
       const message = this.inbox.splice(0, 1)[0]
       if (message) {
         this.bindHandlerFunction(message)
         this.handler = null
         this.waiting = false
-        return true
-      } else {
-        return false
       }
     }
   }
@@ -97,15 +131,10 @@ class Process {
       this.waiting = true
     }
 
-    message.payload = message.payload.map(e => {
-      if (Array.isArray(e)) {
-        // TODO: Speeed this up
-        return JSON.parse(JSON.stringify(e))
-      } else {
-        return e
-      }
-    })
-
+    // TODO: Speeed this up
+    if (typeof message.payload === 'object') {
+      message.payload = JSON.parse(JSON.stringify(message.payload))
+    }
     this.vm.dispatchMessage(message)
   }
 
@@ -127,9 +156,13 @@ class Process {
     let frame = null
     if (requiresResponse) {
       frame = new Frame(handlerId, returnLocation, argData,
-        (res) => {
+        (res, callingFrame) => {
           this.handlingRequest = null
-          this.sendMessage({recipient: sender, payload: res, requestId: id})
+          if (this.vm.pidExists(sender)) {
+            this.sendMessage({recipient: sender, payload: res, requestId: id})
+          } else {
+            callingFrame.write(returnLocation, h('no_such_pid'))
+          }
         })
     } else {
       frame = new Frame(handlerId, returnLocation, argData)
@@ -188,8 +221,8 @@ class Process {
     }
 
     const returnValue = currentFrame.read('__return__')
-    currentFrame.returnCallback(returnValue)
     oldFrame.write(currentFrame.resLocation, returnValue)
+    currentFrame.returnCallback(returnValue, oldFrame)
 
     this.stack.frames.push(oldFrame)
     this.frame = oldFrame
@@ -221,6 +254,7 @@ class Process {
               requestId: this.handlingRequest.id,
               payload: [h('error'), err.errorAtom, this.pid, msg]})
           }
+          this.waiting = false
           this.finished = true
         } else {
           console.error('Encountered runtime error but there was no dude there to do stuff')
