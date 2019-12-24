@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/TheGrandmother/TBN#readme",
   "dependencies": {
+    "deep-equal": "^2.0.1",
     "eslint": "^6.7.2",
     "nearley": "^2.19.0",
     "ulid": "^2.3.0",
