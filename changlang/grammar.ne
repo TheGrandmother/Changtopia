@@ -49,7 +49,7 @@ parenthesized -> "(" expr ")"                                                 {%
 thing ->
     function_call                                                             {% helpers.strip %}
   | parenthesized                                                             {% helpers.strip %}
-  | array_litteral
+  | repack                                                                    {% helpers.makeArrayLitteral %}
   | array_indexed
   | string
   | identifier
@@ -85,6 +85,12 @@ expr_tuple ->
 array_litteral ->
     "[" _ expr_list _ "]"                                                     {% helpers.makeArrayLitteral %}
   | "[" _ "]"                                                                 {% helpers.makeArrayLitteral %}
+
+repack -> "[" _ _repack _ "]"
+
+_repack ->
+    expr_list
+  | expr_list _ "," _ _
 
 unpack ->
      "[" _ _unpack _ "]"                                                      {% helpers.makeUnpack %}

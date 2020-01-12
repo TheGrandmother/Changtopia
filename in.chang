@@ -1,7 +1,6 @@
 def _entry()
-  a = true
-  a = false
-  a = "c"
-  a = "\n"
+  bob = 'asdfasdfadsfsdsfa'
+  glenn = [8, <bob>, 5,6,6]
+  hassan = [8, <bob>, 5, <glenn> ,6]
   return 0
 end
