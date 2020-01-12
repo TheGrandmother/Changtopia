@@ -1,50 +1,7 @@
-def fac(x)
-  if x == 1
-    return 1
-  end
-  new_x = x - 1
-  return x * fac(new_x)
-end
-
-def approx(n)
-  if n == 0
-    return 0
-  end
-  term = n / fac(n)
-  new_n = n - 1
-  return term + approx(new_n)
-end
-
-def otto()
-  return approx(1000)
-end
-
-def bob_listener(sender, payload)
-  send(0, $print, 'bob got message')
-  return otto()
-end
-
-def bob()
-  derp = listen(bob_listener)
-  send(0, $print_raw, derp)
-  if derp == $no_such_pid
-    send(0, $print, 'No such pid')
-  end
-  return derp
-end
-
 def _entry()
-  send(0, $print, 'So we should crash')
-  bob_pid = spawn(bob)
-  send(0, $print, 'Sending to otto')
-  zeit_aus(1000)
-  bob_resp = request(bob_pid, $whatevs)
-  zeit_in()
-  if bob_resp == $timeout
-    send(0, $print, 'timeout')
-  end
-  if 1
-    send(0, $print_raw, bob_resp)
-  end
+  a = true
+  a = false
+  a = "c"
+  a = "\n"
   return 0
 end

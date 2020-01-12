@@ -45,15 +45,20 @@ multiplicative ->
 
 parenthesized -> "(" expr ")"                                                 {% helpers.strip %}
 
+
 thing ->
     function_call                                                             {% helpers.strip %}
-  | number                                                                    {% helpers.strip %}
-  | identifier                                                                {% helpers.strip %}
   | parenthesized                                                             {% helpers.strip %}
   | array_litteral
   | array_indexed
-  | atom
   | string
+  | identifier
+  | constant                                                                  {% helpers.makeConstant %}
+
+constant ->
+    number
+  | char                                                                      {% helpers.makeChar%}
+  | atom
 
 atom -> "$" identifier                                                        {% helpers.makeAtom %}
 
@@ -101,16 +106,18 @@ _stringchar ->
     [^\\']
   | "\\'" {% () => ["'"] %}
 
+_charcharbinks ->
+    "\"" {% () => ["\""] %}
+  | ("\\"):? [^\"]
 
-  # String -> "\"" _string "\"" {% function(d) {return {'literal':d[1]}; } %}
-  #  
-  # _string ->
-  # 	null {% function() {return ""; } %}
-  # 	| _string _stringchar {% function(d) {return d[0] + d[1];} %}
-  #  
-  # _stringchar ->
-  # 	[^\\"] {% id %}
-  # 	| "\\" [^] {% function(d) {return JSON.parse("\"" + d[0] + d[1] + "\""); } %}
+char ->
+    "\"\"\""
+  | "\"" ("\\"):? [^\"] "\""
+
+bool -> _bool                                                                 {% helpers.makeBool %}
+_bool ->
+    "true"
+  | "false"
 
 expr_list ->
     _expr_list                                                                {% helpers.makeExprList %}
@@ -122,7 +129,9 @@ _expr_list ->
 
 crazy_identifier -> identifier | array_indexed
 
-identifier -> [a-zA-Z_] [\w]:* {% helpers.makeIdentifier %}
+identifier ->
+  [a-zA-Z_] [\w]:*                                                            {% helpers.makeIdentifier %}
+
 number -> [\d]:+ {% helpers.makeNumber %}
 
 

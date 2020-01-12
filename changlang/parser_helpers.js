@@ -10,10 +10,10 @@ const ignoreUs = [
   '[', ']', '|',
   '->', '!', null,
   '#', '<', '>',
-  '$', '\'']
+  '$', '\'', '"']
 
 
-// TODO: Allm of this is an inconsistent mess. Redo and do right
+// TODO: All of this is an inconsistent mess. Refactor this at some point
 
 /*
  * ==================================
@@ -200,16 +200,33 @@ function makeUnpack(d) {
  * ==================================
  */
 
-
-
 function makeIdentifier(d) {
   d = flattenAndStrip(d)
   if (!Array.isArray(d)) {
     d = [d]
   }
+
+  d = d.join('')
+  // THIS IS SO FUCKING UGLY
+  // But i couldnt for the life of me
+  // disambiguate the fokkin grammar.
+  if (d === 'true') {
+    return {
+      type: 'constant',
+      valueType: 'bool',
+      value: true
+    }
+  } else if (d === 'false') {
+    return {
+      type: 'constant',
+      valueType: 'bool',
+      value: false
+    }
+  }
+
   return {
     type: 'identifier',
-    name: d.join(''),
+    name: d,
   }
 }
 
@@ -279,12 +296,29 @@ function makeAtom(d) {
   }
 }
 
+function makeChar(d) {
+  d = flattenAndStrip(d)
+  return {
+    type: 'char',
+    value: d[0].charCodeAt(0)
+  }
+}
+
 function makeString(d) {
   d = strip(d)
   d = d.flat(Infinity)
   return {
     type: 'arrayLitterallImmediate',
     entries: {array: d.map(c => c.charCodeAt(0))}
+  }
+}
+
+function makeConstant(d) {
+  d = flattenAndStrip(d)
+  return {
+    type: 'constant',
+    valueType: d.type,
+    value: d.value
   }
 }
 
@@ -311,6 +345,8 @@ module.exports = {
   makeArrayIndexing,
   makeAtom,
   makeString,
+  makeChar,
+  makeConstant,
   log,
   annotateLog
 }

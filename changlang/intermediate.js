@@ -59,11 +59,7 @@ const _generators = {
     return subtreeCode.concat(myCode)
   },
 
-  'number': (state, node, res) => {
-    return [makeInstruction('imove',[{constant: node.value}, res])]
-  },
-
-  'atom': (state, node, res) => {
+  'constant': (state, node, res) => {
     return [makeInstruction('imove',[{constant: node.value}, res])]
   },
 
