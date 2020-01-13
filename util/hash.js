@@ -3,11 +3,23 @@ const XXH = require('xxhashjs')
 // If this is resolved we should switch back due to next level
 // speed increase
 
-const hash = (val) => Number(XXH.h32(val.toString(), 0xcafebabe ))
+const hash = (val) => {
+  const hash = Number(XXH.h32(val.toString(), 0xcafebabe ))
+  knownHashes[hash] = val
+  return hash
+}
 const randomHash = () => hash((Math.random() * Number.MAX_SAFE_INTEGER).toString())
+
+const resolveHash = (hash) => knownHashes[hash] || 'unknown'
+
+const knownHashes = {}
+
+const cheat = false
 
 module.exports = {
   hash,
-  h: hash,
-  randomHash
+  h: cheat ? (v) => v : hash,
+  randomHash,
+  resolveHash,
+  knownHashes
 }

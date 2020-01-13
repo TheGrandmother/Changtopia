@@ -1,6 +1,6 @@
 const grammar = require('./compiled_grammar.js')
 const process = require('process')
-const {generate} = require('./intermediate.js')
+const {generateIntermediateCode} = require('./intermediate.js')
 const {generateCode} = require('./codegen.js')
 const nearley = require('nearley')
 const {inspect} = require('util')
@@ -48,7 +48,7 @@ function pretty(functions) {
 function compile() {
 
   const input = fs.readFileSync(argv.input).toString()
-  // console.log(input)
+
   const functions = parse(input)
   if (argv.a) {
     console.log('AST:')
@@ -56,17 +56,19 @@ function compile() {
     process.exit(0)
   }
 
-  const intermediateFunctions = generate(functions)
+  const intermediateCode = generateIntermediateCode(functions)
 
   if (argv.n) {
-    console.log(inspect(intermediateFunctions, false, null, true))
+    console.log(inspect(intermediateCode, false, null, true))
   }
-  const compiledFunctions = Object.values(intermediateFunctions).map(generateCode)
+  const compiledFunctions = {}
+  Object.keys(intermediateCode.functions).forEach(name => compiledFunctions[name] = generateCode(intermediateCode.functions[name]))
+  //const compiledFunctions = Object.values(generatedCode.functions).map(generateCode)
 
-  fs.writeFileSync(argv.output, JSON.stringify(compiledFunctions, undefined, 2))
+  fs.writeFileSync(argv.output, JSON.stringify({...intermediateCode, functions: compiledFunctions}, undefined, 2))
 
   if (argv.p) {
-    pretty(compiledFunctions)
+    pretty(Object.values(compiledFunctions))
   }
 
 

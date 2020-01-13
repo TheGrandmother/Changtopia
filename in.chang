@@ -1,8 +1,19 @@
+module main
+
+def bob()
+  return 420
+end
+
 def _entry()
   a = 'hello'
   b = 'bob'
   c = 'I\'m a sexy line'
+  thing = bif:load('otto')
+  bif:send(0, $print_raw, thing)
+  bif:send(0, $print, 'calling otto')
+  otto:glenn()
+  bif:send(0, $print, 'called otto')
   d = [<a>, "\n",<b>, "!", "\n", <c>]
-  send(0, $print, d)
+  bif:send(0, $print, d)
   return 0
 end

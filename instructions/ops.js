@@ -157,11 +157,11 @@ const ops = {
 
   'call' : {
     name: 'call',
-    evaluate: (process, functionId, returnLocation, ...args) => {
+    evaluate: (process, module, functionId, returnLocation, ...args) => {
       const _args = []
       args.forEach(a => _args.push(process.frame.data[a]))
       process.incrementLine()
-      process.bindFunction(functionId, returnLocation, _args)
+      process.bindFunction(module, functionId, returnLocation, _args)
     }
   }
 }

@@ -4,6 +4,7 @@ const {pretty} = require('./instructions/pretty.js')
 const {
   LocationInvalidError,
   UnknownFunctionError,
+  UnknownModuleError,
   ArgumentCountError,
   OddLineError,
   RuntimeError
@@ -17,7 +18,6 @@ class Process {
     this.pid = pid
     this.dict = {}
     this.frame = {}
-    this.functions = {}
     this.finished = false
     this.waiting = false
     this.status = 'cold'
@@ -39,26 +39,34 @@ class Process {
   }
 
   getCurrentFunctionId() {
-    return this.frame.functionId
+    return this.frame.func.functionId
   }
 
-  bindFunction (functionId, returnLocation, args) {
-    const func = this.functions[functionId]
-    if (!func) {
-      throw new UnknownFunctionError(`Bro we have litterally no function called ${functionId}`)
+  getFunction(module, functionId) {
+    if (!this.vm.modules[module]) {
+      throw new UnknownModuleError(`Sorry bro, nobody has loaded any ${module} module`)
     }
+    const func = this.vm.modules[module].functions[functionId]
+    if (!func) {
+      throw new UnknownFunctionError(`Bro we the module ${module} has litterally no function called ${functionId}`)
+    }
+    return func
+  }
 
-    if (func.bif) {
-      const retval = this.functions[functionId].exec(this, returnLocation, ...args)
+  bindFunction (module, functionId, returnLocation, args) {
+    const func = this.getFunction(module, functionId)
+    if (module === 'bif') {
+      const retval = func.exec(this, returnLocation, ...args)
       this.frame.write(returnLocation, retval)
     } else {
-      this.bindNormalFunction(...arguments)
+      this.bindNormalFunction(func, returnLocation, args)
     }
 
   }
 
-  listen(handlerId, returnLocation, additionalArgs) {
-    this.handler = {handlerId, returnLocation, additionalArgs}
+  listen(module, functionId, returnLocation, additionalArgs) {
+    const func = this.getFunction(module, functionId)
+    this.handler = {func, returnLocation, additionalArgs}
     this.waiting = true
     this.awaitingResponse = null
   }
@@ -144,18 +152,18 @@ class Process {
       this.handlingRequest = {sender, id}
     }
 
-    const {handlerId, returnLocation, additionalArgs} = this.handler
-    const {argLocations} = this.functions[handlerId]
+    const {func, returnLocation, additionalArgs} = this.handler
+    const {argLocations} = func
     const args = [...additionalArgs, sender, ...payload]
     if (argLocations.length !== args.length) {
-      throw new ArgumentCountError(`Argument length mismatch calling ${handlerId}. You gave me ${args} but I need stuff to fill ${argLocations}`)
+      throw new ArgumentCountError(`Argument length mismatch calling ${func.functionId}. You gave me ${args} but I need stuff to fill ${argLocations}`)
     }
     const argData = {}
     argLocations.forEach((loc, i) => argData[loc] = args[i])
 
     let frame = null
     if (requiresResponse) {
-      frame = new Frame(handlerId, returnLocation, argData,
+      frame = new Frame(func, returnLocation, argData,
         (res, callingFrame) => {
           this.handlingRequest = null
           if (this.vm.pidExists(sender)) {
@@ -165,46 +173,41 @@ class Process {
           }
         })
     } else {
-      frame = new Frame(handlerId, returnLocation, argData)
+      frame = new Frame(func, returnLocation, argData)
     }
     this.stack.addFrame(frame)
     this.frame = frame
   }
 
-  bindNormalFunction(functionId, returnLocation, args) {
-    const func = this.functions[functionId]
-    if (!func) {
-      throw new UnknownFunctionError(`Sorry dude, but there just ain't know ${functionId} function`)
-    }
+  bindNormalFunction(func, returnLocation, args) {
 
     if (func.argLocations.length !== args.length) {
-      throw new ArgumentCountError(`Argument length mismatch calling ${functionId}. You gave me [${args}] but i need stuff to fill [${func.argLocations}]`)
+      throw new ArgumentCountError(`Argument length mismatch calling ${func.functionId}. You gave me [${args}] but i need stuff to fill [${func.argLocations}]`)
+
     }
     const argData = {}
     func.argLocations.forEach((loc, i) => argData[loc] = args[i])
-    const frame = new Frame(functionId, returnLocation, argData)
+    const frame = new Frame(func, returnLocation, argData)
     this.stack.addFrame(frame)
     this.frame = frame
   }
 
-  addFunction (func) {
-    this.functions[func.functionId] = func
-  }
-
   getCurrentInstruction () {
-    return this.functions[this.frame.functionId].code[this.frame.line]
+    return this.frame.func.code[this.frame.line]
   }
 
   incrementLine() {
     this.frame.line += 1
-    if (this.frame.line >= this.functions[this.frame.functionId].code.length) {
+    if (this.frame.line >= this.frame.func.code.length) {
+      this.frame.write('__return__', h('no_return'))
+      this.returnFromFunction()
       this.status = 'End of code'
       this.finished = true
     }
   }
 
   setLine(line) {
-    if (typeof line !== 'number' && line >= this.functions[this.frame.functionId].code.length) {
+    if (typeof line !== 'number' && line >= this.frame.func.code.length) {
       throw new OddLineError(`Process ${this.pid} tried to jump to line ${line} which isnt even real`)
     }
     this.frame.line = line
@@ -264,14 +267,9 @@ class Process {
         pretty(this.pid, this.frame.functionId, this.frame.line, this.getCurrentInstruction())
         console.log('Pesant error')
         console.log('This be our data:', this.frame.data)
-        console.log('Shit went down when fiddlin with:')
         throw err
       }
     }
-  }
-
-  cleanup() {
-    //TBI
   }
 
 }
@@ -287,10 +285,11 @@ class Stack {
 }
 
 class Frame {
-  constructor (functionId, resLocation, data, returnCallback = () => {}) {
+  constructor (func, resLocation, data, returnCallback = () => {}) {
     this.data = data
     this.resLocation = resLocation
-    this.functionId = functionId
+    this.func = func
+    this.functionId = func.functionId
     this.line = 0
     this.returnCallback = returnCallback
   }

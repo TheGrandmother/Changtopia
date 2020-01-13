@@ -95,13 +95,13 @@ const _generators = {
   },
 
   'call': (state, node, res) => {
-    const {name, args} = node
+    const {name, args, module} = node
     const argRefs = args.map(() => makeInterRef())
     const argCode = args.map((arg, i) => generateNode(state, arg, argRefs[i])).flat()
     if (!res) {
       res = DUMP
     }
-    return argCode.concat([makeInstruction('call', [{constant: name}, res, ...argRefs])])
+    return argCode.concat([makeInstruction('call', [{constant: module || state.moduleName}, {constant: name}, res, ...argRefs])])
   },
 
   'spawn': (state, node, res) => {
@@ -125,6 +125,7 @@ const _generators = {
     return lhsCode.concat(rhsCode).concat(myCode)
     // op res_lhs res_rhs res
   },
+
   'if': (state, node) => {
     const {condition, body} = node
     const conditionRes = makeInterRef(node)
@@ -163,7 +164,6 @@ const _generators = {
 
   'arrayLitteral': (state, node, res) => {
     const entries = node.entries
-    console.log(entries)
 
     const blobs = entries.map((e, i) => {
       if (e.type === 'blob') {
@@ -177,7 +177,6 @@ const _generators = {
       }
     }).filter(e => e)
     const entryCode = normalEntries.reduce((acc, e) => acc.concat(generateNode(state, e.node, e.ref)),[])
-    const blobIndexes = blobs.map(e => ({constant: e.index}))
     const entryRefs = []
     blobs.forEach(blob => entryRefs[blob.index] = blob.ref)
     normalEntries.forEach(entry => entryRefs[entry.index] = entry.ref)
@@ -228,12 +227,7 @@ function wrapGenerators() {
   const generators = {}
   Object.keys(_generators).forEach(key => {
     generators[key] = (state, node, ...args) => {
-      //try {
-        return _generators[key](state, node, ...args)
-      //} catch (err) {
-      //  throw new CompilerError(`I encountered the error:\n${err.name}: \n${err.message}\n` +
-      //                          `Whilst trying to generate the code for:\n${inspect(node,false,null,true)}`)
-      //}
+      return _generators[key](state, node, ...args)
     }
   })
   return generators
@@ -248,21 +242,37 @@ function generateNode(state, node, res) {
   return generators[node.type](state, node, res)
 }
 
-function generate(funcs) {
+function generateIntermediateCode(ast) {
   const state = {
+    imports: {},
     functions: {},
     refs: {},
-    labels: {}
+    labels: {},
+    moduleName: ''
   }
 
-  funcs.forEach((func) => {
-    const {name, body, args} = func
+  const functions = []
+
+  ast.forEach((topNode) => {
+    if (topNode.type === 'function') {
+      functions.push(topNode)
+    }
+
+    if (topNode.type === 'module') {
+      state.moduleName = topNode.moduleName
+    }
+  })
+
+
+
+  functions.forEach((func) => {
+    const {name, body, args, isShared} = func
 
     if (state.functions[name]) {
       throw new Error(`A function named ${name} has already been defined`)
     }
     state.refs = {}
-    funcs.forEach(({name}) => state.refs[name] = {constant: name})
+    functions.forEach(({name}) => state.refs[name] = {constant: name})
     state.labels = {}
     Object.values(args).forEach(argument => {
       state.refs[argument.name] = makeArgumentRef(argument.name)
@@ -273,11 +283,15 @@ function generate(funcs) {
 
     const argLocations = Object.values(state.refs).filter(({arg}) => arg).map(({ref}) => ref)
 
-    state.functions[name] = {name, body: bodyCode, refs: state.refs, argLocations}
+    state.functions[name] = {name, body: bodyCode, refs: state.refs, argLocations, isShared}
   })
-  return state.functions
+
+  return {
+    moduleName: state.moduleName,
+    functions: state.functions,
+  }
 }
 
 module.exports = {
-  generate
+  generateIntermediateCode
 }

@@ -10,7 +10,9 @@ const ignoreUs = [
   '[', ']', '|',
   '->', '!', null,
   '#', '<', '>',
-  '$', '\'', '"']
+  '$', '\'', '"',
+  'shared', 'import', 'module',
+  ':']
 
 
 // TODO: All of this is an inconsistent mess. Refactor this at some point
@@ -155,11 +157,17 @@ function makeTuple(d) {
  */
 
 function makeFunctionCall(d) {
-  d = strip(d)
+  d = deepStrip(d)
+  let module = false
+  if (d.length === 3) {
+    module = d[0][0].name
+    d = d.slice(1)
+  }
   return {
     type: 'call',
     name: d[0].name,
-    args: d[1].body.entries
+    args: d[1].body.entries,
+    module
   }
 }
 
@@ -183,7 +191,7 @@ function makeArrayLitteral(d) {
   d = flattenAndStrip(d)
   return {
     type: 'arrayLitteral',
-    entries: d
+    entries: wrapInArray(d)
   }
 }
 
@@ -367,6 +375,14 @@ function makeExpr(d) {
   return dropArray(strip(d))
 }
 
+function makeModule(d) {
+  d = strip(d)
+  return {
+    type: 'module',
+    moduleName: d[0].name
+  }
+}
+
 
 module.exports = {
   strip,
@@ -396,5 +412,6 @@ module.exports = {
   makeExpr,
   dropArray,
   log,
+  makeModule,
   annotateLog
 }

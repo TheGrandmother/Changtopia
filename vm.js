@@ -1,18 +1,16 @@
 const {Process} = require('./process.js')
-const {builtins} = require('./builtins/builtins.js')
-const {NoSuchPidError, NameSpaceError} = require('./errors.js')
-
+const {h} = require('./util/hash.js')
+const builtins = require('./builtins/builtins.js')
+const {NoSuchPidError} = require('./errors.js')
 
 const {
   isMainThread, parentPort, workerData
 } = require('worker_threads')
 
-
-
 class Vm {
 
   constructor() {
-    this.functions = builtins
+    this.modules = {bif: builtins}
     this.processes = {}
     this.pidCounter = 0
     this.runningProcesses = []
@@ -31,6 +29,12 @@ class Vm {
   }
 
   handleExternalMessage(message) {
+    if (message.secret) {
+      if (message.secret === 'module') {
+        this.loadModule(message.payload)
+        message.payload = h('module_loaded')
+      }
+    }
     this.dispatchMessage(message)
   }
 
@@ -46,19 +50,15 @@ class Vm {
     recipient.addMessage(message)
   }
 
-  loadFunctions(funcs) {
-    if (Object.values(funcs).some(({functionId}) => Object.keys(this.functions).includes(functionId))) {
-      throw new NameSpaceError('Could not load functions there were collisions')
-    }
-    this.functions = this.functions.concat(funcs)
+  loadModule(module) {
+    this.modules[module.moduleName] = module
   }
 
-  spawnProcess(entryPoint, args) {
+  spawnProcess(module, entryPoint, args) {
     this.pidCounter += 1
     const pid = this.pidCounter
     const process = new Process(this, pid)
-    this.functions.forEach((func) => process.addFunction(func))
-    process.bindFunction(entryPoint,'program_result', args)
+    process.bindFunction(module, entryPoint, 'program_result', args)
     this.processes[pid] = process
     this.runningProcesses.push(pid)
     return pid
@@ -76,7 +76,6 @@ class Vm {
     } else if (process.waiting) {
       this.waitingProcesses.push(processPid)
     } else if (process.finished) {
-      process.cleanup()
       delete this.processes[processPid]
     }
   }
@@ -95,11 +94,11 @@ class Vm {
     this.waitingProcesses = newWaiting
   }
 
-  start (entryFunction, args) {
-    if (this.functions.length === 0) {
-      throw new Error('No functions loaded... It feels a bit silly to start now')
+  start (args) {
+    if (this.modules.length === 0) {
+      throw new Error('No modules loaded... It feels a bit silly to start now')
     }
-    this.spawnProcess('_entry', args)
+    this.spawnProcess('main', '_entry', args)
 
     let countSinceLastOpen = 0
 
@@ -134,8 +133,8 @@ if (isMainThread) {
     Vm
   }
 } else {
-  const functions = workerData
+  const modules = workerData
   const vm = new Vm()
-  vm.loadFunctions(functions)
-  vm.start('_entry', [])
+  vm.loadModule(modules)
+  vm.start([])
 }

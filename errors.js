@@ -50,6 +50,12 @@ class UnknownFunctionError extends RuntimeError {
   }
 }
 
+class UnknownModuleError extends RuntimeError {
+  constructor(msg) {
+    super(msg, h('unknown_module_error'))
+  }
+}
+
 class ArgumentCountError extends RuntimeError {
   constructor(msg) {
     super(msg, h('argument_count_error'))
@@ -86,5 +92,6 @@ module.exports = {
   ArgumentCountError,
   NoSuchPidError,
   OddLineError,
-  NameSpaceError
+  NameSpaceError,
+  UnknownModuleError
 }

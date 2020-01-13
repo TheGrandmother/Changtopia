@@ -1,3 +1,5 @@
+const {h, resolveHash, knownHashes} = require('../util/hash.js')
+
 const processControlFunctions = [
   {
     functionId: 'send',
@@ -68,8 +70,28 @@ const processControlFunctions = [
       process.unsetTimeout()
       return 0
     }
-  }
+  },
 
+  {
+    functionId: 'atomToString',
+    bif: true,
+    exec: (process, returnLocation, atom) => {
+      return resolveHash(atom).split('').map(c => c.charCodeAt(0))
+    }
+  },
+
+  {
+    functionId: 'load',
+    bif: true,
+    exec: (process, returnLocation, _moduleName) => {
+      const moduleName = String.fromCharCode(..._moduleName)
+      if (process.vm.modules[moduleName]) {
+        return h('already_loaded')
+      } else {
+        process.sendMessage({recipient: 0, payload: [h('load_module'), moduleName]}, returnLocation)
+      }
+    }
+  }
 ]
 
 module.exports = {processControlFunctions}

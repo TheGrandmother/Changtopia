@@ -1,5 +1,5 @@
 const readline = require('readline')
-const fs = require('fs')
+const fs = require('fs').promises
 
 const process = require('process')
 const {Worker} = require('worker_threads')
@@ -7,17 +7,17 @@ const {h, randomHash} = require('./util/hash.js')
 
 
 const ioRoutines = {
-  [h('print_raw')]: (worker, message) => {
+  [h('print_raw')]: async (worker, message) => {
     console.log(`Printing: From ${message.sender}: ${message.payload}`)
   },
-  [h('print')]: (worker, message) => {
+  [h('print')]: async (worker, message) => {
     console.log(String.fromCharCode(...message.payload[0]))
   },
-  [h('random')]: (worker, message) => {
+  [h('random')]: async (worker, message) => {
     const val = (Math.random() * Number.MAX_SAFE_INTEGER)
     worker.postMessage({sender: 0, recipient: message.sender, id: randomHash(), payload: val, requestId: message.id})
   },
-  [h('readline')]: (worker, message) => {
+  [h('readline')]: async (worker, message) => {
     const rl = readline.createInterface({
       input: process.stdin,
       terminal: false
@@ -26,15 +26,27 @@ const ioRoutines = {
     rl.once('line', function(line){
       worker.postMessage({sender: 0, recipient: message.sender, id: randomHash(), payload: line.split('').map(c => c.charCodeAt(0)), requestId: message.id})
     })
-  }
+  },
+  [h('load_module')]: async (worker, message) => {
+    const moduleName = message.payload[0]
+    const filePaths = await fs.readdir('.')
+    const moduleFiles = filePaths.filter(path => /.*\.tbn$/.test(path))
+    for (let file of moduleFiles) {
+      const module = JSON.parse((await fs.readFile(file)).toString())
+      if (module.moduleName === moduleName) {
+        return worker.postMessage({secret: 'module', sender: 0, recipient: message.sender, id: randomHash(), payload: module, requestId: message.id})
+      }
+    }
+    return worker.postMessage({sender: 0, recipient: message.sender, id: randomHash(), payload: h('module_not_found'), requestId: message.id})
+  },
 }
 
 class IoHandler {
-  handleMessage(worker, message) {
+  async handleMessage(worker, message) {
     const [kind, ...payload] = message.payload
     message.payload = payload
     try {
-      ioRoutines[kind](worker, message)
+      await ioRoutines[kind](worker, message)
     } catch(err) {
       console.error(`Chaos happened when trying to process IO message:\n ${kind}, ${payload}`)
       throw err
@@ -45,9 +57,9 @@ class IoHandler {
 const ioHandler = new IoHandler()
 
 
-function spawnVm(functions) {
+function spawnVm(modules) {
   return new Promise((resolve, reject) => {
-    const worker = new Worker('./vm.js', {workerData: functions})
+    const worker = new Worker('./vm.js', {workerData: modules})
     console.log('VM spawned')
     worker.on('error', reject)
     worker.on('message', (message) => ioHandler.handleMessage(worker, message))
@@ -61,13 +73,12 @@ function spawnVm(functions) {
   })
 }
 
-function main () {
+async function main () {
   console.log('Launching VM')
   const [,, inFile] = process.argv
-  const functions = JSON.parse(fs.readFileSync(inFile).toString())
-  spawnVm(functions)
-    .then(() => console.log('Things are cool and we are done'))
-    .catch((err) => { console.error(`VM died in a non chill way: ${err.message}`); throw err})
+  const modules = JSON.parse((await fs.readFile(inFile)).toString())
+  await spawnVm(modules)
+  console.log('Things are cool and we are done')
 }
 
 main()
