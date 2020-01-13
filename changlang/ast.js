@@ -21,15 +21,15 @@ const ignoreUs = [
  * ==================================
  */
 
-function strip (arr) {
-  if (typeof arr === 'object' && !Array.isArray(arr)) {
+function strip (arr, preserveArray = false) {
+  if (!Array.isArray(arr)) {
     return arr
   }
   if (arr.length === 1 && Array.isArray(arr[0])) {
     return strip(arr[0])
   } else {
     const stripped =  arr.filter(e => !ignoreUs.includes(e))
-    if (stripped.length === 1) {
+    if (stripped.length === 1 && !preserveArray) {
       return stripped[0]
     } else {
       return stripped
@@ -37,8 +37,27 @@ function strip (arr) {
   }
 }
 
+function deepStrip(arr) {
+  return arr.filter(e => !ignoreUs.includes(e)).map(subArray => {
+    if (Array.isArray(subArray)) {
+      const stripped =  subArray.filter(e => !ignoreUs.includes(e))
+      return deepStrip(stripped)
+    } else {
+      return strip(subArray)
+    }
+  })
+}
+
 function flattenAndStrip (arr) {
   return strip(arr.flat(Infinity))
+}
+
+function dropArray(d) {
+  if (Array.isArray(d)) {
+    return d[0]
+  } else {
+    return d
+  }
 }
 
 function wrapInArray(d) {
@@ -52,7 +71,9 @@ function wrapInArray(d) {
 }
 
 function stripAndLog(d) {
-  return strip(d)
+  d = strip(d)
+  console.log(d)
+  return d
 }
 
 
@@ -159,10 +180,10 @@ function makeFunction(d) {
  */
 
 function makeArrayLitteral(d) {
-  d = strip(d)
+  d = flattenAndStrip(d)
   return {
-    type: 'arrayLitterall',
-    entries: d.entries
+    type: 'arrayLitteral',
+    entries: d
   }
 }
 
@@ -175,14 +196,22 @@ function makeArrayIndexing(d) {
   }
 }
 
-function makeUnpack(d) {
+function makeBlob(d) {
   d = strip(d)
+  return {
+    type: 'blob',
+    value: d
+  }
+}
+
+function makeUnpack(d) {
+  d = deepStrip(d.flat().flat())
   if (Array.isArray(d)) {
     d = d.flat()
     return {
       type: 'unpack',
       leading: wrapInArray(d[0]),
-      body: d[1],
+      body: d[1].value,
       trailing: wrapInArray(d[2])
     }
   } else {
@@ -297,10 +326,22 @@ function makeAtom(d) {
 }
 
 function makeChar(d) {
-  d = flattenAndStrip(d)
+  //Well do a manual strip here to handle
+  //kipping of sane chars and stupid slashes
+  d = d.flat()
+  const c = (d[1] ? d[1] : '') + d[2]
+  function unFuckEscapes(c) {
+    switch (c) {
+    case '\\n': return '\n'
+    case '\\t': return '\t'
+    case '\\r': return '\r'
+    case '\\0': return '\0'
+    default: return c
+    }
+  }
   return {
     type: 'char',
-    value: d[0].charCodeAt(0)
+    value: unFuckEscapes(c).charCodeAt(0)
   }
 }
 
@@ -320,6 +361,10 @@ function makeConstant(d) {
     valueType: d.type,
     value: d.value
   }
+}
+
+function makeExpr(d) {
+  return dropArray(strip(d))
 }
 
 
@@ -347,6 +392,9 @@ module.exports = {
   makeString,
   makeChar,
   makeConstant,
+  makeBlob,
+  makeExpr,
+  dropArray,
   log,
   annotateLog
 }

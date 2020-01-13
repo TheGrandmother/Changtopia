@@ -1,4 +1,5 @@
 const grammar = require('./compiled_grammar.js')
+const process = require('process')
 const {generate} = require('./intermediate.js')
 const {generateCode} = require('./codegen.js')
 const nearley = require('nearley')
@@ -9,7 +10,7 @@ const argv = require('yargs')
   .option('intermediate', {alias: 'n', description: 'Display intermediate code', type: 'boolean', default: false})
   .option('input', {alias: 'i', description: 'Input file', type: 'string', default: 'in.chang'})
   .option('output', {alias: 'o', description: 'output file', type: 'string', default: 'out.tbn'})
-  .option('p', {alias: 'p', description: 'Print machinecode', type: 'boolean', default: false})
+  .option('machine', {alias: 'p', description: 'Print machinecode', type: 'boolean', default: false})
   .option('verbose', {alias: 'v', description: 'Print verbose errors', type: 'boolean', default: false})
   .argv
 
@@ -52,6 +53,7 @@ function compile() {
   if (argv.a) {
     console.log('AST:')
     console.log(inspect(functions, false, null, true))
+    process.exit(0)
   }
 
   const intermediateFunctions = generate(functions)

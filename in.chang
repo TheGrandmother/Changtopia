@@ -1,6 +1,8 @@
 def _entry()
-  bob = 'asdfasdfadsfsdsfa'
-  glenn = [8, <bob>, 5,6,6]
-  hassan = [8, <bob>, 5, <glenn> ,6]
+  a = 'hello'
+  b = 'bob'
+  c = 'I\'m a sexy line'
+  d = [<a>, "\n",<b>, "!", "\n", <c>]
+  send(0, $print, d)
   return 0
 end

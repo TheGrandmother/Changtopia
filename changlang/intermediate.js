@@ -1,6 +1,8 @@
 const {CompilerError} = require('../errors.js')
 const {inspect} = require('util')
 
+const _inspect = (obj) => inspect(obj,false,null,true)
+
 const DUMP = {constant: '__dump__'}
 
 let __currentIndex = 0
@@ -47,6 +49,15 @@ function createAssignment(state, name) {
   }
   return assignRef
 
+}
+
+function getRef(state, name) {
+  const varReference = state.refs[name]
+  if (!varReference) {
+    throw new CompilerError(`Name ${name} has not been defined`)
+  } else {
+    return varReference.ref
+  }
 }
 
 const _generators = {
@@ -125,7 +136,7 @@ const _generators = {
     // op res_lhs res_rhs res
   },
 
-  'arrayLitterall': (state, node, res) => {
+  '__arrayLitterall': (state, node, res) => {
     const {entries} = node
     const resultLocations = entries.map(() => makeInterRef())
     const valueCodes = entries.map((entry, i) => generateNode(state, entry, resultLocations[i]))
@@ -148,6 +159,29 @@ const _generators = {
       throw new CompilerError(`Name ${node.name} has not been defined`)
     }
     return indexCode.concat([makeInstruction('arrayIndexGet', [arrayRef, indexRef, res])])
+  },
+
+  'arrayLitteral': (state, node, res) => {
+    const entries = node.entries
+    console.log(entries)
+
+    const blobs = entries.map((e, i) => {
+      if (e.type === 'blob') {
+        return {ref: {ref: getRef(state, e.value.name)}, index: i}
+      }
+    }).filter(e => e)
+
+    const normalEntries = entries.map((e, i) => {
+      if (e.type !== 'blob') {
+        return {node: e, index: i, ref: makeInterRef()}
+      }
+    }).filter(e => e)
+    const entryCode = normalEntries.reduce((acc, e) => acc.concat(generateNode(state, e.node, e.ref)),[])
+    const blobIndexes = blobs.map(e => ({constant: e.index}))
+    const entryRefs = []
+    blobs.forEach(blob => entryRefs[blob.index] = blob.ref)
+    normalEntries.forEach(entry => entryRefs[entry.index] = entry.ref)
+    return entryCode.concat([makeInstruction('arrayCreate', [res, ...entryRefs])])
   },
 
   'indexingAssign': (state, node) => {
@@ -194,12 +228,12 @@ function wrapGenerators() {
   const generators = {}
   Object.keys(_generators).forEach(key => {
     generators[key] = (state, node, ...args) => {
-      try {
+      //try {
         return _generators[key](state, node, ...args)
-      } catch (err) {
-        throw new CompilerError(`I encountered the error:\n${err.name}: \n${err.message}\n` +
-                                `Whilst trying to generate the code for:\n${inspect(node,false,null,true)}`)
-      }
+      //} catch (err) {
+      //  throw new CompilerError(`I encountered the error:\n${err.name}: \n${err.message}\n` +
+      //                          `Whilst trying to generate the code for:\n${inspect(node,false,null,true)}`)
+      //}
     }
   })
   return generators

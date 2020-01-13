@@ -1,4 +1,4 @@
-const {h} = require('../util/hash.js')
+// const {h} = require('../util/hash.js')
 const {inspect} = require('util')
 const Errors = require('../errors.js')
 
@@ -79,8 +79,8 @@ const ops = {
 
   'arrayCreate' : {
     name: 'arrayCreate',
-    evaluate: (process, location, ...elementLocations) => {
-      const array = elementLocations.map(location => process.frame.read(location))
+    evaluate: (process, location, ...entries) => {
+      const array = entries.map(location => process.frame.read(location)).flat()
       process.frame.write(location, array)
       process.incrementLine()
     }
