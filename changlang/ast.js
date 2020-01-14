@@ -196,7 +196,7 @@ function makeArrayLitteral(d) {
 }
 
 function makeArrayIndexing(d) {
-  d = strip(d)
+  d = flattenAndStrip(d)
   return {
     type: 'arrayIndexing',
     name: d[0],

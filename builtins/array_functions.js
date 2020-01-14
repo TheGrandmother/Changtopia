@@ -29,12 +29,8 @@ const arrayFunctions = [
   {
     functionId: 'length',
     bif: true,
-    exec: (process, resultLocation, location) => {
-      const arr = process.frame.read(location)
-      if (!Array.isArray(arr)) {
-        throw new ArrayTypeError(`Data at location ${location} is not an array, it is ${arr}`)
-      }
-      return arr.length
+    exec: (process, resultLocation, faff) => {
+      return faff.length
     }
   },
 ]

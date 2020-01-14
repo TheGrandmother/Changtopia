@@ -21,8 +21,15 @@ function parse(string) {
   if (!result || result.length === 0) {
     throw new Error('Input didnt parse at all...')
   }
+
   if (result.length > 1) {
-    throw new Error(`Ambigous parsing There were literally ${result.length} different parsings. ${argv.v && inspect(result, false, null, true)}`)
+    const firstParse = JSON.stringify(result[0])
+    const diffing = result.slice(1).some(res => JSON.stringify(res) !== firstParse)
+    if (diffing) {
+      throw new Error(`Ambigous parsing There were literally ${result.length} different parsings. ${argv.v && inspect(result, false, null, true)}`)
+    } else {
+      console.warn(`There were ${result.length} different but identical parsings... Incompetence thy name is the the dude who wrote this.`)
+    }
   }
 
   if (!Array.isArray(result[0])) {
@@ -63,7 +70,6 @@ function compile() {
   }
   const compiledFunctions = {}
   Object.keys(intermediateCode.functions).forEach(name => compiledFunctions[name] = generateCode(intermediateCode.functions[name]))
-  //const compiledFunctions = Object.values(generatedCode.functions).map(generateCode)
 
   fs.writeFileSync(argv.output, JSON.stringify({...intermediateCode, functions: compiledFunctions}, undefined, 2))
 

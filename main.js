@@ -11,6 +11,7 @@ const ioRoutines = {
     console.log(`Printing: From ${message.sender}: ${message.payload}`)
   },
   [h('print')]: async (worker, message) => {
+    console.log('--------', message)
     console.log(String.fromCharCode(...message.payload[0]))
   },
   [h('random')]: async (worker, message) => {

@@ -1,7 +1,7 @@
 const {CompilerError} = require('../errors.js')
 const {inspect} = require('util')
 
-const _inspect = (obj) => inspect(obj,false,null,true)
+const _inspect = (obj) => inspect(obj,false,null,true) /* eslint-disable-line */
 
 const DUMP = {constant: '__dump__'}
 
@@ -180,7 +180,9 @@ const _generators = {
     const entryRefs = []
     blobs.forEach(blob => entryRefs[blob.index] = blob.ref)
     normalEntries.forEach(entry => entryRefs[entry.index] = entry.ref)
-    return entryCode.concat([makeInstruction('arrayCreate', [res, ...entryRefs])])
+    const blobCount = {constant: blobs.length}
+    const blobIndexes = blobs.map(blob => ({constant: blob.index}))
+    return entryCode.concat([makeInstruction('arrayCreate', [res, blobCount, ...blobIndexes, ...entryRefs])])
   },
 
   'indexingAssign': (state, node) => {
