@@ -46,7 +46,7 @@ multiplicative ->
     multiplicative _ ("*" | "/") _ thing                                      {% ast.makeMath %}
   | thing                                                                     {% ast.makeMath %}
 
-parenthesized -> "(" expr ")"                                                 {% ast.strip %}
+parenthesized -> "(" _ expr _ ")"                                             {% ast.strip %}
 
 
 thing ->
