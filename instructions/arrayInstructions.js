@@ -17,7 +17,7 @@ const arrayInstructions = {
         } else {
           const stuff = process.frame.read(entry)
           if (Array.isArray(stuff)) {
-            array.push([entry])
+            array.push(stuff)
           }else {
             array.push(stuff)
           }
