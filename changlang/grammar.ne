@@ -1,5 +1,5 @@
 @{%
-  const ast = require('./ast.js')
+  const ast = require('./ast/ast.js')
 %}
 
 main -> module (function_def):+ {% ast.flattenAndStrip%}
