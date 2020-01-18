@@ -114,11 +114,9 @@ class Vm {
       }
       if(this.runningProcesses.length !== 0 || this.waitingProcesses.length !== 0){
         countSinceLastOpen = 0
-        setImmediate(() => {runner() && process.exit(0)}) // eslint-disable-line
-        return false
+        setImmediate(() => runner()) // eslint-disable-line
       } else {
-        console.log('Seriously, how the fuck can this not be exit?')
-        return true
+        process.exit(0) // eslint-disable-line
       }
     }
 

@@ -7,14 +7,16 @@ const ioRoutines = {
   [h('print_raw')]: async (worker, message) => {
     console.log(`Printing: From ${message.sender}: ${message.payload}`)
   },
+
   [h('print')]: async (worker, message) => {
-    console.log('--------', message)
     console.log(String.fromCharCode(...message.payload[0]))
   },
+
   [h('random')]: async (worker, message) => {
     const val = (Math.random() * Number.MAX_SAFE_INTEGER)
     worker.postMessage({sender: 0, recipient: message.sender, id: randomHash(), payload: val, requestId: message.id})
   },
+
   [h('readline')]: async (worker, message) => {
     const rl = readline.createInterface({
       input: process.stdin,
@@ -25,6 +27,7 @@ const ioRoutines = {
       worker.postMessage({sender: 0, recipient: message.sender, id: randomHash(), payload: line.split('').map(c => c.charCodeAt(0)), requestId: message.id})
     })
   },
+
   [h('load_module')]: async (worker, message) => {
     const moduleName = message.payload[0]
     const filePaths = await fs.readdir('.')
