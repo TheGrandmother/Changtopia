@@ -12,6 +12,7 @@ const argv = require('yargs')
   .option('output', {alias: 'o', description: 'output file', type: 'string', default: 'out.tbn'})
   .option('machine', {alias: 'p', description: 'Print machinecode', type: 'boolean', default: false})
   .option('verbose', {alias: 'v', description: 'Print verbose errors', type: 'boolean', default: false})
+  .option('show-ambigous', {alias: 's', description: 'Show ambigous parsings', type: 'boolean', default: false})
   .argv
 
 const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar))
@@ -29,6 +30,9 @@ function parse(string) {
       throw new Error(`Ambigous parsing There were literally ${result.length} different parsings. ${argv.v && inspect(result, false, null, true)}`)
     } else {
       console.warn(`There were ${result.length} different but identical parsings... Incompetence thy name is the the dude who wrote this.`)
+      if (argv.s) {
+        console.log(`${inspect(result, false, null, true)}`)
+      }
     }
   }
 
