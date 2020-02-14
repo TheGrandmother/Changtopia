@@ -14,6 +14,7 @@ function_def ->
 block ->
     compound                                                                  {% ast.makeBlock %}
   | compound _ (";"|"\n") _ block                                             {% ast.makeBlock %}
+  | (";"|"\n") _ block
 
 
 compound ->

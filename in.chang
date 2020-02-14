@@ -1,5 +1,10 @@
 module main
 
 def _entry()
+  otto =1
+  glenn = 5 ; aron = 7
+
+  a = 123
+
   return b(a) - a
 end
