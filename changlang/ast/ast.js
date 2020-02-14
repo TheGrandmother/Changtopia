@@ -20,7 +20,7 @@ const helpers = require('./helpers')
 
 
 function makeAssignment(d) {
-  d = strip(d)
+  d = helpers.strip(d)
   if (d[0].type === 'unpack') {
     return {
       type: 'unpackingAssignment',
@@ -44,7 +44,7 @@ function makeAssignment(d) {
 }
 
 function makeIdentifier(d) {
-  d = flattenAndStrip(d)
+  d = helpers.flattenAndStrip(d)
   if (!Array.isArray(d)) {
     d = [d]
   }
@@ -74,7 +74,7 @@ function makeIdentifier(d) {
 }
 
 function makeNumber(d) {
-  d = flattenAndStrip(d)
+  d = helpers.flattenAndStrip(d)
   if (!Array.isArray(d)) {
     d = [d]
   }
@@ -85,7 +85,7 @@ function makeNumber(d) {
 }
 
 function makeMath(d) {
-  d = strip(d)
+  d = helpers.strip(d)
   if (!Array.isArray(d)) {
     return d
   } else {
@@ -100,7 +100,7 @@ function makeMath(d) {
 
 
 function makeBlock(d) {
-  d = flattenAndStrip(d)
+  d = helpers.flattenAndStrip(d)
   if (!Array.isArray(d)) {
     return d
   } else {
@@ -114,7 +114,7 @@ function makeBlock(d) {
 
 
 function makeIfStatement(d) {
-  d = strip(d)
+  d = helpers.strip(d)
   return {
     type: 'if',
     condition: d[0],
@@ -123,7 +123,7 @@ function makeIfStatement(d) {
 }
 
 function makeReturn(d) {
-  d = strip(d)
+  d = helpers.strip(d)
   return {
     type: 'return',
     rhs: d[1],
@@ -131,7 +131,7 @@ function makeReturn(d) {
 }
 
 function makeAtom(d) {
-  d = strip(d)
+  d = helpers.strip(d)
   return {
     type: 'atom',
     name: d.name,
@@ -160,7 +160,7 @@ function makeChar(d) {
 }
 
 function makeConstant(d) {
-  d = flattenAndStrip(d)
+  d = helpers.flattenAndStrip(d)
   return {
     type: 'constant',
     valueType: d.type,
@@ -169,7 +169,7 @@ function makeConstant(d) {
 }
 
 function makeExpr(d) {
-  return dropArray(strip(d))
+  return helpers.dropArray(helpers.strip(d))
 }
 
 module.exports = {

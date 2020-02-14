@@ -1,5 +1,6 @@
 @{%
   const ast = require('./ast/ast.js')
+  //const ast = {}
 %}
 
 main -> module (function_def):+ {% ast.flattenAndStrip%}
@@ -65,7 +66,7 @@ constant ->
 
 atom -> "$" identifier                                                        {% ast.makeAtom %}
 
-function_call -> (identifier ":"):? identifier expr_tuple _                   {% ast.makeFunctionCall %}
+function_call -> (identifier ":"):? identifier expr_tuple                     {% ast.makeFunctionCall %}
 
 array_indexed -> identifier "#" parenthesized                                 {% ast.makeArrayIndexing %}
 
