@@ -10,11 +10,26 @@ module -> "module" _ identifier "\n":*                                        {%
 function_def ->
   "def" _ identifier _ name_tuple _ "\n" _ block _ "\n" _ "end" "\n":*        {% ast.makeFunction %}
 
-
 block ->
     compound                                                                  {% ast.makeBlock %}
   | compound _ (";"|"\n") _ block                                             {% ast.makeBlock %}
   | (";"|"\n") _ block
+  | match _ ("\n") _  block
+  | match
+
+match -> "match" __ expr _ "\n" _ match_clauses                               {% ast.makeMatcher %}
+
+match_clauses ->
+    match_clause _ match_clauses
+  | _ "end"
+
+match_clause ->  _ pattern __ "->" _ "\n" _ block _ "\n" _ "end" _ "\n"       {% ast.makeClause %}
+
+pattern ->
+    constant
+  | string
+  | identifier
+  | array_litteral
 
 
 compound ->

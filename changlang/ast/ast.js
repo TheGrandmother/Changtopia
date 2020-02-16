@@ -7,6 +7,7 @@ const listsAndTuples = require('./listsAndTuples')
 const arrays = require('./arrays')
 const functions = require('./functions')
 const helpers = require('./helpers')
+const matcher = require('./matcher')
 
 
 
@@ -187,5 +188,6 @@ module.exports = {
   ...listsAndTuples,
   ...helpers,
   ...functions,
-  ...arrays
+  ...arrays,
+  ...matcher
 }

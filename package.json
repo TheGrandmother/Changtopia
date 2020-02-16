@@ -7,8 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "test_grammar": "nearleyc test_grammar.ne -o test_grammar.js && nearley-test test_grammar.js",
     "compile_grammar": "nearleyc changlang/grammar.ne -o changlang/compiled_grammar.js",
-    "compile": "yarn compile_grammar && node changlang/compiler.js",
-    "test_run": "yarn compile -p && node main.js out.tbn"
+    "changpile": "yarn compile_grammar && node changlang/compiler.js",
+    "test_run": "yarn changpile -p && node main.js out.tbn"
   },
   "repository": {
     "type": "git",
