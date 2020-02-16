@@ -1,12 +1,12 @@
 module main
 
 def _entry()
-  match a+1
-    5 ->
-      b = 1
-    end
-    8 ->
-      b = 1
-    end
-  end
+ match a+1
+   5 ->
+    return 1
+   end
+   8 ->
+    return 1
+   end
+ end
 end

@@ -5,12 +5,12 @@ function makeMatcher(d) {
   return {
     type: 'matcher',
     expr: d[1],
-    clauses: helpers.strip(d[2])
+    clauses: helpers.deepStrip(helpers.strip(d[2].flat()))
   }
 }
 
 function makeClause(d) {
-  d = helpers.strip(d)
+  d = helpers.strip(d.flat())
   return {
     type: 'clause',
     pattern: helpers.dropArray(d[0]),

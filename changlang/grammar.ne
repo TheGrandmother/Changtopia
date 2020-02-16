@@ -21,9 +21,9 @@ match -> "match" __ expr _ "\n" _ match_clauses                               {%
 
 match_clauses ->
     match_clause _ match_clauses
-  | _ "end"
+  | "end"
 
-match_clause ->  _ pattern __ "->" _ "\n" _ block _ "\n" _ "end" _ "\n"       {% ast.makeClause %}
+match_clause ->  pattern __ "->" _ "\n"  _ block  "\n" _ "end" _ "\n"       {% ast.makeClause %}
 
 pattern ->
     constant
