@@ -23,10 +23,10 @@ match_clauses ->
     match_clause _ match_clauses
   | "end"
 
-match_clause ->  pattern __ "->" _ "\n"  _ block  "\n" _ "end" _ "\n"       {% ast.makeClause %}
+match_clause ->  pattern __ "->" _ "\n"  _ block  "\n" _ "end" _ "\n"         {% ast.makeClause %}
 
 pattern ->
-    constant
+    constant                                                                  {% ast.makeConstant %}
   | string
   | identifier
   | array_litteral
@@ -69,7 +69,7 @@ parenthesized -> "(" _ expr _ ")"                                             {%
 thing ->
     function_call                                                             {% ast.strip %}
   | parenthesized                                                             {% ast.strip %}
-  | array_litteral                                                            {% ast.makeArrayLitteral %}
+  | array_litteral
   | array_indexed
   | string
   | identifier
@@ -103,8 +103,8 @@ expr_tuple ->
   | "(" _ ")"                                                                 {% ast.makeTuple %}
 
 array_litteral ->
-    "[" _ repack_list _ "]"
-  | "[" _ "]"
+    "[" _ repack_list _ "]"                                                   {% ast.makeArrayLitteral %}
+  | "[" _ "]"                                                                 {% ast.makeArrayLitteral %}
 
 repack_list ->
     _repack_list

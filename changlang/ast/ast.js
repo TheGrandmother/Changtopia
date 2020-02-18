@@ -8,6 +8,8 @@ const arrays = require('./arrays')
 const functions = require('./functions')
 const helpers = require('./helpers')
 const matcher = require('./matcher')
+const control = require('./control')
+const assign = require('./assign')
 
 
 
@@ -18,31 +20,6 @@ const matcher = require('./matcher')
  * HELPERS
  * ==================================
  */
-
-
-function makeAssignment(d) {
-  d = helpers.strip(d)
-  if (d[0].type === 'unpack') {
-    return {
-      type: 'unpackingAssignment',
-      unpack: d[0],
-      rhs: d[2],
-    }
-  }
-  if (d[0].type === 'arrayIndexing') {
-    return {
-      type: 'indexingAssign',
-      arrayName: d[0].name,
-      index: d[0].index,
-      rhs: d[2],
-    }
-  }
-  return {
-    type: 'assignment',
-    name: d[0].name,
-    rhs: d[2],
-  }
-}
 
 function makeIdentifier(d) {
   d = helpers.flattenAndStrip(d)
@@ -95,20 +72,6 @@ function makeMath(d) {
       operand: d[1][0],
       lhs: d[0],
       rhs: d[2]
-    }
-  }
-}
-
-
-function makeBlock(d) {
-  d = helpers.flattenAndStrip(d)
-  if (!Array.isArray(d)) {
-    return d
-  } else {
-    return {
-      type: 'block',
-      lhs: d[0],
-      rhs: d[1]
     }
   }
 }
@@ -174,11 +137,9 @@ function makeExpr(d) {
 }
 
 module.exports = {
-  makeAssignment,
   makeIdentifier,
   makeMath,
   makeNumber,
-  makeBlock,
   makeIfStatement,
   makeReturn,
   makeAtom,
@@ -189,5 +150,7 @@ module.exports = {
   ...helpers,
   ...functions,
   ...arrays,
-  ...matcher
+  ...matcher,
+  ...control,
+  ...assign
 }
