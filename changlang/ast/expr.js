@@ -9,17 +9,16 @@ function makeExprNode(operand, lhs, rhs) {
   }
 }
 
-function makeExpr(d) {
+function makeMath(d) {
   d = helpers.strip(d)
   if (!Array.isArray(d)) {
     return d
   } else {
-    return makeExprNode
-    return {
-      type: 'binop',
-      operand: d[1][0],
-      lhs: d[0],
-      rhs: d[2]
-    }
+    return makeExprNode(d[1][0], d[0], d[2])
   }
+}
+
+module.exports = {
+  makeExprNode,
+  makeMath
 }

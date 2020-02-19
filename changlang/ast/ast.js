@@ -10,6 +10,7 @@ const helpers = require('./helpers')
 const matcher = require('./matcher')
 const control = require('./control')
 const assign = require('./assign')
+const expr = require('./expr')
 
 
 
@@ -61,21 +62,6 @@ function makeNumber(d) {
     value: parseInt(d.join('')),
   }
 }
-
-function makeMath(d) {
-  d = helpers.strip(d)
-  if (!Array.isArray(d)) {
-    return d
-  } else {
-    return {
-      type: 'binop',
-      operand: d[1][0],
-      lhs: d[0],
-      rhs: d[2]
-    }
-  }
-}
-
 
 function makeIfStatement(d) {
   d = helpers.strip(d)
@@ -138,7 +124,6 @@ function makeExpr(d) {
 
 module.exports = {
   makeIdentifier,
-  makeMath,
   makeNumber,
   makeIfStatement,
   makeReturn,
@@ -152,5 +137,6 @@ module.exports = {
   ...arrays,
   ...matcher,
   ...control,
-  ...assign
+  ...assign,
+  ...expr
 }

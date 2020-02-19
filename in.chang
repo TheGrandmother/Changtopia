@@ -5,7 +5,7 @@ def _entry()
    5 ->
     return 1
    end
-   [a ,b] ->
+   420 ->
     return 1
    end
  end

@@ -1,21 +1,45 @@
 const helpers = require('./helpers')
 const {randomHash} = require('../../util/hash.js')
 const {makeBasicAssignmentNode} = require('./assign')
-const {makeBlockNode} = require('./control')
+const {makeBlockNode, makeIfNode, chainStatements, makeJumpNode} = require('./control')
+const {makeExprNode} = require('./expr')
+const {inspect} = require('util')
+console._log = (...args) => console.log(args.map(arg => inspect(arg, false,null,true)).join(' '))
 
-function makeConstantClause(node) {
+function makeIdentifier(name) {
+  return {
+    type: 'identifier',
+    name: name,
+  }
+}
 
+function makeConstantClause(clause, resultName, doneLabel) {
+  const compare = makeExprNode('==', resultName, clause.pattern)
+  const body = makeBlockNode(clause.body, makeJumpNode(doneLabel))
+  return makeIfNode(compare, body)
+
+}
+
+function makeClauses(clauses, resultName, doneLabel) {
+
+  return clauses.filter(clause => clause.type).map((clause) => {
+    console.log(clause)
+    if (clause.pattern.type === 'constant') {
+      return makeConstantClause(clause, resultName, doneLabel)
+    }
+  })
 }
 
 function makeMatcher(d) {
   d = helpers.wrapInArray(helpers.strip(d))
-  const clauses = helpers.strip(helpers.wrapInArray(d[2].flat()))
+  const clauses = helpers.deepStrip(helpers.wrapInArray(helpers.strip(helpers.wrapInArray(d[2].flat()))))
   const expr = d[1]
   const matchIdentifier = randomHash()
-  const matchExprName = `match_expr_${matchIdentifier}`
-  const matchDoneLabel = `match_done_${matchIdentifier}`
-  const assignment = makeBasicAssignmentNode(matchExprName, expr)
-  return makeBlockNode(assignment, clauses)
+  const exprResult = makeIdentifier(`match_expr_${matchIdentifier}`)
+  const doneLabel = `match_done_${matchIdentifier}`
+  const assignment = makeBasicAssignmentNode(exprResult, expr)
+  console._log(makeBlockNode(assignment, makeClauses(clauses, exprResult, doneLabel)))
+  return {}
 
   //return {
   //  type: 'matcher',
