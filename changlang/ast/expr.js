@@ -14,7 +14,7 @@ function makeMath(d) {
   if (!Array.isArray(d)) {
     return d
   } else {
-    return makeExprNode(d[1][0], d[0], d[2])
+    return makeExprNode(d[1][0], helpers.dropArray(d[0]), helpers.dropArray(d[2]))
   }
 }
 
