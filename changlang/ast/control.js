@@ -17,7 +17,7 @@ function makeJumpNode(label) {
 
 function chainStatements(statements) {
   if (statements.length < 2) {
-    throw new Error('Can\'t chain single statements')
+    return statements[0]
   }
   const [first, second, ...rest] = statements
   let block = makeBlockNode(first, second)

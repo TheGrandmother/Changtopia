@@ -6,8 +6,7 @@ def _entry()
    5 ->
     return 1
    end
-   420 ->
-    return 1
-   end
  end
+ b = a + 789
+ return 420
 end

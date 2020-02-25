@@ -13,8 +13,8 @@ function_def ->
 block ->
     compound                                                                  {% ast.makeBlock %}
   | compound _ (";"|"\n") _ block                                             {% ast.makeBlock %}
-  | (";"|"\n") _ block
-  | match _ ("\n") _  block
+  | (";"|"\n") _ block                                                        {% ast.makeBlock %}
+  | match _ ("\n") _  block                                                   {% ast.makeBlock %}
   | match
 
 match -> "match" __ expr _ "\n" _ match_clauses                               {% ast.makeMatcher %}
