@@ -1,6 +1,7 @@
 module main
 
 def _entry()
+ a = 7
  match a+1
    5 ->
     return 1

@@ -23,7 +23,6 @@ function makeConstantClause(clause, resultName, doneLabel) {
 function makeClauses(clauses, resultName, doneLabel) {
 
   return clauses.filter(clause => clause.type).map((clause) => {
-    console.log(clause)
     if (clause.pattern.type === 'constant') {
       return makeConstantClause(clause, resultName, doneLabel)
     }
@@ -37,9 +36,11 @@ function makeMatcher(d) {
   const matchIdentifier = randomHash()
   const exprResult = makeIdentifier(`match_expr_${matchIdentifier}`)
   const doneLabel = `match_done_${matchIdentifier}`
-  const assignment = makeBasicAssignmentNode(exprResult, expr)
-  console._log(makeBlockNode(assignment, makeClauses(clauses, exprResult, doneLabel)))
-  return {}
+  const assignment = makeBasicAssignmentNode(exprResult.name, expr)
+  const node = makeBlockNode(assignment, chainStatements(makeClauses(clauses, exprResult, doneLabel)))
+  node.subType = 'matcher'
+  node.doneLabel = doneLabel
+  return node
 
   //return {
   //  type: 'matcher',
@@ -50,7 +51,6 @@ function makeMatcher(d) {
 
 function makeClause(d) {
   d = helpers.strip(d.flat())
-  console.log(helpers.strip(d[0]))
   return {
     type: 'clause',
     pattern: helpers.strip(d[0]),

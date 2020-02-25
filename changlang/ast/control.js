@@ -8,10 +8,10 @@ function makeBlockNode(lhs, rhs) {
   }
 }
 
-function makeJumpNode(lable) {
+function makeJumpNode(label) {
   return {
     type: 'jump',
-    lable
+    label
   }
 }
 

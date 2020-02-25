@@ -31,9 +31,13 @@ function makeInstruction(id, args) {
   return {instruction: {id, args}}
 }
 
-function makeLineLabel(node, name) {
+function makeUniqueLineLabel(name) {
   __currentIndex += 1
   return {lineLabel: `${name}_arg${__currentIndex}_l`}
+}
+
+function makeLineLabel(name) {
+  return {lineLabel: `${name}`}
 }
 
 function createAssignment(state, name) {
@@ -131,7 +135,7 @@ const _generators = {
     const conditionRes = makeInterRef(node)
     const conditionCode = generateNode(state, condition, conditionRes)
     const bodyCode = generateNode(state, body)
-    const skipLabel = makeLineLabel(node, 'skip')
+    const skipLabel = makeUniqueLineLabel('skip')
     const myCode = [makeInstruction('jump_if_false', [conditionRes, skipLabel])]
     return conditionCode.concat(myCode).concat(bodyCode).concat(skipLabel)
     // op res_lhs res_rhs res
@@ -143,6 +147,11 @@ const _generators = {
     const valueCodes = entries.map((entry, i) => generateNode(state, entry, resultLocations[i]))
     const myCode = [makeInstruction('arrayCreate', [res, ...resultLocations])]
     return valueCodes.flat().concat(myCode)
+  },
+
+  'jump': (state, node) => {
+    const {label} = node
+    return [makeInstruction('jump', [makeLineLabel(label)])]
   },
 
   'arrayLitterallImmediate': (state, node, res) => {
@@ -219,9 +228,14 @@ const _generators = {
   },
 
   'block': (state, node) => {
-    const lhsCode = generateNode(state, node.lhs)
-    const rhsCode = generateNode(state, node.rhs)
-    return lhsCode.concat(rhsCode)
+    const {rhs, lhs, doneLabel} = node
+    const lhsCode = generateNode(state, lhs)
+    const rhsCode = generateNode(state, rhs)
+    if (!doneLabel) {
+      return lhsCode.concat(rhsCode)
+    } else {
+      return lhsCode.concat(rhsCode).concat([makeLineLabel(doneLabel)])
+    }
   },
 }
 
@@ -268,7 +282,7 @@ function generateIntermediateCode(ast) {
 
 
   functions.forEach((func) => {
-    const {name, body, args, isShared} = func
+    const {name, body, args} = func
 
     if (state.functions[name]) {
       throw new Error(`A function named ${name} has already been defined`)
@@ -281,11 +295,16 @@ function generateIntermediateCode(ast) {
     })
     state.returnRef = {constant: '__return__'}
 
+    if (!generators[body.type]) {
+      console.log(body)
+      console.log(body.type)
+      throw new CompilerError(`I dont know what to do with a ${body.type} node`)
+    }
     const bodyCode = generators[body.type](state, body)
 
     const argLocations = Object.values(state.refs).filter(({arg}) => arg).map(({ref}) => ref)
 
-    state.functions[name] = {name, body: bodyCode, refs: state.refs, argLocations, isShared}
+    state.functions[name] = {name, body: bodyCode, refs: state.refs, argLocations}
   })
 
   return {

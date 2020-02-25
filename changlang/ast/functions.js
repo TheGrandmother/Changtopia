@@ -21,7 +21,7 @@ function makeFunction(d) {
     type: 'function',
     name: d[0].name,
     args: d[1].body.entries,
-    body: d[2]
+    body: helpers.dropArray(d[2])
   }
 }
 
