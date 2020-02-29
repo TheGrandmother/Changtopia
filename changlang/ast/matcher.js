@@ -31,7 +31,7 @@ function makeClauses(clauses, resultName, doneLabel) {
 
 function makeMatcher(d) {
   d = helpers.wrapInArray(helpers.strip(d))
-  const clauses = helpers.deepStrip(helpers.wrapInArray(helpers.strip(helpers.wrapInArray(d[2].flat()))))
+  const clauses = helpers.deepStrip(helpers.wrapInArray(helpers.strip(helpers.wrapInArray(d[2].flat())))).flat(Infinity)
   const expr = d[1]
   const matchIdentifier = randomHash()
   const exprResult = makeIdentifier(`match_expr_${matchIdentifier}`)
