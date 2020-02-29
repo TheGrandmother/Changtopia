@@ -1,22 +1,9 @@
 module main
 
 def _entry()
- a = "x"
+ a = $otto_von_bissmark
  match a
-   5 ->
-    bif:send(0, $print, 'First clause')
-    return 1
-   end
-   1337 ->
-    bif:send(0, $print, 'Second clause')
-    return 1
-   end
-   $otto_von_bissmark ->
-    bif:send(0, $print, 'Third clause')
-    return 1
-   end
-   "x" ->
-    bif:send(0, $print, 'Fourth clause')
+   [a, 5, <yz>, 9, x] ->
     return 1
    end
  end

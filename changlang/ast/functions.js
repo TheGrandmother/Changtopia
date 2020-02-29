@@ -1,5 +1,14 @@
 const helpers = require('./helpers')
 
+function makeFunctionCallNode(name, args, module=false) {
+  return {
+    type: 'call',
+    name,
+    args,
+    module
+  }
+}
+
 function makeFunctionCall(d) {
   d = helpers.deepStrip(d)
   let module = false
@@ -7,12 +16,7 @@ function makeFunctionCall(d) {
     module = d[0][0].name
     d = d.slice(1)
   }
-  return {
-    type: 'call',
-    name: d[0].name,
-    args: d[1].body.entries,
-    module
-  }
+  return makeFunctionCallNode(d[0].name, d[1].body.entries, module)
 }
 
 function makeFunction(d) {
@@ -35,6 +39,7 @@ function makeModule(d) {
 
 module.exports = {
   makeFunctionCall,
+  makeFunctionCallNode,
   makeFunction,
   makeModule
 }
