@@ -103,13 +103,15 @@ function makeClauses(clauses, resultName, doneLabel) {
     if (clause.pattern.type === 'arrayLitteral') {
       return makeArrayClause(clause, resultName, doneLabel)
     }
+    if (clause.pattern.type === 'identifier' && clause.pattern.name === 'whatever') {
+      return makeBlockNode(clause.body, makeJumpNode(doneLabel))
+    }
   })
 }
 
 function makeMatcher(d) {
   d = helpers.wrapInArray(helpers.strip(d))
   const clauses = helpers.deepStrip(helpers.wrapInArray(helpers.strip(helpers.wrapInArray(d[2].flat())))).flat(Infinity)
-  //console._log(clauses)
   const expr = d[1]
   const matchIdentifier = randomHash()
   const exprResult = makeIdentifier(`match_expr_${matchIdentifier}`)

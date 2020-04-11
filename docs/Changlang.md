@@ -1,7 +1,6 @@
 # Changlang
 
-Changlang is a garbage changuage. Please get out.
-
+Changlang is a garbage changuage. Just don't even.
 
 ## Pattern matching
 
