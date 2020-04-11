@@ -1,11 +1,35 @@
 module main
 
 def _entry()
- a = $otto_von_bissmark
- match a
-   [a, 5, <yz>, 9, x] ->
-    return 1
-   end
- end
- return 420
+  a = [16, 5, 69,69,69,69,69,69, 9, 2]
+  match a
+    [] ->
+      bif:send(0, $print, 'Empty mfer')
+      return 1
+    end
+    [2, 6] ->
+      bif:send(0, $print, 'array with only const')
+      return 1
+    end
+    [a, x] ->
+      bif:send(0, $print, 'array with only ident')
+      return 1
+    end
+    [a, 5, 9, x] ->
+      bif:send(0, $print, 'array with no blob')
+      return 1
+    end
+    [a, 5, <yz>, 9, x] ->
+      bif:send(0, $print, 'Array with blob')
+      bif:send(0, $print_raw, [a])
+      bif:send(0, $print_raw, [yz])
+      bif:send(0, $print_raw, [x])
+      return 1
+    end
+    $otto_von_bissmark ->
+      bif:send(0, $print, 'Matched the otto von bissmark dude :[')
+    end
+  end
+  bif:send(0, $print, 'Ended and blended')
+  return 420
 end

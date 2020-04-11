@@ -29,12 +29,10 @@ function makeArrayClause(clause, resultName, doneLabel) {
   const hasBlob = !!pattern.entries.find(e => e.type === 'blob')
   const targetLength = pattern.entries.length - (hasBlob ? 1 : 0)
 
-  //Assert corrent length
   const isArrayCall = makeFunctionCallNode('is_array', [resultName], 'bif')
   const lengthCall = makeFunctionCallNode('length', [resultName], 'bif')
   const compareLength = makeExprNode(hasBlob ? '>=' : '==', lengthCall, {type: 'constant', value: targetLength})
 
-  //console.log('otto', pattern.entries)
 
   // Faff around untill your eyes bleed
   const destructorEntries = pattern.entries.map((entry, i) => {
@@ -52,6 +50,7 @@ function makeArrayClause(clause, resultName, doneLabel) {
   let leading, trailing, blob
   if (blobIndex === -1) {
     leading = destructorEntries
+    trailing = []
   } else {
     blob = destructorEntries[blobIndex]
     leading = destructorEntries.slice(0, blobIndex)
@@ -70,22 +69,15 @@ function makeArrayClause(clause, resultName, doneLabel) {
 
   let deathNode
   if (checks.length > 0) {
-    deathNode = makeExprNode('and', allChecksIdent, checks[0])
-    checks.splice(1)
-    checks.forEach(node => {
-      deathNode = makeExprNode('and', deathNode, node)
+    deathNode = makeExprNode('&&', allChecksIdent, checks[0])
+    checks.slice(1).forEach(node => {
+      deathNode = makeExprNode('&&', deathNode, node)
     })
   } else {
     deathNode = allChecksIdent
   }
 
-  //console.log(deathNode)
-  // const isArrayIf = makeIfNode(isArrayCall, makeJumpNode(doneLabel))
-  // const lengthIf = makeIfNode(compareLength, makeJumpNode(doneLabel))
-  // const checkIf = makeIfNode(deathNode, makeJumpNode(doneLabel))
-  // const body = makeBlockNode(clause.body, makeJumpNode(doneLabel))
-
-  const theBiggestSad =
+  const theBigSad =
     makeIfNode(isArrayCall,
       makeIfNode(compareLength,
         makeBlockNode(chainStatements([unpackAssignmentNode, setAllCheckedToTrue]),
@@ -98,7 +90,7 @@ function makeArrayClause(clause, resultName, doneLabel) {
       )
     )
 
-  return theBiggestSad
+  return theBigSad
 
 }
 
