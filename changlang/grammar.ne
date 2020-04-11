@@ -140,6 +140,7 @@ _string ->
 
 _stringchar ->
     [^\\']
+  | "\\"
   | "\\'" {% () => ["'"] %}
 
 _charcharbinks ->

@@ -34,3 +34,17 @@ evaluate the first one.
 If no patterns match and there is no `whatever` clause the matching
 block will have little to no effect.
 
+## Messages and shit
+
+### Listnener
+
+Listener function:
+```
+def listener_dude(....random_args, sender, payload)
+```
+
+use like:
+```
+bif:listen('module', listener_dude, ...random_args)
+```
+

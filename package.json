@@ -8,7 +8,7 @@
     "test_grammar": "nearleyc test_grammar.ne -o test_grammar.js && nearley-test test_grammar.js",
     "compile_grammar": "nearleyc changlang/grammar.ne -o changlang/compiled_grammar.js",
     "changpile": "yarn compile_grammar && node changlang/compiler.js",
-    "test_run": "yarn changpile -p && node main.js out.tbn"
+    "test_run": "yarn changpile && node main.js out.tbn"
   },
   "repository": {
     "type": "git",
@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/TheGrandmother/TBN#readme",
   "dependencies": {
+    "ansi-escapes": "^4.3.1",
     "deep-equal": "^2.0.1",
     "eslint": "^6.7.2",
     "nearley": "^2.19.0",

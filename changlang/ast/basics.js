@@ -70,7 +70,7 @@ function makeAtom(d) {
 
 function makeChar(d) {
   //Well do a manual strip here to handle
-  //kipping of sane chars and stupid slashes
+  //skipping of sane chars and stupid slashes
   d = d.flat()
   const c = (d[1] ? d[1] : '') + d[2]
   function unFuckEscapes(c) {

@@ -57,7 +57,9 @@ function pretty(functions) {
 
 function compile() {
 
-  const input = fs.readFileSync(argv.input).toString()
+  const rawInput = fs.readFileSync(argv.input).toString()
+
+  const input = rawInput.replace(/--.*$/mg,'')
 
   const functions = parse(input)
   if (argv.a) {

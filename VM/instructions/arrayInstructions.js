@@ -1,4 +1,4 @@
-const Errors = require('../errors.js')
+const Errors = require('../../errors.js')
 
 const arrayInstructions = {
   'arrayCreate' : {

@@ -1,7 +1,7 @@
 const {Process} = require('./process.js')
-const {h} = require('./util/hash.js')
+const {h} = require('../util/hash.js')
 const builtins = require('./builtins/builtins.js')
-const {NoSuchPidError} = require('./errors.js')
+const {NoSuchPidError} = require('../errors.js')
 
 const {
   isMainThread, parentPort, workerData

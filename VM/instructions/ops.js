@@ -1,6 +1,6 @@
 // const {h} = require('../util/hash.js')
 const {inspect} = require('util')
-const Errors = require('../errors.js')
+const Errors = require('../../errors.js')
 
 const ops = {
   ...require('./arrayInstructions.js'),

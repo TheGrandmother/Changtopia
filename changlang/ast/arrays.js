@@ -47,9 +47,23 @@ function makeUnpack(d) {
 function makeString(d) {
   d = helpers.strip(d)
   d = d.flat(Infinity)
+  function unFuckEscapes(c) {
+    switch (c) {
+    case '\\n': return '\n'
+    case '\\t': return '\t'
+    case '\\r': return '\r'
+    case '\\0': return '\0'
+    default: return c
+    }
+  }
+  d = d.join('')
+    .replace('\\n','\n')
+    .replace('\\t','\t')
+    .replace('\\r','\r')
+    .replace('\\0','\0')
   return {
     type: 'arrayLitterallImmediate',
-    entries: {array: d.map(c => c.charCodeAt(0))}
+    entries: {array: d.split('').map(c => c.charCodeAt(0))}
   }
 }
 

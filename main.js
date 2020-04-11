@@ -2,7 +2,7 @@ const fs = require('fs').promises
 
 const process = require('process')
 const {Worker} = require('worker_threads')
-const {NodeIoHandler} = require('./NodeIO.js')
+const {NodeIoHandler} = require('./Io/NodeIO.js')
 
 
 
@@ -11,7 +11,7 @@ const ioHandler = new NodeIoHandler()
 
 function spawnVm(modules) {
   return new Promise((resolve, reject) => {
-    const worker = new Worker('./vm.js', {workerData: modules})
+    const worker = new Worker('./VM/vm.js', {workerData: modules})
     console.log('VM spawned')
     worker.on('error', reject)
     worker.on('message', (message) => ioHandler.handleMessage(worker, message))

@@ -1,4 +1,4 @@
-const {h, resolveHash, knownHashes} = require('../util/hash.js')
+const {h, resolveHash} = require('../../util/hash.js')
 
 const processControlFunctions = [
   {
@@ -25,8 +25,8 @@ const processControlFunctions = [
   {
     functionId: 'listen',
     bif: true,
-    exec: (process, returnLocation, functionId, ...args) => {
-      process.listen(functionId, returnLocation, args)
+    exec: (process, returnLocation, module, functionId, ...args) => {
+      process.listen(String.fromCharCode(...module), functionId, returnLocation, args)
       return 0
     }
   },

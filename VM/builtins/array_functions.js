@@ -1,5 +1,5 @@
 const deepEquals = require('deep-equal')
-const {ArrayTypeError} = require('../errors.js')
+const {ArrayTypeError} = require('../../errors.js')
 
 const arrayFunctions = [
   {

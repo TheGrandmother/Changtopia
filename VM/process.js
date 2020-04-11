@@ -1,4 +1,4 @@
-const {randomHash, h} = require('./util/hash')
+const {randomHash, h} = require('../util/hash')
 const {evaluateInstruction} = require('./instructions/ops.js')
 const {pretty} = require('./instructions/pretty.js')
 const {
@@ -8,7 +8,7 @@ const {
   ArgumentCountError,
   OddLineError,
   RuntimeError
-} = require('./errors.js')
+} = require('../errors.js')
 
 class Process {
   constructor (vm, pid) {

@@ -1,20 +1,61 @@
 module main
+-- Lets try to write the basics for a shell like thing!
 
-def _entry()
-  array_bro = [16, 5, 69,69,69,69,69,69, 7, 2]
-
-  match array_bro
-    [a, 5, <yz>, 9, x] ->
-      bif:send(0, $print, 'Array with blob')
+def handle_input(input_string, input)
+  match input
+    13 ->
+      return [$done, input_string]
     end
-    $otto_von_bissmark ->
-      bif:send(0, $print, 'Matched atom')
+    127 ->
+      bif:send(0, $cursor_back)
+      bif:send(0, $print_string, ' ')
+      bif:send(0, $cursor_back)
+      [s, <head>, meh] = input_string
+      return [s, <head>]
     end
     whatever ->
-      bif:send(0, $print, 'Fuckitall')
+      bif:send(0, $print_string, [input])
+      return [<input_string>, input]
     end
   end
+end
 
-  bif:send(0, $print, 'Ended like a fokkin pimp')
-  return 420
+def main_listener(input_string, sender, payload)
+  match sender
+    0 ->
+      match payload
+        [$input_data, d] ->
+          thing = handle_input(input_string, d)
+          match thing
+            [$done, stuff] ->
+              return stuff
+            end
+            whatever ->
+              input_string = thing
+            end
+          end
+        end
+        $ok ->
+          bif:send(0, $print_string, '> ')
+        end
+        whatever ->
+          bif:send(0, $print_string, 'Got some starnge shit')
+          bif:send(0, $print_raw, payload)
+        end
+      end
+    end
+    whatever ->
+      bif:send(0, $print_string, '>Got a message from someone completley different!?')
+    end
+  end
+  return bif:listen('main', main_listener, input_string)
+end
+
+def _entry()
+  line = bif:send(0, $get_input_stream)
+  bif:send(0, $print_string, 'Starting to listen\n')
+  input_string = bif:listen('main', main_listener, '')
+  bif:send(0, $print_string, '\n')
+  bif:send(0, $print_string, [<input_string>, "\n"])
+  return 0
 end

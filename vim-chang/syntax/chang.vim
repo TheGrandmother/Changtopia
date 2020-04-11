@@ -39,7 +39,7 @@ syntax keyword changBoolean true false
 syntax region changString start=/"/ skip=/\\"/ end=/"/
 syntax region changChar start=/'/ skip=/\\'/ end=/'/
 
-" syntax match changComment "--.*\|//.*"
+syntax match changComment "--.*\|//.*"
 " syntax match changTypeThing ":\s\*\w\+"
 " syntax region changComment start="{-" end="-}"
 " syntax region changComment start="/\*" end="\*/"
@@ -70,7 +70,7 @@ highlight link changChar String
 " highlight link changType Label
 " highlight link changTypeThing Label
 " highlight link changParam Label
-" highlight link changComment Comment
+highlight link changComment Comment
 " highlight link changString String
 " highlight link changChar String
 " highlight link changNumber Number
