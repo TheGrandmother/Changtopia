@@ -25,22 +25,22 @@ function makeBlob(d) {
   }
 }
 
+function makeUnpackNode(leading, body, trailing) {
+  return {
+    type: 'unpack',
+    leading,
+    body,
+    trailing
+  }
+}
+
 function makeUnpack(d) {
   d = helpers.deepStrip(d.flat().flat())
   if (Array.isArray(d)) {
     d = d.flat()
-    return {
-      type: 'unpack',
-      leading: helpers.wrapInArray(d[0]),
-      body: d[1].value,
-      trailing: helpers.wrapInArray(d[2])
-    }
+    return makeUnpackNode(helpers.wrapInArray(d[0]), d[1].value, helpers.wrapInArray(d[2]))
   } else {
-    return {
-      type: 'unpack',
-      leading: d.entries,
-      trailing: []
-    }
+    return makeUnpackNode(d.entries, undefined, [])
   }
 }
 
@@ -58,5 +58,6 @@ module.exports = {
   makeArrayIndexing,
   makeBlob,
   makeUnpack,
+  makeUnpackNode,
   makeString
 }

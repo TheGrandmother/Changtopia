@@ -26,6 +26,12 @@ class LocationInvalidError extends RuntimeError {
   }
 }
 
+class LocationEmptyError extends RuntimeError {
+  constructor(msg) {
+    super(`There is no data at location ${msg}`, h('location_empty'))
+  }
+}
+
 class ArrayIndexError extends RuntimeError {
   constructor(msg) {
     super(msg, h('array_index_error'))
@@ -93,5 +99,6 @@ module.exports = {
   NoSuchPidError,
   OddLineError,
   NameSpaceError,
-  UnknownModuleError
+  UnknownModuleError,
+  LocationEmptyError
 }

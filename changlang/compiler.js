@@ -1,5 +1,4 @@
 const grammar = require('./compiled_grammar.js')
-const process = require('process')
 const {generateIntermediateCode} = require('./intermediate.js')
 const {generateCode} = require('./codegen.js')
 const nearley = require('nearley')
@@ -62,14 +61,14 @@ function compile() {
 
   const functions = parse(input)
   if (argv.a) {
-    console.log('AST:')
+    console.log('==============================AST================================')
     console.log(inspect(functions, false, null, true))
-    process.exit(0)
   }
 
   const intermediateCode = generateIntermediateCode(functions)
 
   if (argv.n) {
+    console.log('=========================INTERMEDIATE============================')
     console.log(inspect(intermediateCode, false, null, true))
   }
   const compiledFunctions = {}
@@ -78,6 +77,7 @@ function compile() {
   fs.writeFileSync(argv.output, JSON.stringify({...intermediateCode, functions: compiledFunctions}, undefined, 2))
 
   if (argv.p) {
+    console.log('============================CODE================================')
     pretty(Object.values(compiledFunctions))
   }
 

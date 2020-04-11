@@ -214,7 +214,7 @@ const _generators = {
     const rhsCode = generateNode(state, rhs, rhsRes)
     const leadingRefs = leading.map(({name}) => createAssignment(state, name))
     const trailingRefs = trailing.map(({name}) => createAssignment(state, name))
-    const bodyRef = body && createAssignment(state, body.name)
+    const bodyRef = body && createAssignment(state, body.name || body.value.name)
     const args = [
       rhsRes,
       {constant: !!body},

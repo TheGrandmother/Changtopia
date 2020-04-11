@@ -22,8 +22,7 @@ const arrayFunctions = [
     functionId: 'is_array',
     bif: true,
     exec: (process, resultLocation, location) => {
-      const arr = process.frame.read(location)
-      return Array.isArray(arr)
+      return Array.isArray(location)
     }
   },
   {

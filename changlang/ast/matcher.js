@@ -1,9 +1,11 @@
 const helpers = require('./helpers')
 const {randomHash} = require('../../util/hash.js')
-const {makeBasicAssignmentNode} = require('./assign')
+const {makeBasicAssignmentNode, makeUnpackingAssignmentNode} = require('./assign')
+const {makeUnpackNode} = require('./arrays')
 const {makeBlockNode, makeIfNode, chainStatements, makeJumpNode} = require('./control')
 const {makeExprNode} = require('./expr')
 const {makeFunctionCallNode} = require('./functions')
+const {makeConstantNode} = require('./basics')
 const {inspect} = require('util')
 console._log = (...args) => console.log(args.map(arg => inspect(arg, false,null,true)).join(' '))
 
@@ -21,19 +23,82 @@ function makeConstantClause(clause, resultName, doneLabel) {
 
 }
 
-function makePatternClause(clause, resultName, doneLabel) {
-  const longAssSequence = []
+function makeArrayClause(clause, resultName, doneLabel) {
+  const clauseIdentifier = randomHash()
   const pattern = clause.pattern
   const hasBlob = !!pattern.entries.find(e => e.type === 'blob')
   const targetLength = pattern.entries.length - (hasBlob ? 1 : 0)
 
   //Assert corrent length
-  const lengthCall = makeFunctionCallNode('length', resultName, 'bif')
-  const compare = makeExprNode(hasBlob ? '>=' : '==', lengthCall, {type: 'constant', value: targetLength})
-  longAssSequence.push(makeIfNode(compare, makeJumpNode(doneLabel)))
+  const isArrayCall = makeFunctionCallNode('is_array', [resultName], 'bif')
+  const lengthCall = makeFunctionCallNode('length', [resultName], 'bif')
+  const compareLength = makeExprNode(hasBlob ? '>=' : '==', lengthCall, {type: 'constant', value: targetLength})
 
-  const body = makeBlockNode(clause.body, makeJumpNode(doneLabel))
-  return body
+  //console.log('otto', pattern.entries)
+
+  // Faff around untill your eyes bleed
+  const destructorEntries = pattern.entries.map((entry, i) => {
+    if (entry.type !== 'identifier' && entry.type !== 'blob') {
+      const conditionalIdent = makeIdentifier(`cond_entry_${i}_${clauseIdentifier}`)
+      conditionalIdent.checkAgainst = i
+      conditionalIdent.checkMe = true
+      return conditionalIdent
+    } else {
+      return entry
+    }
+  })
+  //console.log('destructorEntries:', destructorEntries)
+  const blobIndex = destructorEntries.findIndex(e => e.type === 'blob')
+  let leading, trailing, blob
+  if (blobIndex === -1) {
+    leading = destructorEntries
+  } else {
+    blob = destructorEntries[blobIndex]
+    leading = destructorEntries.slice(0, blobIndex)
+    trailing = destructorEntries.slice(blobIndex + 1)
+  }
+  const unpackNode = makeUnpackNode(leading, blob, trailing)
+  const unpackAssignmentNode = makeUnpackingAssignmentNode(unpackNode, resultName)
+
+  const checks = destructorEntries.filter(e => e.checkMe).map(e => {
+    return makeExprNode('==', e, pattern.entries[e.checkAgainst])
+  })
+
+  //console.log(checks)
+  const allChecksIdent = makeIdentifier(`all_checks_${clauseIdentifier}`)
+  const setAllCheckedToTrue = makeBasicAssignmentNode(allChecksIdent.name, makeConstantNode(true, 'bool'))
+
+  let deathNode
+  if (checks.length > 0) {
+    deathNode = makeExprNode('and', allChecksIdent, checks[0])
+    checks.splice(1)
+    checks.forEach(node => {
+      deathNode = makeExprNode('and', deathNode, node)
+    })
+  } else {
+    deathNode = allChecksIdent
+  }
+
+  //console.log(deathNode)
+  // const isArrayIf = makeIfNode(isArrayCall, makeJumpNode(doneLabel))
+  // const lengthIf = makeIfNode(compareLength, makeJumpNode(doneLabel))
+  // const checkIf = makeIfNode(deathNode, makeJumpNode(doneLabel))
+  // const body = makeBlockNode(clause.body, makeJumpNode(doneLabel))
+
+  const theBiggestSad =
+    makeIfNode(isArrayCall,
+      makeIfNode(compareLength,
+        makeBlockNode(chainStatements([unpackAssignmentNode, setAllCheckedToTrue]),
+          makeIfNode(deathNode,
+            makeBlockNode(clause.body,
+              makeJumpNode(doneLabel)
+            )
+          )
+        )
+      )
+    )
+
+  return theBiggestSad
 
 }
 
@@ -43,8 +108,8 @@ function makeClauses(clauses, resultName, doneLabel) {
     if (clause.pattern.type === 'constant') {
       return makeConstantClause(clause, resultName, doneLabel)
     }
-    if (clause.pattern.type === 'arrayLitterall') {
-      return makePatternClause(clause, resultName, doneLabel)
+    if (clause.pattern.type === 'arrayLitteral') {
+      return makeArrayClause(clause, resultName, doneLabel)
     }
   })
 }
@@ -52,7 +117,7 @@ function makeClauses(clauses, resultName, doneLabel) {
 function makeMatcher(d) {
   d = helpers.wrapInArray(helpers.strip(d))
   const clauses = helpers.deepStrip(helpers.wrapInArray(helpers.strip(helpers.wrapInArray(d[2].flat())))).flat(Infinity)
-  console._log(clauses)
+  //console._log(clauses)
   const expr = d[1]
   const matchIdentifier = randomHash()
   const exprResult = makeIdentifier(`match_expr_${matchIdentifier}`)

@@ -40,3 +40,9 @@ barring timeouts. Any other messages received whilst waiting for a response will
 To receive messages a process must enter a listening state. This is done by registering a listening handler function. This function
 will receive the following arguments on a message: the senders pid, and the payload array. If the received message has the `require_response`
 flag set the thingy returned by the function will be sent as a response to the requester dude.
+
+## ISA
+I cant rember this crap....
+
+function calls:
+`call <module_name> <function_name> <result_location> <...args>`

@@ -7,6 +7,5 @@ def _entry()
     return 1
    end
  end
- bif:send(0, $print, 'Outside')
  return 420
 end

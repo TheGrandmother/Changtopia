@@ -8,27 +8,37 @@ function makeBasicAssignmentNode(name, rhs) {
   }
 }
 
+function makeUnpackingAssignmentNode(unpack, rhs) {
+  return {
+    type: 'unpackingAssignment',
+    unpack,
+    rhs,
+  }
+}
+
+function makeIndexAssigntNode(arrayName, index, rhs) {
+  return {
+    type: 'indexingAssign',
+    arrayName,
+    index,
+    rhs
+  }
+}
+
 function makeAssignment(d) {
   d = helpers.strip(d)
   if (d[0].type === 'unpack') {
-    return {
-      type: 'unpackingAssignment',
-      unpack: d[0],
-      rhs: d[2],
-    }
+    return makeUnpackingAssignmentNode(d[0], d[2])
   }
   if (d[0].type === 'arrayIndexing') {
-    return {
-      type: 'indexingAssign',
-      arrayName: d[0].name,
-      index: d[0].index,
-      rhs: d[2],
-    }
+    return makeIndexAssigntNode(d[0].name, d[0].index, d[2])
   }
   return makeBasicAssignmentNode(d[0].name, d[2])
 }
 
 module.exports = {
   makeAssignment,
-  makeBasicAssignmentNode
+  makeBasicAssignmentNode,
+  makeUnpackingAssignmentNode,
+  makeIndexAssigntNode
 }

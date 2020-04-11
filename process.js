@@ -2,7 +2,7 @@ const {randomHash, h} = require('./util/hash')
 const {evaluateInstruction} = require('./instructions/ops.js')
 const {pretty} = require('./instructions/pretty.js')
 const {
-  LocationInvalidError,
+  LocationEmptyError,
   UnknownFunctionError,
   UnknownModuleError,
   ArgumentCountError,
@@ -232,8 +232,10 @@ class Process {
   }
 
   executeInstruction() {
+    let instruction
     try {
-      evaluateInstruction(this, this.getCurrentInstruction())
+      instruction = this.getCurrentInstruction(this.getCurrentInstruction())
+      evaluateInstruction(this, instruction)
     } catch (err) {
       if (err instanceof RuntimeError) {
         if (this.linkedProcesses.length > 0 || this.inbox.length > 0 || this.handlingRequest) {
@@ -260,11 +262,15 @@ class Process {
           this.waiting = false
           this.finished = true
         } else {
-          console.error('Encountered runtime error but there was no dude there to do stuff')
+          console.log('Encountered runtime error but there was no dude there to do stuff said jiggly puff')
+          console.log('This went down when trying to evaluate:')
+          console.log(this.frame.data)
+          console.error(this.frame.data, instruction)
+          //pretty(this.pid, this.frame.functionId, this.frame.line, this.getCurrentInstruction())
           throw err
         }
       } else {
-        pretty(this.pid, this.frame.functionId, this.frame.line, this.getCurrentInstruction())
+        pretty(this.pid, this.frame.functionId, this.frame.line, instruction)
         console.log('Pesant error')
         console.log('This be our data:', this.frame.data)
         throw err
@@ -301,7 +307,7 @@ class Frame {
 
   read (location) {
     if (this.data[location] === undefined) {
-      throw new LocationInvalidError(location)
+      throw new LocationEmptyError(location)
     }
     return this.data[location]
   }
