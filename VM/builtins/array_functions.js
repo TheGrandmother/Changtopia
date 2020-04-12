@@ -6,8 +6,8 @@ const arrayFunctions = [
     functionId: 'array_compare',
     bif: true,
     exec: (process, resultLocation, a1Location, a2Location) => {
-      const a1 = process.frame.read(a1Location)
-      const a2 = process.frame.read(a2Location)
+      const a1 = a1Location
+      const a2 = a2Location
       if (!Array.isArray(a1)) {
         throw new ArrayTypeError(`Data at location ${a1Location} is not an array, it is ${a1}`)
       }

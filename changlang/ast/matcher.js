@@ -23,6 +23,15 @@ function makeConstantClause(clause, resultName, doneLabel) {
 
 }
 
+function makeImmediateClause(clause, resultName, doneLabel) {
+  const clauseIdentifier = makeIdentifier(`array_${randomHash()}`)
+  const assignArray = makeBasicAssignmentNode(clauseIdentifier.name, clause.pattern)
+  const isArrayCall = makeFunctionCallNode('is_array', [resultName], 'bif')
+  const arrayCompareCall = makeFunctionCallNode('array_compare', [resultName, clauseIdentifier], 'bif')
+  return makeIfNode(isArrayCall, makeBlockNode(assignArray, makeIfNode(arrayCompareCall, makeBlockNode(clause.body, makeJumpNode(doneLabel)))))
+
+}
+
 function makeArrayClause(clause, resultName, doneLabel) {
   const clauseIdentifier = randomHash()
   const pattern = clause.pattern
@@ -103,9 +112,13 @@ function makeClauses(clauses, resultName, doneLabel) {
     if (clause.pattern.type === 'arrayLitteral') {
       return makeArrayClause(clause, resultName, doneLabel)
     }
+    if (clause.pattern.type === 'arrayLitterallImmediate') {
+      return makeImmediateClause(clause, resultName, doneLabel)
+    }
     if (clause.pattern.type === 'identifier' && clause.pattern.name === 'whatever') {
       return makeBlockNode(clause.body, makeJumpNode(doneLabel))
     }
+    throw new Error(`The fuck is up with ${inspect(clause, false,null,true)}`)
   })
 }
 
