@@ -21,7 +21,7 @@ syntax clear
 " chang is case sensitive.
 syntax case match
 
-syntax keyword changBlocks def if end
+syntax keyword changBlocks def if end match
 syntax keyword changBif print _log print_raw readline
 syntax keyword changCommunicate send listen request spawn
 syntax keyword changReturn return
