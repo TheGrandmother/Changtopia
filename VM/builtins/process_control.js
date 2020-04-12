@@ -91,6 +91,17 @@ const processControlFunctions = [
         process.sendMessage({recipient: 0, payload: [h('load_module'), moduleName]}, returnLocation)
       }
     }
+  },
+
+  {
+    functionId: 'run',
+    bif: true,
+    exec: (process, returnLocation, _moduleName, _functionName, ...args) => {
+      const moduleName = String.fromCharCode(..._moduleName)
+      const functionName = String.fromCharCode(..._functionName)
+      process.incrementLine()
+      process.bindFunction(moduleName, functionName, returnLocation, args)
+    }
   }
 ]
 

@@ -9,6 +9,10 @@ def load_module(arg)
           bif:send(0, $print_string, list:flatten(['Could not find module: ', name, '\n']))
           return $fail
         end
+        $already_loaded ->
+          bif:send(0, $print_string, list:flatten([name, ' has already been loaded \n']))
+          return $ok
+        end
         whatever ->
           bif:send(0, $print_string, list:flatten(['Loaded module: ', name, '\n']))
           return $ok
@@ -27,8 +31,24 @@ def load_module(arg)
   return $ok
 end
 
-def process_command(input)
+def run_module(arg)
+  match arg
+    [name] ->
+      return bif:run(name, '_entry')
+    end
+    [] ->
+      bif:send(0, $print_string, 'No module name provided\n')
+      return $fail
+    end
+    whatever ->
+      bif:send(0, $print_string, 'Run only takes the name of the module as an argument\n')
+      return $fail
+    end
+  end
+  return $ok
+end
 
+def process_command(input)
   match input
     ' '   ->
       bif:send(0, $print_string, 'No command provided\n')
@@ -40,6 +60,10 @@ def process_command(input)
           load_module(arguments)
           return $ok
         end
+        'run' ->
+          run_module(arguments)
+          return $ok
+        end
         'quit' ->
           bif:send(0, $print_string, 'Thanks for nothing... cya l8r\n')
           return $quit
@@ -48,7 +72,7 @@ def process_command(input)
           bif:send(0, $print_string, list:flatten(['What is even "', command, '"? I\'ve never heard of such stupidity before.\n']))
         end
       end
-      return $seriousl
+      return $seriously
     end
   end
   return $ok
@@ -72,14 +96,13 @@ def _entry()
   bif:send(0, $print_string, '\n')
   bif:send(0, $print_string, '\n')
   bif:send(0, $print_string, '\n')
-  bif:send(0, $print_string, 'Starting Shell.\nLoading Modules\n')
-  bif:send(0, $print_string, 'Loading Io module\n')
+  bif:send(0, $print_string, 'Starting Shell.\nLoading Modules:\n')
   match bif:request(0, $load_module, 'io')
     $module_not_found ->
       bif:send(0, $print_string, 'Could not load io module\n')
     end
     whatever ->
-      bif:send(0, $print_string, 'Io loaded\n')
+      bif:send(0, $print_string, '  Io module loaded\n')
     end
   end
   match bif:request(0, $load_module, 'list')
@@ -87,7 +110,7 @@ def _entry()
       bif:send(0, $print_string, 'Could not load list module\n')
     end
     whatever ->
-      bif:send(0, $print_string, 'list loaded\n')
+      bif:send(0, $print_string, '  List module loaded\n')
     end
   end
   bif:request(0, $get_input_stream)

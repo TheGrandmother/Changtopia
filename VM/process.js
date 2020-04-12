@@ -266,10 +266,7 @@ class Process {
           this.waiting = false
           this.finished = true
         } else {
-          console.log('Encountered runtime error but there was no dude there to do stuff said jiggly puff')
-          console.log('This went down when trying to evaluate:')
-          console.log(this.frame.data)
-          console.error(this.frame.data, instruction)
+          console.error('Frame:\n',this.frame.data, '\ninstruction:\n', instruction)
           //pretty(this.pid, this.frame.functionId, this.frame.line, this.getCurrentInstruction())
           throw err
         }
