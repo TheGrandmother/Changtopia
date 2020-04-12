@@ -22,9 +22,7 @@ syntax clear
 syntax case match
 
 syntax keyword changBlocks def if end match
-syntax keyword changBif print _log print_raw readline
-syntax keyword changCommunicate send listen request spawn
-syntax keyword changReturn return
+syntax keyword changReturn return module
 syntax keyword changBoolean true false
 "syntax keyword changModifier passive require
 "syntax keyword changModule module import qualified hiding as
@@ -49,17 +47,19 @@ syntax match changComment "--.*\|//.*"
 syntax match changNumber "\d\+"
 syntax match changIdentifier /\w\+/
 syntax match changAtom /$\w\+/
+syntax match changModuleName /\zs\w\+\ze\:/
+syntax match changFunction /\zs\w\+\ze(/
 
-highlight link changBlocks Keyword
+highlight link changBlocks Identifier
 highlight link changReturn Keyword
-highlight link changIdentifier Identifier
-highlight link changCommunicate Error
-highlight link changBif Label
+highlight link changIdentifier Normal
 highlight link changBoolean Boolean
 highlight link changAtom Boolean
 highlight link changNumber Number
 highlight link changString String
 highlight link changChar String
+highlight link changModuleName Type
+highlight link changFunction PreProc
 
 " highlight link changTrait Statement
 " highlight link changModule StorageClass
@@ -80,3 +80,31 @@ highlight link changComment Comment
 " highlight link changModifier Typedef
 " highlight link changMaybe Boolean
 " highlight link changEmbed PreCondit
+
+
+syntax keyword a Normal
+syntax keyword b Comment
+syntax keyword c Constant
+syntax keyword d Identifier
+syntax keyword e Statement
+syntax keyword f PreProc
+syntax keyword g Type
+syntax keyword h Special
+syntax keyword i Underlined
+syntax keyword j Ignore
+syntax keyword k Error
+syntax keyword l Todo
+
+
+highlight link a Normal
+highlight link b Comment
+highlight link c Constant
+highlight link d Identifier
+highlight link e Statement
+highlight link f PreProc
+highlight link g Type
+highlight link h Special
+highlight link i Underlined
+highlight link j Ignore
+highlight link k Error
+highlight link l Todo
