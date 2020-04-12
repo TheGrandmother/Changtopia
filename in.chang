@@ -1,31 +1,50 @@
 module main
 -- Lets try to write the basics for a shell like thing!
 
-def handle_input(input_string, input)
+def build_input(input_string, input)
   match input
     13 ->
       return [$done, input_string]
     end
     127 ->
-      bif:send(0, $cursor_back)
-      bif:send(0, $print_string, ' ')
-      bif:send(0, $cursor_back)
-      [s, <head>, meh] = input_string
-      return [s, <head>]
+      match input_string
+        [s, <head>, _] ->
+          bif:send(0, $move_cursor, -1, 0)
+          bif:send(0, $print_string, ' ')
+          bif:send(0, $move_cursor, -1, 0)
+          return [s, <head>]
+        end
+        [s, _] ->
+          bif:send(0, $move_cursor, -1, 0)
+          bif:send(0, $print_string, ' ')
+          bif:send(0, $move_cursor, -1, 0)
+          return [s]
+        end
+        [_] ->
+          bif:send(0, $move_cursor, -1, 0)
+          bif:send(0, $print_string, ' ')
+          bif:send(0, $move_cursor, -1, 0)
+          return []
+        end
+        [] ->
+          return []
+        end
+      end
     end
     whatever ->
       bif:send(0, $print_string, [input])
       return [<input_string>, input]
     end
   end
+  return $whatever
 end
 
-def main_listener(input_string, sender, payload)
+def _get_line(input_string, sender, payload)
   match sender
     0 ->
       match payload
         [$input_data, d] ->
-          thing = handle_input(input_string, d)
+          thing = build_input(input_string, d)
           match thing
             [$done, stuff] ->
               return stuff
@@ -34,9 +53,6 @@ def main_listener(input_string, sender, payload)
               input_string = thing
             end
           end
-        end
-        $ok ->
-          bif:send(0, $print_string, '> ')
         end
         whatever ->
           bif:send(0, $print_string, 'Got some starnge shit')
@@ -48,14 +64,59 @@ def main_listener(input_string, sender, payload)
       bif:send(0, $print_string, '>Got a message from someone completley different!?')
     end
   end
-  return bif:listen('main', main_listener, input_string)
+  return bif:listen('main', _get_line, input_string)
+end
+
+def get_line()
+  bif:send(0, $print_string, '>')
+  return bif:listen('main', _get_line, '')
+end
+
+def split_by(list, delimiter)
+  return _split_by(list, delimiter, [], [])
+end
+
+def _split_by(list, delimiter, current_word, res)
+  match list
+    [] ->
+      return [<res>, current_word]
+    end
+    [thing, <tail>] ->
+      if thing == delimiter
+        return _split_by(tail, delimiter,  [], [<res>, current_word])
+      end
+      return _split_by(tail, delimiter, [<current_word>, thing], res)
+    end
+  end
+end
+
+def _print_list(list)
+  match list
+    [] ->
+      return $ok
+    end
+    [thing, <rest>] ->
+      bif:send(0, $print_string, '  ')
+      bif:send(0, $print_string, thing)
+      bif:send(0, $print_string, ',\n')
+      return _print_list(rest)
+    end
+  end
+end
+
+def print_list(list)
+  bif:send(0, $print_string, '[\n')
+  _print_list(list)
+  bif:send(0, $print_string, ']\n')
 end
 
 def _entry()
-  line = bif:send(0, $get_input_stream)
-  bif:send(0, $print_string, 'Starting to listen\n')
-  input_string = bif:listen('main', main_listener, '')
-  bif:send(0, $print_string, '\n')
-  bif:send(0, $print_string, [<input_string>, "\n"])
+  line = bif:request(0, $get_input_stream)
+  if line == $ok
+    bif:send(0, $print_string, 'Got the stream\n')
+  end
+  input_string = get_line()
+  bif:send(0, $print_string, ["\n", <input_string>, "\n"])
+  print_list(split_by(input_string, " "))
   return 0
 end

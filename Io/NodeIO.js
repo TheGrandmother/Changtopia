@@ -21,8 +21,9 @@ const ioRoutines = {
   [h('print_string')]: async (worker, message) => {
     process.stdout.write(String.fromCharCode(...message.payload[0]))
   },
-  [h('cursor_back')]: async () => {
-    process.stdout.write(ansiEscapes.cursorBackward(1))
+
+  [h('move_cursor')]: async (worker, message) => {
+    process.stdout.write(ansiEscapes.cursorMove(message.payload[0], message.payload[1]))
   },
 
   [h('random')]: async (worker, message) => {

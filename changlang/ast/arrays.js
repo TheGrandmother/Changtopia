@@ -37,8 +37,15 @@ function makeUnpackNode(leading, body, trailing) {
 function makeUnpack(d) {
   d = helpers.deepStrip(d.flat().flat())
   if (Array.isArray(d)) {
-    d = d.flat()
-    return makeUnpackNode(helpers.wrapInArray(d[0]), d[1].value, helpers.wrapInArray(d[2]))
+    const blobIndex = d.findIndex(e => e.type === 'blob')
+    if (blobIndex === -1) {
+      return makeUnpackNode(d[0].entries, undefined, [])
+    } else {
+      return makeUnpackNode(
+        helpers.wrapInArray(d.slice(0, blobIndex)[0]) || [],
+        d[blobIndex].value,
+        helpers.wrapInArray(d.slice(blobIndex + 1)[0] || []))
+    }
   } else {
     return makeUnpackNode(d.entries, undefined, [])
   }
@@ -47,15 +54,6 @@ function makeUnpack(d) {
 function makeString(d) {
   d = helpers.strip(d)
   d = d.flat(Infinity)
-  function unFuckEscapes(c) {
-    switch (c) {
-    case '\\n': return '\n'
-    case '\\t': return '\t'
-    case '\\r': return '\r'
-    case '\\0': return '\0'
-    default: return c
-    }
-  }
   d = d.join('')
     .replace('\\n','\n')
     .replace('\\t','\t')

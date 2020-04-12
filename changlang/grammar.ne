@@ -169,7 +169,7 @@ crazy_identifier -> identifier | array_indexed
 identifier ->
   [a-zA-Z_] [\w]:*                                                            {% ast.makeIdentifier %}
 
-number -> [\d]:+ {% ast.makeNumber %}
+number -> "-":? [\d]:+ {% ast.makeNumber %}
 
 
 _  -> wschar:* {% ast.skip %}
