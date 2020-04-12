@@ -207,8 +207,12 @@ class Process {
   }
 
   setLine(line) {
-    if (typeof line !== 'number' && line >= this.frame.func.code.length) {
+    if (typeof line !== 'number') {
       throw new OddLineError(`Process ${this.pid} tried to jump to line ${line} which isnt even real`)
+    }
+    if (line >= this.frame.func.code.length) {
+      this.frame.write('__return__', h('no_return'))
+      this.returnFromFunction()
     }
     this.frame.line = line
   }
@@ -234,7 +238,7 @@ class Process {
   executeInstruction() {
     let instruction
     try {
-      instruction = this.getCurrentInstruction(this.getCurrentInstruction())
+      instruction = this.getCurrentInstruction()
       evaluateInstruction(this, instruction)
     } catch (err) {
       if (err instanceof RuntimeError) {

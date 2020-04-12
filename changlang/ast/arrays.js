@@ -55,10 +55,10 @@ function makeString(d) {
   d = helpers.strip(d)
   d = d.flat(Infinity)
   d = d.join('')
-    .replace('\\n','\n')
-    .replace('\\t','\t')
-    .replace('\\r','\r')
-    .replace('\\0','\0')
+    .replace(/\\n/g,'\n')
+    .replace(/\\t/g,'\t')
+    .replace(/\\r/g,'\r')
+    .replace(/\\0/g,'\0')
   return {
     type: 'arrayLitterallImmediate',
     entries: {array: d.split('').map(c => c.charCodeAt(0))}

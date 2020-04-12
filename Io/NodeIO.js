@@ -1,4 +1,5 @@
 const {h, randomHash} = require('../util/hash.js')
+const {toJsString} = require('../util/strings.js')
 const readline = require('readline')
 const process = require('process')
 const fs = require('fs').promises
@@ -64,7 +65,7 @@ const ioRoutines = {
   },
 
   [h('load_module')]: async (worker, message) => {
-    const moduleName = message.payload[0]
+    const moduleName = toJsString(message.payload[0])
     const filePaths = await fs.readdir('.')
     const moduleFiles = filePaths.filter(path => /.*\.tbn$/.test(path))
     for (let file of moduleFiles) {

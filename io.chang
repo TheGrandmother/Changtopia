@@ -1,0 +1,94 @@
+module io
+
+def erase()
+  bif:send(0, $move_cursor, -1, 0)
+  bif:send(0, $print_string, ' ')
+  bif:send(0, $move_cursor, -1, 0)
+  return 0
+end
+
+def build_input(input_string, input)
+  match input
+    13 ->
+      return [$done, input_string]
+    end
+    127 ->
+      match input_string
+        [s, <head>, _] ->
+          erase()
+          return [s, <head>]
+        end
+        [s, _] ->
+          erase()
+          return [s]
+        end
+        [_] ->
+          erase()
+          return []
+        end
+        [] ->
+          return []
+        end
+      end
+    end
+    whatever ->
+      bif:send(0, $print_string, [input])
+      return [<input_string>, input]
+    end
+  end
+  return $whatever
+end
+
+def _get_line(input_string, sender, payload)
+  match sender
+    0 ->
+      match payload
+        [$input_data, d] ->
+          thing = build_input(input_string, d)
+          match thing
+            [$done, stuff] ->
+              return stuff
+            end
+            whatever ->
+              input_string = thing
+            end
+          end
+        end
+        whatever ->
+          bif:send(0, $print_string, 'Got some starnge shit')
+          bif:send(0, $print_raw, payload)
+        end
+      end
+    end
+    whatever ->
+      bif:send(0, $print_string, '>Got a message from someone completley different!?')
+    end
+  end
+  return bif:listen('io', _get_line, input_string)
+end
+
+def get_line()
+  bif:send(0, $print_string, '>')
+  return bif:listen('io', _get_line, '')
+end
+
+def _print_list(list)
+  match list
+    [] ->
+      return $ok
+    end
+    [thing, <rest>] ->
+      bif:send(0, $print_string, '  ')
+      bif:send(0, $print_string, thing)
+      bif:send(0, $print_string, ',\n')
+      return _print_list(rest)
+    end
+  end
+end
+
+def print_list(list)
+  bif:send(0, $print_string, '[\n')
+  _print_list(list)
+  bif:send(0, $print_string, ']\n')
+  return $ok
+end

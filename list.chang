@@ -1,0 +1,39 @@
+module list
+
+def flatten(lists)
+  return _flatten(lists, [])
+end
+
+def _flatten(lists, acc)
+  match lists
+    [] ->
+      return acc
+    end
+    [x] ->
+      return [<acc>, <x>]
+    end
+    [head, <tail>] ->
+      return _flatten(tail, [<acc>, <head>])
+    end
+  end
+  return acc
+end
+
+def split_by(list, delimiter)
+  return _split_by(list, delimiter, [], [])
+end
+
+def _split_by(list, delimiter, current_word, res)
+  match list
+    [] ->
+      return [<res>, current_word]
+    end
+    [thing, <tail>] ->
+      if thing == delimiter
+        return _split_by(tail, delimiter,  [], [<res>, current_word])
+      end
+      return _split_by(tail, delimiter, [<current_word>, thing], res)
+    end
+  end
+  return $ok
+end
