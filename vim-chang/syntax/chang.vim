@@ -108,3 +108,10 @@ highlight link i Underlined
 highlight link j Ignore
 highlight link k Error
 highlight link l Todo
+
+
+syn region changFoldMatch
+      \ start="def"
+      \ end="end"
+      \ transparent fold
+      \ keepend extend
