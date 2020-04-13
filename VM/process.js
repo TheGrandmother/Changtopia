@@ -261,7 +261,7 @@ class Process {
             this.sendMessage({
               recipient: this.handlingRequest.sender,
               requestId: this.handlingRequest.id,
-              payload: [h('error'), err.errorAtom, this.pid, msg]})
+              payload: [h('error'), err.errorAtom, msg]})
           }
           this.waiting = false
           this.finished = true

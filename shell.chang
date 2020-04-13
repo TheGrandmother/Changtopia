@@ -61,9 +61,16 @@ def spawn_module(name)
     $ok ->
       return $ok
     end
-    [the_fuck, something, <msg>] ->
-      bif:send(0, $print_string, list:flatten([name, ' Sent us some strange shit...\n', msg, '\n']))
+    [the_fuck, something, msg] ->
+      bif:send(0, $print_string, list:flatten([name, ' Why is this not an error...\n', msg, '\n']))
       bif:send(0, $print_raw, msg)
+      bif:send(0, $print_raw, the_fuck)
+      bif:send(0, $print_raw, something)
+      bif:send(0, $print_raw, $error)
+      return $ok
+    end
+    whatever ->
+      bif:send(0, $print_string, list:flatten([name, ' Sent us some strange shit...\n', msg, '\n']))
       return $ok
     end
   end
