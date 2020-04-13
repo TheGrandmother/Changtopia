@@ -1,4 +1,5 @@
 const {h, resolveHash} = require('../../util/hash.js')
+const {toJsString} = require('../../util/strings.js')
 
 const processControlFunctions = [
   {
@@ -26,17 +27,15 @@ const processControlFunctions = [
     functionId: 'listen',
     bif: true,
     exec: (process, returnLocation, module, functionId, ...args) => {
-      process.listen(String.fromCharCode(...module), functionId, returnLocation, args)
+      process.listen(toJsString(module), functionId, returnLocation, args)
       return 0
     }
   },
   {
     functionId: 'spawn',
     bif: true,
-    exec: (process, returnLocation, functionId, ...args) => {
-      const _args = []
-      args.forEach(a => _args.push(process.frame.data[a]))
-      return process.vm.spawnProcess(functionId, _args)
+    exec: (process, returnLocation, module, functionId, ...args) => {
+      return process.vm.spawnProcess(toJsString(module), functionId, args)
     }
   },
   {

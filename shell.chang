@@ -34,7 +34,8 @@ end
 def run_module(arg)
   match arg
     [name] ->
-      return bif:run(name, '_entry')
+      --return bif:run(name, '_entry')
+      return spawn_module(name)
     end
     [] ->
       bif:send(0, $print_string, 'No module name provided\n')
@@ -43,6 +44,44 @@ def run_module(arg)
     whatever ->
       bif:send(0, $print_string, 'Run only takes the name of the module as an argument\n')
       return $fail
+    end
+  end
+  return $ok
+end
+
+def spawn_module(name)
+  pid = bif:spawn('main', _spawn_module, name)
+  bif:link(pid)
+  response = bif:request(pid, $run)
+  match response
+    [$error, error_atom, msg] ->
+      bif:send(0, $print_string, list:flatten(['Error running: ', name, ':\n  ', msg, '\n']))
+      return $error
+    end
+    $ok ->
+      return $ok
+    end
+    [the_fuck, something, <msg>] ->
+      bif:send(0, $print_string, list:flatten([name, ' Sent us some strange shit...\n', msg, '\n']))
+      bif:send(0, $print_raw, msg)
+      return $ok
+    end
+  end
+  bif:unlink(pid)
+  return $ok
+end
+
+def _spawn_module(name)
+  return bif:listen('main', _spawn_listener, name)
+end
+
+def _spawn_listener(name, sender, payload)
+  match payload
+    $run ->
+      return bif:run(name, '_entry')
+    end
+    whatever ->
+      return $unknown_message
     end
   end
   return $ok
