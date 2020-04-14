@@ -212,8 +212,9 @@ class Process {
     if (line >= this.frame.func.code.length) {
       this.frame.write('__return__', h('no_return'))
       this.returnFromFunction()
+    } else {
+      this.frame.line = line
     }
-    this.frame.line = line
   }
 
   returnFromFunction() {
@@ -266,7 +267,7 @@ class Process {
           this.finished = true
         } else {
           console.error('Frame:\n',this.frame.data, '\ninstruction:\n', instruction)
-          //pretty(this.pid, this.frame.functionId, this.frame.line, this.getCurrentInstruction())
+          pretty(this.pid, this.frame.functionId, this.frame.line, this.getCurrentInstruction())
           throw err
         }
       } else {
