@@ -178,6 +178,11 @@ class Process {
     }
     this.stack.addFrame(frame)
     this.frame = frame
+
+    // It is the binding of the listener that constitutes the call
+    // that when returned from, should increment the line counter.
+    // Not the return from the listener
+    this.frame.omittIncrement = true
   }
 
   bindNormalFunction(func, returnLocation, args) {
@@ -232,7 +237,9 @@ class Process {
     currentFrame.returnCallback(returnValue, oldFrame)
     this.stack.frames.push(oldFrame)
     this.frame = oldFrame
-    this.incrementLine()
+    if ( !currentFrame.omittIncrement) {
+      this.incrementLine()
+    }
   }
 
   executeInstruction() {
