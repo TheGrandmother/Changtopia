@@ -1,6 +1,6 @@
 CHANGPILE=node changlang/compiler.js
 
-changlang/compiled_grammar.js:
+changlang/compiled_grammar.js: changlang/grammar.ne
 	yarn nearleyc changlang/grammar.ne -o changlang/compiled_grammar.js
 
 bob.tbn: bob.chang changlang/compiled_grammar.js
@@ -15,7 +15,9 @@ list.tbn: list.chang changlang/compiled_grammar.js
 shell.tbn: shell.chang bob.tbn list.tbn io.tbn changlang/compiled_grammar.js
 	${CHANGPILE} -i $< -o $@
 
-os: shell.tbn
+all: shell.tbn list.tbn io.tbn bob.tbn changlang/compiled_grammar.js
+
+run: shell.tbn
 	node main.js shell.tbn
 
 clean:

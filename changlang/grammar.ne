@@ -92,44 +92,44 @@ name_tuple ->
 
 ident_list ->
     _ident_list                                                               {% ast.makeIdentList %}
-  | _ident_list _ ","                                                         {% ast.makeIdentList %}
+  | _ident_list _ "," "\n":?                                                  {% ast.makeIdentList %}
 
 _ident_list ->
     identifier                                                                {% ast.flattenAndStrip %}
-  | _ident_list _ "," _ identifier                                            {% ast.flattenAndStrip %}
+  | _ident_list _ "," "\n":? _ identifier                                            {% ast.flattenAndStrip %}
 
 expr_tuple ->
     "(" _ expr_list _ ")"                                                     {% ast.makeTuple %}
   | "(" _ ")"                                                                 {% ast.makeTuple %}
 
 array_litteral ->
-    "[" _ repack_list _ "]"                                                   {% ast.makeArrayLitteral %}
+    "[" (_ "\n"):? _ repack_list _ ("\n" _):? "]"                                                   {% ast.makeArrayLitteral %}
   | "[" _ "]"                                                                 {% ast.makeArrayLitteral %}
 
 repack_list ->
     _repack_list
-  | _repack_list _ ","
+  | _repack_list _ "," "\n":?
 
 _repack_list ->
     expr
   | array_blob
-  | _repack_list _ "," _ expr
-  | _repack_list _ "," _ array_blob
+  | _repack_list _ "," "\n":? _ expr
+  | _repack_list _ "," "\n":? _ array_blob
 
 _repack ->
     expr_list
-  | expr_list _ "," _ array_blob
+  | expr_list _ "," "\n":? _ array_blob
 
 array_blob -> "<" _ identifier _ ">"                                          {% ast.makeBlob %}
 
 unpack ->
-     "[" _ _unpack _ "]"                                                      {% ast.makeUnpack %}
+     "[" (_ "\n"):? _ _unpack _ "\n":? "]"                                                      {% ast.makeUnpack %}
 
 _unpack ->
     ident_list                                                                {% ast.strip %}
-  | (_ident_list _ "," {% ast.strip %}):? _
+  | (_ident_list _ "," "\n":? {% ast.strip %}):? _
     array_blob
-    _ ("," _ _ident_list {% ast.strip %}):?
+    _ ("," ("\n" _):? _ident_list {% ast.strip %}):?
 
 
 string ->

@@ -59,7 +59,7 @@ function compile() {
 
   const rawInput = fs.readFileSync(argv.input).toString()
 
-  const input = rawInput.replace(/--.*$/mg,'')
+  const input = rawInput.replace(/--.*$/mg,'').replace(/^\s*$/mg,'')
 
   const functions = parse(input)
   if (argv.a) {
