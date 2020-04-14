@@ -58,6 +58,7 @@ class Process {
     if (module === 'bif') {
       const retval = func.exec(this, returnLocation, ...args)
       this.frame.write(returnLocation, retval)
+      this.incrementLine()
     } else {
       this.bindNormalFunction(func, returnLocation, args)
     }
@@ -201,8 +202,6 @@ class Process {
     if (this.frame.line >= this.frame.func.code.length) {
       this.frame.write('__return__', h('no_return'))
       this.returnFromFunction()
-      this.status = 'End of code'
-      this.finished = true
     }
   }
 
@@ -230,9 +229,9 @@ class Process {
     const returnValue = currentFrame.read('__return__')
     oldFrame.write(currentFrame.resLocation, returnValue)
     currentFrame.returnCallback(returnValue, oldFrame)
-
     this.stack.frames.push(oldFrame)
     this.frame = oldFrame
+    this.incrementLine()
   }
 
   executeInstruction() {
