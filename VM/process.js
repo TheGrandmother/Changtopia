@@ -58,8 +58,10 @@ class Process {
     const func = this.getFunction(module, functionId)
     if (module === 'bif') {
       const retval = func.exec(this, returnLocation, ...args)
-      this.frame.write(returnLocation, retval)
-      this.incrementLine()
+      if (retval !== h('__ignore_return')) {
+        this.frame.write(returnLocation, retval)
+        this.incrementLine()
+      }
     } else {
       this.bindNormalFunction(func, returnLocation, args)
     }
@@ -179,13 +181,6 @@ class Process {
   }
 
   bindNormalFunction(func, returnLocation, args) {
-    const derpstring = `
-    =======
-    The function ${func.functionId}
-    received these arguments ${args}\n
-    We are putting it at these locations:  ${func.argLocations}
-    `
-
     if (func.argLocations.length !== args.length) {
       throw new ArgumentCountError(`Argument length mismatch calling ${func.functionId}. You gave me [${args}] but i need stuff to fill [${func.argLocations}]`)
 
@@ -193,7 +188,6 @@ class Process {
     const argData = {}
 
     func.argLocations.forEach((loc, i) => argData[loc] = args[i])
-//    this.vm.log(derpstring + `They were bound to ${inspect(argData, false, null, true)}`)
 
     const frame = new Frame(func, returnLocation, argData)
     this.stack.addFrame(frame)
@@ -277,7 +271,6 @@ class Process {
         } else {
           console.error(this.buildErrorMessage(err.message, instruction))
           //console.error('Frame:\n',this.frame.data, '\ninstruction:\n', instruction)
-          //pretty(this.pid, this.frame.functionId, this.frame.line, this.getCurrentInstruction())
           throw err
         }
       } else {

@@ -98,8 +98,8 @@ const processControlFunctions = [
     exec: (process, returnLocation, _moduleName, _functionName, ...args) => {
       const moduleName = String.fromCharCode(..._moduleName)
       const functionName = String.fromCharCode(..._functionName)
-      process.incrementLine()
       process.bindFunction(moduleName, functionName, returnLocation, args)
+      return h('__ignore_return')
     }
   }
 ]
