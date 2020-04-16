@@ -27,7 +27,7 @@ const processControlFunctions = [
     functionId: 'listen',
     bif: true,
     exec: (process, returnLocation, module, functionId, ...args) => {
-      process.listen(toJsString(module), functionId, returnLocation, args)
+      process.listen(toJsString(module), toJsString(functionId), returnLocation, args)
       return 0
     }
   },
@@ -35,7 +35,7 @@ const processControlFunctions = [
     functionId: 'spawn',
     bif: true,
     exec: (process, returnLocation, module, functionId, ...args) => {
-      return process.vm.spawnProcess(toJsString(module), functionId, args)
+      return process.vm.spawnProcess(toJsString(module), toJsString(functionId), args)
     }
   },
   {

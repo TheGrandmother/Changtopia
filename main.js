@@ -14,7 +14,14 @@ function spawnVm(modules) {
     const worker = new Worker('./VM/vm.js', {workerData: modules})
     console.log('VM spawned')
     worker.on('error', reject)
-    worker.on('message', (message) => ioHandler.handleMessage(worker, message))
+    worker.on('message', (message) => {
+      const {internal, args} = message
+      if (internal) {
+        console.log(...args)
+      } else {
+        ioHandler.handleMessage(worker, message)
+      }
+    })
     worker.on('exit', (code) => {
       if (code !== 0) {
         reject(new Error(`Worker stopped with exit code ${code}`))
@@ -30,7 +37,7 @@ async function main () {
   const [,, inFile] = process.argv
   const modules = JSON.parse((await fs.readFile(inFile)).toString())
   await spawnVm(modules)
-  console.log('Things are cool and we are done')
+  process.exit()
 }
 
-main()
+main().then().catch((err) => {console.error(err); process.exit(420)})

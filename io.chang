@@ -64,12 +64,19 @@ def _get_line(input_string, sender, payload)
       bif:send(0, $print_string, '>Got a message from someone completley different!?')
     end
   end
-  return bif:listen('io', _get_line, input_string)
+  return bif:listen('io', '_get_line', input_string)
 end
 
 def get_line()
   bif:send(0, $print_string, '>')
-  return bif:listen('io', _get_line, '')
+  return bif:listen('io', '_get_line', '')
+end
+
+def print_tabs(n)
+  if n > 0
+    bif:send(0, $print_string, '  ')
+    print_tabs(n)
+  end
 end
 
 def _print_list(list)
@@ -90,5 +97,10 @@ def print_list(list)
   bif:send(0, $print_string, '[\n')
   _print_list(list)
   bif:send(0, $print_string, ']\n')
+  return $ok
+end
+
+def print_string(str)
+  bif:send(0, $print_string, str)
   return $ok
 end

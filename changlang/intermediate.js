@@ -22,9 +22,9 @@ function makeAssignRef(name) {
   return {ref: `${name}_a${__currentIndex}`, name: name}
 }
 
-function makeArgumentRef(name) {
+function makeArgumentRef(name, order) {
   __currentIndex += 1
-  return {ref: `${name}_arg${__currentIndex}`, name, arg: true}
+  return {ref: `${name}_arg${__currentIndex}`, name, arg: true, order}
 }
 
 function makeInstruction(id, args) {
@@ -288,10 +288,9 @@ function generateIntermediateCode(ast) {
       throw new Error(`A function named ${name} has already been defined`)
     }
     state.refs = {}
-    functions.forEach(({name}) => state.refs[name] = {constant: name})
     state.labels = {}
-    Object.values(args).forEach(argument => {
-      state.refs[argument.name] = makeArgumentRef(argument.name)
+    Object.values(args).forEach((argument, i) => {
+      state.refs[argument.name] = makeArgumentRef(argument.name, i)
     })
     state.returnRef = {constant: '__return__'}
 

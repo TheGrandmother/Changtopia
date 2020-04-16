@@ -1,12 +1,21 @@
 module main
 -- Lets try to write the basics for a shell like thing!
 
-def _entry()
-  bob = 'guggenheim and such'
-  match bob
-    'guggenheim and such' ->
-      bif:send(0, $print_string, 'I printa da thing')
-    end
-  end
+def iShouldNoBeAref()
   return 0
+end
+
+def willhelm(a, b)
+  return a + b
+end
+
+def otto(x ,willhelm)
+  willhelm(69,42)
+  bif:send(0, $print_raw, x)
+  bif:send(0, $print_raw, willhelm)
+  return $ok
+end
+
+def _entry()
+  otto(420, 1337)
 end

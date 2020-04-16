@@ -6,6 +6,11 @@ function pretty(pid, functionId, line, inst) {
   }
 }
 
+function prettyInst(inst) {
+  return inst ? `${inst.id} ${inst.args.join(', ')}` : 'Instruction unkown'
+}
+
 module.exports = {
-  pretty
+  pretty,
+  prettyInst
 }

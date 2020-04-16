@@ -29,7 +29,6 @@ const controlInstructions = {
   },
 
   'return' : {
-    aCount: 0,
     name: 'return',
     evaluate: (process) => {
       process.returnFromFunction()

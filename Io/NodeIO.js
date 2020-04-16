@@ -6,15 +6,12 @@ const fs = require('fs').promises
 const ansiEscapes = require('ansi-escapes')
 
 // Prepare stdin to fuck up our lives
-process.stdin.setRawMode(true)
-process.stdin.setEncoding('utf8')
-process.stdin.on( 'data',(key) => {
-  if ( key === '\u0003' ) {
-    process.exit()
-  }
-})
 
 const ioRoutines = {
+  [h('shut_down')]: async () => {
+    process.exit()
+  },
+
   [h('print_raw')]: async (worker, message) => {
     console.log(`Printing: From ${message.sender}: ${message.payload}`)
   },
@@ -33,6 +30,14 @@ const ioRoutines = {
   },
 
   [h('get_input_stream')]:async (worker, message) => {
+    process.stdin.setRawMode(true)
+    process.stdin.setEncoding('utf8')
+    process.stdin.on( 'data',(key) => {
+      if ( key === '\u0003' ) {
+        process.exit()
+      }
+    })
+
     if (process.stdin.readable) {
       worker.postMessage({sender: 0, recipient: message.sender, id: randomHash(), payload: [h('ok')], requestId: message.id})
     }

@@ -1,6 +1,7 @@
 const {randomHash, h} = require('../util/hash')
 const {evaluateInstruction} = require('./instructions/ops.js')
-const {pretty} = require('./instructions/pretty.js')
+const {pretty, prettyInst} = require('./instructions/pretty.js')
+const {inspect} = require('util')
 const {
   LocationEmptyError,
   UnknownFunctionError,
@@ -154,17 +155,18 @@ class Process {
     }
 
     const {func, returnLocation, additionalArgs} = this.handler
-    const {argLocations} = func
     const args = [...additionalArgs, sender, ...payload]
-    if (argLocations.length !== args.length) {
-      throw new ArgumentCountError(`Argument length mismatch calling ${func.functionId}. You gave me ${args} but I need stuff to fill ${argLocations}`)
-    }
-    const argData = {}
-    argLocations.forEach((loc, i) => argData[loc] = args[i])
 
-    let frame = null
+    // This will push the handler frame to the stack
+    this.bindNormalFunction(func, returnLocation, args)
+
+    // It is the binding of the listener that constitutes the call
+    // that when returned from, should increment the line counter.
+    // Not the return from the listener
+    this.frame.omittIncrement = true
+
     if (requiresResponse) {
-      frame = new Frame(func, returnLocation, argData,
+      this.frame.returnCallback =
         (res, callingFrame) => {
           this.handlingRequest = null
           if (this.vm.pidExists(sender)) {
@@ -172,27 +174,27 @@ class Process {
           } else {
             callingFrame.write(returnLocation, h('no_such_pid'))
           }
-        })
-    } else {
-      frame = new Frame(func, returnLocation, argData)
+        }
     }
-    this.stack.addFrame(frame)
-    this.frame = frame
-
-    // It is the binding of the listener that constitutes the call
-    // that when returned from, should increment the line counter.
-    // Not the return from the listener
-    this.frame.omittIncrement = true
   }
 
   bindNormalFunction(func, returnLocation, args) {
+    const derpstring = `
+    =======
+    The function ${func.functionId}
+    received these arguments ${args}\n
+    We are putting it at these locations:  ${func.argLocations}
+    `
 
     if (func.argLocations.length !== args.length) {
       throw new ArgumentCountError(`Argument length mismatch calling ${func.functionId}. You gave me [${args}] but i need stuff to fill [${func.argLocations}]`)
 
     }
     const argData = {}
+
     func.argLocations.forEach((loc, i) => argData[loc] = args[i])
+//    this.vm.log(derpstring + `They were bound to ${inspect(argData, false, null, true)}`)
+
     const frame = new Frame(func, returnLocation, argData)
     this.stack.addFrame(frame)
     this.frame = frame
@@ -273,8 +275,9 @@ class Process {
           this.waiting = false
           this.finished = true
         } else {
-          console.error('Frame:\n',this.frame.data, '\ninstruction:\n', instruction)
-          pretty(this.pid, this.frame.functionId, this.frame.line, this.getCurrentInstruction())
+          console.error(this.buildErrorMessage(err.message, instruction))
+          //console.error('Frame:\n',this.frame.data, '\ninstruction:\n', instruction)
+          //pretty(this.pid, this.frame.functionId, this.frame.line, this.getCurrentInstruction())
           throw err
         }
       } else {
@@ -286,6 +289,20 @@ class Process {
     }
   }
 
+  buildErrorMessage(msg, instruction) {
+    const stackTrace = this.stack.getStackTrace()
+    return (
+      '================================\n' +
+      'An unhandled error occured!\n' +
+      `${msg}\n` +
+      `Running in process ${this.pid}\n` +
+      `Evaluating line ${this.frame.line}: ${prettyInst(instruction)}\n`+
+      `Stack trace\n${stackTrace}\n` +
+      'Frame data:\n' +
+      `${inspect(this.frame.data, false, null, true)}\n` +
+      '================================\n')
+  }
+
 }
 
 class Stack {
@@ -295,6 +312,10 @@ class Stack {
 
   addFrame (frame) {
     this.frames.push(frame)
+  }
+
+  getStackTrace() {
+    return this.frames.map((frame) => `  ${frame.functionId}(${frame.line})`).reverse().join('\n')
   }
 }
 

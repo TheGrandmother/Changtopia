@@ -49,8 +49,28 @@ def run_module(arg)
   return $ok
 end
 
+def help()
+  bif:send(0, $print_string, 'Welcome to the ridicously pointless "operating system"\n')
+  bif:send(0, $print_string, 'This is what you can do, which ain\'t much\n')
+  return _help(commands())
+end
+
+def _help(commands)
+  match commands
+    [] ->
+      return $ok
+    end
+    [entry, <rest>] ->
+      [name, arg_count, _, help_text] = entry
+      bif:send(0, $print_string, list:flatten(['\t', name, ': ', help_text, '\n']))
+      return _help(rest)
+    end
+  end
+  return $ok
+end
+
 def spawn_module(name)
-  pid = bif:spawn('main', _spawn_module, name)
+  pid = bif:spawn('main', '_spawn_module', name)
   bif:link(pid)
   response = bif:request(pid, $run)
   match response
@@ -62,11 +82,6 @@ def spawn_module(name)
       return $ok
     end
     [the_fuck, something, msg] ->
-      bif:send(0, $print_string, list:flatten([name, ' Why is this not an error...\n', msg, '\n']))
-      bif:send(0, $print_raw, msg)
-      bif:send(0, $print_raw, the_fuck)
-      bif:send(0, $print_raw, something)
-      bif:send(0, $print_raw, $error)
       return $ok
     end
     whatever ->
@@ -79,7 +94,7 @@ def spawn_module(name)
 end
 
 def _spawn_module(name)
-  return bif:listen('main', _spawn_listener, name)
+  return bif:listen('main', '_spawn_listener', name)
 end
 
 def _spawn_listener(name, sender, payload)
@@ -110,6 +125,10 @@ def process_command(input)
           run_module(arguments)
           return $ok
         end
+        'help' ->
+          help()
+          return $ok
+        end
         'quit' ->
           bif:send(0, $print_string, 'Thanks for nothing... cya l8r\n')
           return $quit
@@ -124,10 +143,63 @@ def process_command(input)
   return $ok
 end
 
+def quit()
+  bif:send(0, $quit)
+  return $ok
+end
+
+
+def run_command(input)
+  [name, <arguments>] = input
+  match find_command(name)
+    $not_found ->
+      bif:send(0, $print_string, list:flatten(['What is even "', name, '"?\n']))
+      return $ok
+    end
+    [_, arg_count, thing, __] ->
+      [module, function] = thing
+      return bif:run(module, function)
+    end
+  end
+  return $ok
+end
+
+def commands()
+  -- Commands ar an array on the form:
+  -- name, noArgs, [module, function], help_text
+  bob = [
+    ['quit', 0, ['main', 'quit'], 'Quits the VM'],
+    ['run', 1, ['main', 'run_module'], 'Runs the specified module'],
+    ['load', 1, ['main', 'load_module'], 'Loads the specified module'],
+    ['help', 0, ['main', 'help'], 'Prints this.. duh']
+  ]
+  return bob
+end
+def find_command(name)
+  bob = commands()
+  return _find_command(name, bob)
+end
+
+def _find_command(name, commands)
+  match commands
+    [] ->
+      return $not_found
+    end
+    [command, <rest>] ->
+      [command_name, <_>] = command
+      if bif:array_compare(name, command_name)
+        return command
+      end
+      return _find_command(name, rest)
+    end
+  end
+  return $ok
+end
+
 def prompt()
   input_string = io:get_line()
-  bif:send(0, $print_string, '\n')
-  match process_command(list:split_by(input_string, " "))
+  io:print_string('\n')
+  match run_command(list:split_by(input_string, " "))
     $quit ->
       return $quit
     end
@@ -140,9 +212,7 @@ end
 
 def _entry()
   bif:send(0, $print_string, '\n')
-  bif:send(0, $print_string, '\n')
-  bif:send(0, $print_string, '\n')
-  bif:send(0, $print_string, 'Starting Shell.\nLoading Modules:\n')
+  bif:send(0, $print_string, 'Starting An even cooler Shell.\nLoading Modules:\n')
   match bif:request(0, $load_module, 'io')
     $module_not_found ->
       bif:send(0, $print_string, 'Could not load io module\n')

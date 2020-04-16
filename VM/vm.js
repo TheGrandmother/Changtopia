@@ -20,6 +20,10 @@ class Vm {
     parentPort.on('message', (message) => this.handleExternalMessage(message))
   }
 
+  log(...args) {
+    parentPort.postMessage({internal: true, args})
+  }
+
   pidExists(pid) {
     return !!this.processes[pid]
   }

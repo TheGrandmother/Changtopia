@@ -66,3 +66,5 @@ typings/
 changlang/compiled_grammar.js
 *.swl
 *.swm
+*.swj
+*.swk
