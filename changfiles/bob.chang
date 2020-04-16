@@ -1,0 +1,6 @@
+module bob
+
+def _entry()
+  bif:send(0, $print_string, 'WE ARE IN BOB!!!!!!!!!!!!!!\n')
+  return $ok
+end

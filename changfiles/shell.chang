@@ -109,40 +109,6 @@ def _spawn_listener(name, sender, payload)
   return $ok
 end
 
-def process_command(input)
-  match input
-    ' '   ->
-      bif:send(0, $print_string, 'No command provided\n')
-      return $ok
-    end
-    [command, <arguments>] ->
-      match command
-        'load' ->
-          load_module(arguments)
-          return $ok
-        end
-        'run' ->
-          run_module(arguments)
-          return $ok
-        end
-        'help' ->
-          help()
-          return $ok
-        end
-        'quit' ->
-          bif:send(0, $print_string, 'Thanks for nothing... cya l8r\n')
-          return $quit
-        end
-        whatever ->
-          bif:send(0, $print_string, list:flatten(['What is even "', command, '"? I\'ve never heard of such stupidity before.\n']))
-        end
-      end
-      return $seriously
-    end
-  end
-  return $ok
-end
-
 def quit(_)
   bif:send(0, $print_string, 'Thanks for nothing... cya l8r\n')
   bif:send(0, $shut_down)

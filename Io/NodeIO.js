@@ -71,10 +71,10 @@ const ioRoutines = {
 
   [h('load_module')]: async (worker, message) => {
     const moduleName = toJsString(message.payload[0])
-    const filePaths = await fs.readdir('.')
+    const filePaths = await fs.readdir('./tbn_modules')
     const moduleFiles = filePaths.filter(path => /.*\.tbn$/.test(path))
     for (let file of moduleFiles) {
-      const module = JSON.parse((await fs.readFile(file)).toString())
+      const module = JSON.parse((await fs.readFile('./tbn_modules/' + file)).toString())
       if (module.moduleName === moduleName) {
         return worker.postMessage({secret: 'module', sender: 0, recipient: message.sender, id: randomHash(), payload: module, requestId: message.id})
       }

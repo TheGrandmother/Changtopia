@@ -8,7 +8,7 @@ const argv = require('yargs')
   .option('ast-only', {alias: 'a', description: 'Display AST', type:'boolean', default: false})
   .option('intermediate', {alias: 'n', description: 'Display intermediate code', type: 'boolean', default: false})
   .option('input', {alias: 'i', description: 'Input file', type: 'string', default: 'in.chang'})
-  .option('output', {alias: 'o', description: 'output file', type: 'string', default: 'out.tbn'})
+  .option('output', {alias: 'o', description: 'output file', type: 'string'})
   .option('machine', {alias: 'p', description: 'Print machinecode', type: 'boolean', default: false})
   .option('verbose', {alias: 'v', description: 'Print verbose errors', type: 'boolean', default: false})
   .option('show-ambigous', {alias: 's', description: 'Show ambigous parsings', type: 'boolean', default: false})
@@ -57,7 +57,16 @@ function pretty(functions) {
 
 function compile() {
 
-  const rawInput = fs.readFileSync(argv.input).toString()
+  const inPath = argv.input.replace(/(.*)(?:.chang$)/,'$1')
+  let outPath
+  if (!argv.output) {
+    outPath = inPath + '.tbn'
+  } else {
+    outPath = argv.output
+  }
+
+
+  const rawInput = fs.readFileSync(inPath + '.chang').toString()
 
   const input = rawInput.replace(/--.*$/mg,'').replace(/^\s*$/mg,'')
 
@@ -76,7 +85,7 @@ function compile() {
   const compiledFunctions = {}
   Object.keys(intermediateCode.functions).forEach(name => compiledFunctions[name] = generateCode(intermediateCode.functions[name]))
 
-  fs.writeFileSync(argv.output, JSON.stringify({...intermediateCode, functions: compiledFunctions}, undefined, 2))
+  fs.writeFileSync(outPath, JSON.stringify({...intermediateCode, functions: compiledFunctions}, undefined, 2))
 
   if (argv.p) {
     console.log('============================CODE================================')
