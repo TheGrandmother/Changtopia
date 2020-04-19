@@ -49,7 +49,7 @@ def run_module(arg)
   return $ok
 end
 
-def help()
+def help(_)
   bif:send(0, $print_string, 'Welcome to the ridicously pointless "operating system"\n')
   bif:send(0, $print_string, 'This is what you can do, which ain\'t much\n')
   return _help(commands())

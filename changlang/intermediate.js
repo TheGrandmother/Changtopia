@@ -125,7 +125,7 @@ const _generators = {
     const resRhs = makeInterRef(node)
     const lhsCode = generateNode(state, node.lhs, resLhs)
     const rhsCode = generateNode(state, node.rhs, resRhs)
-    const myCode = [makeInstruction('op', [{constant: node.operand}, resLhs, resRhs, res])]
+    const myCode = [makeInstruction('op', [{constant: node.operand}, res, resLhs, resRhs])]
     return lhsCode.concat(rhsCode).concat(myCode)
     // op res_lhs res_rhs res
   },
@@ -292,7 +292,7 @@ function generateIntermediateCode(ast) {
     Object.values(args).forEach((argument, i) => {
       state.refs[argument.name] = makeArgumentRef(argument.name, i)
     })
-    state.returnRef = {constant: '__return__'}
+    state.returnRef = {ref: '__return__'}
 
     if (!generators[body.type]) {
       console.log(body)

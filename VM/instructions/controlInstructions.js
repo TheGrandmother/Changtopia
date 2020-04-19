@@ -9,7 +9,7 @@ const controlInstructions = {
   'jump_if_true' : {
     name: 'jump_if_true',
     evaluate: (process, a1, line) => {
-      if (process.frame.data[a1]) {
+      if (process.frame.read.read(a1)) {
         process.setLine(line)
       } else {
         process.incrementLine()
@@ -20,7 +20,7 @@ const controlInstructions = {
   'jump_if_false' : {
     name: 'jump_if_false',
     evaluate: (process, a1, line) => {
-      if (!process.frame.data[a1]) {
+      if (!process.frame.read(a1)) {
         process.setLine(line)
       } else {
         process.incrementLine()
@@ -39,7 +39,7 @@ const controlInstructions = {
     name: 'call',
     evaluate: (process, module, functionId, returnLocation, ...args) => {
       const _args = []
-      args.forEach(a => _args.push(process.frame.data[a]))
+      args.forEach(a => _args.push(process.frame.read(a)))
       process.bindFunction(module, functionId, returnLocation, _args)
     }
   }

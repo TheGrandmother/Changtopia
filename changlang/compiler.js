@@ -1,9 +1,11 @@
 const grammar = require('./compiled_grammar.js')
 const {generateIntermediateCode} = require('./intermediate.js')
 const {generateCode} = require('./codegen.js')
+const {dropRedundantMoves} = require('./optimize.js')
 const nearley = require('nearley')
 const {inspect} = require('util')
 const fs = require('fs')
+const path = require('path')
 const argv = require('yargs')
   .option('ast-only', {alias: 'a', description: 'Display AST', type:'boolean', default: false})
   .option('intermediate', {alias: 'n', description: 'Display intermediate code', type: 'boolean', default: false})
@@ -11,6 +13,7 @@ const argv = require('yargs')
   .option('output', {alias: 'o', description: 'output file', type: 'string'})
   .option('machine', {alias: 'p', description: 'Print machinecode', type: 'boolean', default: false})
   .option('verbose', {alias: 'v', description: 'Print verbose errors', type: 'boolean', default: false})
+  .option('no-optimize', {alias: 'k', description: 'Disable removal of redundant moves', type: 'boolean', default: false})
   .option('show-ambigous', {alias: 's', description: 'Show ambigous parsings', type: 'boolean', default: false})
   .argv
 
@@ -57,16 +60,16 @@ function pretty(functions) {
 
 function compile() {
 
-  const inPath = argv.input.replace(/(.*)(?:.chang$)/,'$1')
+  const inName = path.basename(argv.input, '.chang')
   let outPath
   if (!argv.output) {
-    outPath = inPath + '.tbn'
+    outPath = './tbn_modules/' + inName + '.tbn'
   } else {
     outPath = argv.output
   }
 
 
-  const rawInput = fs.readFileSync(inPath + '.chang').toString()
+  const rawInput = fs.readFileSync(path.dirname(argv.input) + '/' + inName + '.chang').toString()
 
   const input = rawInput.replace(/--.*$/mg,'').replace(/^\s*$/mg,'')
 
@@ -83,6 +86,11 @@ function compile() {
     console.log(inspect(intermediateCode, false, null, true))
   }
   const compiledFunctions = {}
+
+  if (!argv.noOptimize) {
+    Object.keys(intermediateCode.functions).forEach(name => intermediateCode.functions[name].body = dropRedundantMoves(intermediateCode.functions[name].body))
+  }
+
   Object.keys(intermediateCode.functions).forEach(name => compiledFunctions[name] = generateCode(intermediateCode.functions[name]))
 
   fs.writeFileSync(outPath, JSON.stringify({...intermediateCode, functions: compiledFunctions}, undefined, 2))
