@@ -49,13 +49,13 @@ expr ->
     math                                                                      {% ast.makeExpr %}
 
 math ->
-    comparison                                                                {% ast.makeMath %}
-comparison ->
-    comparison _ ("=="  | "!=" | ">" | "<") _ logic                           {% ast.makeMath %}
-  | logic                                                                     {% ast.makeMath %}
+    logic                                                                {% ast.makeMath %}
 logic ->
-    logic _ ("&&" | "||") _ arithmetic                                        {% ast.makeMath %}
-  | arithmetic                                                                {% ast.makeMath %}
+    logic _ ("&&" | "||") _ comparison                                        {% ast.makeMath %}
+  | comparison                                                                {% ast.makeMath %}
+comparison ->
+    comparison _ ("=="  | "!=" | ">" | "<") _ arithmetic                           {% ast.makeMath %}
+  | arithmetic                                                                     {% ast.makeMath %}
 arithmetic ->
     arithmetic _ ("+" | "-") _ multiplicative                                 {% ast.makeMath %}
   | multiplicative                                                            {% ast.makeMath %}
