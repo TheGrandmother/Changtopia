@@ -17,13 +17,6 @@ const processControlFunctions = [
     }
   },
   {
-    functionId: 'pid',
-    bif: true,
-    exec: (process) => {
-      return process.pid
-    }
-  },
-  {
     functionId: 'listen',
     bif: true,
     exec: (process, returnLocation, module, functionId, ...args) => {

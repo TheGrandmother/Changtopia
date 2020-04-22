@@ -1,14 +1,14 @@
 module main
 -- Lets try to write the basics for a shell like thing!
 
+def bob()
+  return 5
+end
 
 def _entry()
-  x = 1
-  y = 2
-  p = y
-  p = y + 1
-  a = x * y
-  z = x + y + a
-  bif:send(0, $print_raw, z)
-  return a
+  match 5
+    bob() ->
+      return 420
+    end
+  end
 end

@@ -82,7 +82,19 @@ class OddLineError extends RuntimeError {
 
 class NameSpaceError extends RuntimeError {
   constructor(msg) {
-    super(msg, h('name_space_error'))
+    super(msg, h('namespace_error'))
+  }
+}
+
+class UnknownInstance extends RuntimeError {
+  constructor(msg) {
+    super(msg, h('unknown_instance'))
+  }
+}
+
+class MallformedPid extends RuntimeError {
+  constructor(msg) {
+    super(msg, h('mallformed_pid'))
   }
 }
 
@@ -100,5 +112,7 @@ module.exports = {
   OddLineError,
   NameSpaceError,
   UnknownModuleError,
-  LocationEmptyError
+  LocationEmptyError,
+  UnknownInstance,
+  MallformedPid
 }

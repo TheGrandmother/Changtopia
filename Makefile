@@ -15,7 +15,10 @@ ${BIN}/io.tbn: ${SRC}/io.chang changlang/compiled_grammar.js
 ${BIN}/list.tbn: ${SRC}/list.chang changlang/compiled_grammar.js
 	${CHANGPILE} -i $< -o $@
 
-${BIN}/shell.tbn: ${SRC}/shell.chang ${BIN}/bob.tbn ${BIN}/list.tbn ${BIN}/io.tbn changlang/compiled_grammar.js
+${BIN}/utils.tbn: ${SRC}/utils.chang changlang/compiled_grammar.js
+	${CHANGPILE} -i $< -o $@
+
+${BIN}/shell.tbn: ${SRC}/shell.chang ${BIN}/bob.tbn ${BIN}/list.tbn ${BIN}/io.tbn ${BIN}/utils.tbn changlang/compiled_grammar.js
 	${CHANGPILE} -i $< -o $@
 
 all: ${BIN}/shell.tbn

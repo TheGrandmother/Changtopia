@@ -5,6 +5,8 @@ const process = require('process')
 const fs = require('fs').promises
 const ansiEscapes = require('ansi-escapes')
 
+const PATH = './.tbn_paths/'
+
 // Prepare stdin to fuck up our lives
 
 const ioRoutines = {
@@ -26,7 +28,7 @@ const ioRoutines = {
 
   [h('random')]: async (worker, message) => {
     const val = (Math.random() * Number.MAX_SAFE_INTEGER)
-    worker.postMessage({sender: 0, recipient: message.sender, id: randomHash(), payload: val, requestId: message.id})
+    worker.postMessage({sender: message.recipient, recipient: message.sender, id: randomHash(), payload: val, requestId: message.id})
   },
 
   [h('get_input_stream')]:async (worker, message) => {
@@ -39,11 +41,11 @@ const ioRoutines = {
     })
 
     if (process.stdin.readable) {
-      worker.postMessage({sender: 0, recipient: message.sender, id: randomHash(), payload: [h('ok')], requestId: message.id})
+      worker.postMessage({sender: message.recipient, recipient: message.sender, id: randomHash(), payload: [h('ok')], requestId: message.id})
     }
 
     process.stdin.addListener('data', function(d) {
-      worker.postMessage({sender: 0, recipient: message.sender, id: randomHash(), payload: [[h('input_data'), d.charCodeAt(0)]]})
+      worker.postMessage({sender: message.recipient, recipient: message.sender, id: randomHash(), payload: [[h('input_data'), d.charCodeAt(0)]]})
     })
   },
 
@@ -54,7 +56,7 @@ const ioRoutines = {
     })
     rl.once('data', function (d) {
       console.log('We got dat', d)
-      worker.postMessage({sender: 0, recipient: message.sender, id: randomHash(), payload: d, requestId: message.id})
+      worker.postMessage({sender: message.recipient, recipient: message.sender, id: randomHash(), payload: d, requestId: message.id})
     })
   },
 
@@ -65,7 +67,7 @@ const ioRoutines = {
     })
 
     rl.once('line', function (line){
-      worker.postMessage({sender: 0, recipient: message.sender, id: randomHash(), payload: line.split('').map(c => c.charCodeAt(0)), requestId: message.id})
+      worker.postMessage({sender: message.recipient, recipient: message.sender, id: randomHash(), payload: line.split('').map(c => c.charCodeAt(0)), requestId: message.id})
     })
   },
 
@@ -76,11 +78,11 @@ const ioRoutines = {
     for (let file of moduleFiles) {
       const module = JSON.parse((await fs.readFile('./tbn_modules/' + file)).toString())
       if (module.moduleName === moduleName) {
-        return worker.postMessage({secret: 'module', sender: 0, recipient: message.sender, id: randomHash(), payload: module, requestId: message.id})
+        return worker.postMessage({secret: 'module', sender: message.recipient, recipient: message.sender, id: randomHash(), payload: module, requestId: message.id})
       }
     }
-    return worker.postMessage({sender: 0, recipient: message.sender, id: randomHash(), payload: h('module_not_found'), requestId: message.id})
-  },
+    return worker.postMessage({sender: message.recipient, recipient: message.sender, id: randomHash(), payload: h('module_not_found'), requestId: message.id})
+  }
 }
 
 class NodeIoHandler {

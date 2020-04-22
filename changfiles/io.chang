@@ -1,9 +1,9 @@
 module io
 
 def erase()
-  bif:send(0, $move_cursor, -1, 0)
-  bif:send(0, $print_string, ' ')
-  bif:send(0, $move_cursor, -1, 0)
+  bif:send(bif:io_pid(), $move_cursor, -1, 0)
+  bif:send(bif:io_pid(), $print_string, ' ')
+  bif:send(bif:io_pid(), $move_cursor, -1, 0)
   return 0
 end
 
@@ -32,7 +32,7 @@ def build_input(input_string, input)
       end
     end
     whatever ->
-      bif:send(0, $print_string, [input])
+      bif:send(bif:io_pid(), $print_string, [input])
       return [<input_string>, input]
     end
   end
@@ -40,8 +40,8 @@ def build_input(input_string, input)
 end
 
 def _get_line(input_string, sender, payload)
-  match sender
-    0 ->
+  match utils:pid_compare(sender, bif:io_pid())
+    true ->
       match payload
         [$input_data, d] ->
           thing = build_input(input_string, d)
@@ -55,26 +55,26 @@ def _get_line(input_string, sender, payload)
           end
         end
         whatever ->
-          bif:send(0, $print_string, 'Got some starnge shit')
-          bif:send(0, $print_raw, payload)
+          bif:send(bif:io_pid(), $print_string, 'Got some starnge shit')
+          bif:send(bif:io_pid(), $print_raw, payload)
         end
       end
     end
-    whatever ->
-      bif:send(0, $print_string, '>Got a message from someone completley different!?')
+    false ->
+      bif:send(bif:io_pid(), $print_string, '>Got a message from someone completley different!?\n')
     end
   end
   return bif:listen('io', '_get_line', input_string)
 end
 
 def get_line()
-  bif:send(0, $print_string, '>')
+  bif:send(bif:io_pid(), $print_string, '>')
   return bif:listen('io', '_get_line', '')
 end
 
 def print_tabs(n)
   if n > 0
-    bif:send(0, $print_string, '  ')
+    bif:send(bif:io_pid(), $print_string, '  ')
     print_tabs(n)
   end
 end
@@ -85,22 +85,26 @@ def _print_list(list)
       return $ok
     end
     [thing, <rest>] ->
-      bif:send(0, $print_string, '  ')
-      bif:send(0, $print_string, thing)
-      bif:send(0, $print_string, ',\n')
+      bif:send(bif:io_pid(), $print_string, '  ')
+      bif:send(bif:io_pid(), $print_string, thing)
+      bif:send(bif:io_pid(), $print_string, ',\n')
       return _print_list(rest)
     end
   end
 end
 
 def print_list(list)
-  bif:send(0, $print_string, '[\n')
+  bif:send(bif:io_pid(), $print_string, '[\n')
   _print_list(list)
-  bif:send(0, $print_string, ']\n')
+  bif:send(bif:io_pid(), $print_string, ']\n')
   return $ok
 end
 
+def print_strings(arr)
+  bif:send(bif:io_pid(), $print_string, list:flatten(arr))
+end
+
 def print_string(str)
-  bif:send(0, $print_string, str)
+  bif:send(bif:io_pid(), $print_string, str)
   return $ok
 end

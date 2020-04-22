@@ -4,27 +4,27 @@ module main
 def load_module(arg)
   match arg
     [name] ->
-      match bif:request(0, $load_module, name)
+      match bif:request(bif:io_pid(), $load_module, name)
         $module_not_found ->
-          bif:send(0, $print_string, list:flatten(['Could not find module: ', name, '\n']))
+          io:print_strings(['Could not find module: ', name, '\n'])
           return $fail
         end
         $already_loaded ->
-          bif:send(0, $print_string, list:flatten([name, ' has already been loaded \n']))
+          io:print_strings([name, ' has already been loaded \n'])
           return $ok
         end
         whatever ->
-          bif:send(0, $print_string, list:flatten(['Loaded module: ', name, '\n']))
+          io:print_strings(['Loaded module: ', name, '\n'])
           return $ok
         end
       end
     end
     [] ->
-      bif:send(0, $print_string, 'No module name provided\n')
+      io:print_string('No module name provided\n')
       return $fail
     end
     whatever ->
-      bif:send(0, $print_string, 'Load only takes the name of the module as an argument\n')
+      io:print_string('Load only takes the name of the module as an argument\n')
       return $fail
     end
   end
@@ -38,11 +38,11 @@ def run_module(arg)
       return spawn_module(name)
     end
     [] ->
-      bif:send(0, $print_string, 'No module name provided\n')
+      io:print_string('No module name provided\n')
       return $fail
     end
     whatever ->
-      bif:send(0, $print_string, 'Run only takes the name of the module as an argument\n')
+      io:print_string('Run only takes the name of the module as an argument\n')
       return $fail
     end
   end
@@ -50,8 +50,8 @@ def run_module(arg)
 end
 
 def help(_)
-  bif:send(0, $print_string, 'Welcome to the ridicously pointless "operating system"\n')
-  bif:send(0, $print_string, 'This is what you can do, which ain\'t much\n')
+  io:print_string('Welcome to the ridicously pointless "operating system"\n')
+  io:print_string('This is what you can do, which ain\'t much\n')
   return _help(commands())
 end
 
@@ -62,7 +62,7 @@ def _help(commands)
     end
     [entry, <rest>] ->
       [name, arg_count, _, help_text] = entry
-      bif:send(0, $print_string, list:flatten(['\t', name, ': ', help_text, '\n']))
+      io:print_strings(['\t', name, ': ', help_text, '\n'])
       return _help(rest)
     end
   end
@@ -75,7 +75,7 @@ def spawn_module(name)
   response = bif:request(pid, $run)
   match response
     [$error, error_atom, msg] ->
-      bif:send(0, $print_string, list:flatten(['Error running: ', name, ':\n  ', msg, '\n']))
+      io:print_strings(['Error running: ', name, ':\n  ', msg, '\n'])
       return $error
     end
     $ok ->
@@ -85,7 +85,7 @@ def spawn_module(name)
       return $ok
     end
     whatever ->
-      bif:send(0, $print_string, list:flatten([name, ' Sent us some strange shit...\n', msg, '\n']))
+      io:print_strings([name, ' Sent us some strange shit...\n', msg, '\n'])
       return $ok
     end
   end
@@ -110,8 +110,8 @@ def _spawn_listener(name, sender, payload)
 end
 
 def quit(_)
-  bif:send(0, $print_string, 'Thanks for nothing... cya l8r\n')
-  bif:send(0, $shut_down)
+  io:print_string('Thanks for nothing... cya l8r\n')
+  bif:send(bif:io_pid(), $shut_down)
   return $ok
 end
 
@@ -120,7 +120,7 @@ def run_command(input)
   [name, <arguments>] = input
   match find_command(name)
     $not_found ->
-      bif:send(0, $print_string, list:flatten(['What is even "', name, '"?\n']))
+      io:print_strings(['What is even "', name, '"?\n'])
       return $ok
     end
     [_, arg_count, thing, __] ->
@@ -178,25 +178,26 @@ def prompt()
 end
 
 def _entry()
-  bif:send(0, $print_string, '\n')
-  bif:send(0, $print_string, 'Starting An even cooler Shell.\nLoading Modules:\n')
-  match bif:request(0, $load_module, 'io')
+  bif:send(bif:io_pid(), $print_string, 'Starting the Shell.\nLoading Modules:\n')
+  match bif:request(bif:io_pid(), $load_module, 'io')
     $module_not_found ->
-      bif:send(0, $print_string, 'Could not load io module\n')
-    end
-    whatever ->
-      bif:send(0, $print_string, '  Io module loaded\n')
+      bif:send(bif:io_pid(), $print_string, 'Could not load io module\n')
+      quit([])
     end
   end
-  match bif:request(0, $load_module, 'list')
+  match bif:request(bif:io_pid(), $load_module, 'list')
     $module_not_found ->
-      bif:send(0, $print_string, 'Could not load list module\n')
-    end
-    whatever ->
-      bif:send(0, $print_string, '  List module loaded\n')
+      bif:send(bif:io_pid(), $print_string, 'Could not load list module\n')
+      quit([])
     end
   end
-  bif:request(0, $get_input_stream)
+  match bif:request(bif:io_pid(), $load_module, 'utils')
+    $module_not_found ->
+      bif:send(bif:io_pid(), $print_string, 'Could not load utils module\n')
+      quit([])
+    end
+  end
+  bif:request(bif:io_pid(), $get_input_stream)
   prompt()
   return $ok
 end

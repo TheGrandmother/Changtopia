@@ -1,7 +1,8 @@
 const {Process} = require('./process.js')
-const {h} = require('../util/hash.js')
+const {h, randomHash} = require('../util/hash.js')
 const builtins = require('./builtins/builtins.js')
 const {NoSuchPidError} = require('../errors.js')
+const Pid = require('./pid.js')
 
 const {
   isMainThread, parentPort, workerData
@@ -12,11 +13,11 @@ class Vm {
   constructor() {
     this.modules = {bif: builtins}
     this.processes = {}
-    this.pidCounter = 0
     this.runningProcesses = []
     this.waitingProcesses = []
     this.quantum = 5
     this.openWindow = 1000
+    this.instanceId = randomHash()
     parentPort.on('message', (message) => this.handleExternalMessage(message))
   }
 
@@ -43,7 +44,8 @@ class Vm {
   }
 
   dispatchMessage(message) {
-    if (message.recipient === 0) {
+    message.recipient = Pid.toPid(message.recipient)
+    if (message.recipient.isIo()) {
       this.sendExternal(message)
       return
     }
@@ -59,8 +61,7 @@ class Vm {
   }
 
   spawnProcess(module, entryPoint, args) {
-    this.pidCounter += 1
-    const pid = this.pidCounter
+    const pid = new Pid(this.instanceId)
     const process = new Process(this, pid)
     process.bindFunction(module, entryPoint, 'program_result', args)
     this.processes[pid] = process
