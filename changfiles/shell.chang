@@ -109,9 +109,32 @@ def _spawn_listener(name, sender, payload)
   return $ok
 end
 
+def dump(args)
+  match args
+    [name] ->
+      [_, filePid] = bif:request(bif:io_pid(), $open_file, name)
+      content = bif:request(filePid, $read)
+      io:print_string(content)
+      return $ok
+    end
+    whatever ->
+      return $no_name
+    end
+  end
+  io:print_string('Thanks for nothing... cya l8r\n')
+  bif:send(bif:io_pid(), $shut_down)
+  return $ok
+end
+
 def quit(_)
   io:print_string('Thanks for nothing... cya l8r\n')
   bif:send(bif:io_pid(), $shut_down)
+  return $ok
+end
+
+def ls(_)
+  files = bif:request(bif:io_pid(), $list_files)
+  io:print_string(list:join_with(files, '\n'))
   return $ok
 end
 
@@ -138,7 +161,9 @@ def commands()
     ['quit', 0, ['main', 'quit'], 'Quits the VM'],
     ['run', 1, ['main', 'run_module'], 'Runs the specified module'],
     ['load', 1, ['main', 'load_module'], 'Loads the specified module'],
-    ['help', 0, ['main', 'help'], 'Prints this.. duh']
+    ['ls', 0, ['main', 'ls'], 'Lists existing files'],
+    ['help', 0, ['main', 'help'], 'Prints this.. duh'],
+    ['dump', 1, ['main', 'dump'], 'Dumps the content of the file']
   ]
   return bob
 end

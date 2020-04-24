@@ -8,7 +8,8 @@ const {
   UnknownModuleError,
   ArgumentCountError,
   OddLineError,
-  RuntimeError
+  RuntimeError,
+  UndefinedWrite
 } = require('../errors.js')
 
 class Process {
@@ -59,7 +60,7 @@ class Process {
     if (module === 'bif') {
       const retval = func.exec(this, returnLocation, ...args)
       if (retval !== h('__ignore_return')) {
-        this.frame.write(returnLocation, retval)
+        retval !== undefined && this.frame.write(returnLocation, retval)
         this.incrementLine()
       }
     } else {
@@ -323,6 +324,9 @@ class Frame {
   }
 
   write (location, value) {
+    if (value === undefined && location !== '__dump__') {
+      throw new UndefinedWrite(`Tried to write 'undefined' into ${location}`)
+    }
     this.data[location] = value
     return location
   }

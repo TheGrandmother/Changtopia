@@ -19,6 +19,24 @@ def _flatten(lists, acc)
   return acc
 end
 
+def join_with(list, delim)
+  return _join_with(list, delim, [])
+end
+
+def _join_with(list, delim, acc)
+  match list
+    [x, <rest>] ->
+      return _join_with(rest, delim, [<acc>, <x>, <delim>])
+    end
+    [x] ->
+      return [<acc>, <x>]
+    end
+    [] ->
+      return acc
+    end
+  end
+end
+
 def split_by(list, delimiter)
   return _split_by(list, delimiter, [], [])
 end

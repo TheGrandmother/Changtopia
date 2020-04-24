@@ -1,5 +1,6 @@
 const {h} = require('./util/hash.js')
 
+
 class CompilerError extends Error {
   constructor(msg) {
     super(msg)
@@ -98,6 +99,12 @@ class MallformedPid extends RuntimeError {
   }
 }
 
+class UndefinedWrite extends RuntimeError {
+  constructor(msg) {
+    super(msg, h('undefined_write'))
+  }
+}
+
 module.exports = {
   CodegenError,
   RuntimeError,
@@ -114,5 +121,6 @@ module.exports = {
   UnknownModuleError,
   LocationEmptyError,
   UnknownInstance,
-  MallformedPid
+  MallformedPid,
+  UndefinedWrite
 }

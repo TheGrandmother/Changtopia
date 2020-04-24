@@ -15,7 +15,8 @@ class Pid {
   }
 
   isIo () {
-    return this.instance === 0 && this.host === hostId
+    // return this.instance === 0 && this.host === hostId
+    return this.instance === 0 // the host is broken
   }
 }
 
