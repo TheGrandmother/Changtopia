@@ -4,14 +4,26 @@ const Pid = require('../VM/pid.js')
 const process = require('process')
 const fs = require('fs').promises
 const ansiEscapes = require('ansi-escapes')
+const util = require('util')
+const exec = util.promisify(require('child_process').exec)
 
 const PATH = '.tbn_runtime/'
+
+let inputStreamOwner = null
+let inputStreamHandler = null
+process.stdin.setRawMode(true)
+process.stdin.setEncoding('utf8')
+process.stdin.on('data', key => {
+  if ( key === '\u0003' ) {
+    process.exit()
+  }
+})
 
 class FileInterface {
   constructor (owner, fileName) {
     this.fileName = fileName
     this.owner = owner
-    this.pid = new Pid(0)
+    this.pid = new Pid(0, undefined, owner.host)
 
     this.handlers = {
       [h('read')]: (worker, message) => this.read(worker, message)
@@ -25,9 +37,7 @@ class FileInterface {
   }
 
   async read(worker, message) {
-    console.log(this)
     const content =  await fs.readFile(this.fileName, {encoding: 'utf-8'})
-    console.log(content)
     worker.postMessage(makeReply(message, fromJsString(content)))
   }
 }
@@ -60,22 +70,22 @@ const ioRoutines = {
     worker.postMessage(makeReply(message, val))
   },
 
-  [h('get_input_stream')]:async (worker, message) => {
-    process.stdin.setRawMode(true)
-    process.stdin.setEncoding('utf8')
-    process.stdin.on( 'data',(key) => {
-      if ( key === '\u0003' ) {
-        process.exit()
-      }
-    })
+  [h('get_console_size')]: async (worker, message) => {
+    const {stdout: rows} = await exec('tput rows')
+    const {stdout: cols} = await exec('tput cols')
+    worker.postMessage(makeReply(message, [parseInt(cols), parseInt(rows)]))
+  },
+
+  [h('get_input_stream')]: async (worker, message) => {
+    if (inputStreamHandler) {
+      process.stdin.removeListener('data', inputStreamHandler)
+    }
+    inputStreamHandler = (d) => worker.postMessage(makeReply(message, [[h('input_data'), d.charCodeAt(0)]]))
 
     if (process.stdin.readable) {
       worker.postMessage(makeReply(message, [h('ok')]))
     }
-
-    process.stdin.addListener('data', function(d) {
-      worker.postMessage(makeReply(message, [[h('input_data'), d.charCodeAt(0)]]))
-    })
+    process.stdin.addListener('data', inputStreamHandler)
   },
 
   [h('load_module')]: async (worker, message) => {
@@ -102,7 +112,6 @@ const ioRoutines = {
       await fs.access(fileName)
       const systemInterface = new FileInterface(message.sender, fileName)
       interfaces[systemInterface.pid.id] = systemInterface
-      console.log(systemInterface)
       return worker.postMessage(makeReply(message, [h('opened'), systemInterface.pid]))
     } catch (err) {
       return worker.postMessage(makeReply(message, [h('file_not_found')]))

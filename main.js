@@ -4,10 +4,7 @@ const process = require('process')
 const {Worker} = require('worker_threads')
 const {NodeIoHandler} = require('./Io/NodeIO.js')
 
-
-
 const ioHandler = new NodeIoHandler()
-
 
 function spawnVm(modules) {
   return new Promise((resolve, reject) => {
@@ -28,7 +25,6 @@ function spawnVm(modules) {
       }
       resolve()
     })
-
   })
 }
 
@@ -40,4 +36,4 @@ async function main () {
   process.exit()
 }
 
-main().then().catch((err) => {console.error(err); process.exit(420)})
+main().then().catch((err) => {console.log('Uncaucght fuckup'); console.error(err); process.exit(420)})

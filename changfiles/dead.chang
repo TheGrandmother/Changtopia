@@ -1,0 +1,40 @@
+module dead
+
+-- this is and will be the worlds worst editor
+
+def split_into_lines(content)
+  lines = list:split_by(content, "\n")
+  return lines
+end
+
+def print_lines(lines, line_no)
+  match lines
+    [line, <rest>] ->
+      io:print_strings([bif:cast(line_no, 'string'), ': ', line, '\n'])
+      print_lines(rest, line_no+1)
+    end
+  end
+end
+
+def print_file(content, startLine)
+  [width, height] = bif:request(bif:io_pid(), $get_console_size)
+end
+
+def _entry()
+  io:print_string('Please enter the file name\n')
+  bif:request(bif:io_pid(), $get_input_stream)
+  file_name = io:get_line()
+  match bif:request(bif:io_pid(), $open_file, file_name)
+    [$opened, file_pid] ->
+      content = bif:request(file_pid, $read)
+      lines = split_into_lines(content)
+      print_lines(lines, 1)
+    end
+    [error] ->
+      io:print_strings(['Could not read file: ', file_name, '\n'])
+      io:print_strings(['Got the wierd thing: ', error, '\n'])
+      return _entry()
+    end
+  end
+  return $ok
+end

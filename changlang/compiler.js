@@ -89,7 +89,6 @@ function compile() {
 
   if (!argv.noOptimize) {
     Object.keys(intermediateCode.functions).forEach(name => intermediateCode.functions[name].body = dropRedundantMoves(intermediateCode.functions[name].body))
-    console.log('I HAVE OPTIMIZED')
   }
 
   Object.keys(intermediateCode.functions).forEach(name => compiledFunctions[name] = generateCode(intermediateCode.functions[name]))

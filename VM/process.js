@@ -18,11 +18,9 @@ class Process {
     this.stack = new Stack()
     this.inbox = []
     this.pid = pid
-    this.dict = {}
     this.frame = {}
     this.finished = false
     this.waiting = false
-    this.status = 'cold'
     this.awaitingResponse = null
     this.accepting = false
     this.handler = null
@@ -30,6 +28,16 @@ class Process {
     this.handlingRequest = null
     this.timeout = null
     this.abandonedRequests = []
+  }
+
+  getStateDescriptor() {
+    return {
+      waiting: this.waiting,
+      finished: this.finished,
+      accepting: this.accepting,
+      blocking: !!this.awaitingResponse,
+      handling: !!this.handlingRequest
+    }
   }
 
   link(pid) {
@@ -225,7 +233,6 @@ class Process {
 
     if (!oldFrame) {
       this.finished = true
-      this.status = 'Out of stack frames :/'
       return
     }
 

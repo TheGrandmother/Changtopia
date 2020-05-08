@@ -121,8 +121,6 @@ def dump(args)
       return $no_name
     end
   end
-  io:print_string('Thanks for nothing... cya l8r\n')
-  bif:send(bif:io_pid(), $shut_down)
   return $ok
 end
 
@@ -158,7 +156,7 @@ def commands()
   -- Commands ar an array on the form:
   -- name, noArgs, [module, function], help_text
   bob = [
-    ['quit', 0, ['main', 'quit'], 'Quits the VM'],
+    ['q', 0, ['main', 'quit'], 'Quits the VM'],
     ['run', 1, ['main', 'run_module'], 'Runs the specified module'],
     ['load', 1, ['main', 'load_module'], 'Loads the specified module'],
     ['ls', 0, ['main', 'ls'], 'Lists existing files'],
@@ -167,6 +165,7 @@ def commands()
   ]
   return bob
 end
+
 def find_command(name)
   bob = commands()
   return _find_command(name, bob)
@@ -189,6 +188,7 @@ def _find_command(name, commands)
 end
 
 def prompt()
+  bif:request(bif:io_pid(), $get_input_stream)
   input_string = io:get_line()
   io:print_string('\n')
   match run_command(list:split_by(input_string, " "))
@@ -222,7 +222,6 @@ def _entry()
       quit([])
     end
   end
-  bif:request(bif:io_pid(), $get_input_stream)
   prompt()
   return $ok
 end

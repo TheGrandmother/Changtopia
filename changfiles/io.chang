@@ -1,9 +1,9 @@
 module io
 
 def erase()
-  bif:send(bif:io_pid(), $move_cursor, -1, 0)
+  print_string(bif:ansi_cursor_move(-1,0))
   bif:send(bif:io_pid(), $print_string, ' ')
-  bif:send(bif:io_pid(), $move_cursor, -1, 0)
+  print_string(bif:ansi_cursor_move(-1,0))
   return 0
 end
 

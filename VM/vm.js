@@ -3,6 +3,8 @@ const {h, randomHash} = require('../util/hash.js')
 const builtins = require('./builtins/builtins.js')
 const {NoSuchPidError} = require('../errors.js')
 const Pid = require('./pid.js')
+const {prettyInst} = require('./instructions/pretty.js')
+const {inspect} = require('util')
 
 const {
   isMainThread, parentPort, workerData
@@ -51,7 +53,8 @@ class Vm {
     }
     const recipient = this.processes[message.recipient]
     if (!recipient) {
-      throw new NoSuchPidError(`There is no process ${message.recipient} to read this message`)
+      this.logError()
+      throw new NoSuchPidError(`There is no process ${message.recipient} to read the message ${inspect(message)}`)
     }
     recipient.addMessage(message)
   }
@@ -126,7 +129,30 @@ class Vm {
     }
 
     runner()
+  }
 
+  logError() {
+    const stateLegend = '[W,F,A,B,H]'
+    function makeStateDisplay(state) {
+      const toMark = val => val ? '✓' : ' '
+      return Object.values(state).map(toMark).join(',')
+    }
+    const runningInfo = this.runningProcesses.map((pid) => {
+      const proc = this.processes[pid]
+      const functionId = proc.frame.functionId
+      const neatString = `${proc.frame.line}: ${prettyInst(proc.getCurrentInstruction())}`
+      const state = makeStateDisplay(proc.getStateDescriptor())
+      return `${pid}\t${state}\t${functionId}:${neatString}`
+    })
+
+    const waitingInfo = this.waitingProcesses.map((pid) => {
+      const proc = this.processes[pid]
+      const functionId = proc.frame.functionId
+      const neatString = `${proc.frame.line}: ${prettyInst(proc.getCurrentInstruction())}`
+      const state = makeStateDisplay(proc.getStateDescriptor())
+      return `${pid}\t${state}\t${functionId}:${neatString}`
+    })
+    this.log(runningInfo)
   }
 
 }
