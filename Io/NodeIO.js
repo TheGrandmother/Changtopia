@@ -71,7 +71,7 @@ const ioRoutines = {
   },
 
   [h('get_console_size')]: async (worker, message) => {
-    const {stdout: rows} = await exec('tput rows')
+    const {stdout: rows} = await exec('tput lines')
     const {stdout: cols} = await exec('tput cols')
     worker.postMessage(makeReply(message, [parseInt(cols), parseInt(rows)]))
   },
@@ -95,7 +95,14 @@ const ioRoutines = {
     for (let file of moduleFiles) {
       const module = JSON.parse((await fs.readFile('./tbn_modules/' + file)).toString())
       if (module.moduleName === moduleName) {
-        return worker.postMessage(makeReply(message, module, 'module'))
+        Object.values(worker.workers).forEach(worker => {
+          if (worker.instance === message.sender.instance) {
+            worker.postMessage(makeReply(message, {module}, 'module'))
+          } else {
+            worker.postMessage(makeReply(message, {module, sneaky: true}, 'module'))
+          }
+        })
+        return
       }
     }
     return worker.postMessage(makeReply(message, h('module_not_found')))
@@ -115,6 +122,17 @@ const ioRoutines = {
       return worker.postMessage(makeReply(message, [h('opened'), systemInterface.pid]))
     } catch (err) {
       return worker.postMessage(makeReply(message, [h('file_not_found')]))
+    }
+  },
+
+  [h('spawn_process')]: async (worker, message) => {
+    // Due to me being lazy we just pick a random worker to receive the new process
+    const workers = Object.values(worker.workers)
+    const assignedWorker = workers[parseInt(Math.random() * workers.length)]
+    const pid = new Pid(assignedWorker.instance, randomHash(), assignedWorker.host)
+    assignedWorker.postMessage({payload: [pid, ...message.payload], secret: 'spawn'})
+    if (message.requiresResponse) {
+      return worker.postMessage(makeReply(message, pid))
     }
   }
 }

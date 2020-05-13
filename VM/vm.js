@@ -5,6 +5,7 @@ const {NoSuchPidError} = require('../errors.js')
 const Pid = require('./pid.js')
 const {prettyInst} = require('./instructions/pretty.js')
 const {inspect} = require('util')
+const {toJsString} = require('../util/strings.js')
 
 const {
   isMainThread, parentPort, workerData
@@ -12,14 +13,15 @@ const {
 
 class Vm {
 
-  constructor() {
+  constructor(instance, host) {
     this.modules = {bif: builtins}
     this.processes = {}
     this.runningProcesses = []
     this.waitingProcesses = []
-    this.quantum = 5
-    this.openWindow = 1000
-    this.instanceId = randomHash()
+    this.quantum = 25000
+    this.openWindow = 1
+    this.instanceId = instance
+    this.host = host
     parentPort.on('message', (message) => this.handleExternalMessage(message))
   }
 
@@ -38,23 +40,41 @@ class Vm {
   handleExternalMessage(message) {
     if (message.secret) {
       if (message.secret === 'module') {
-        this.loadModule(message.payload)
+        const {module, sneaky} = message.payload
+        this.loadModule(module)
+        if (sneaky) {
+          return
+        }
         message.payload = h('module_loaded')
+      } else if (message.secret === 'start') {
+        const {startInIdle} = message.payload
+        this.start([], startInIdle)
+        return
+      } else if (message.secret === 'spawn') {
+        const [pid, module, entryPoint, ...args] = message.payload
+        this.spawnProcess(Pid.toPid(pid), toJsString(module), toJsString(entryPoint), args)
+        return
+      } else {
+        throw new Error(`I can't handle the secret: ${message.secret}`)
       }
     }
-    this.dispatchMessage(message)
+    this.handleMessage(message)
   }
 
   dispatchMessage(message) {
-    message.recipient = Pid.toPid(message.recipient)
-    if (message.recipient.isIo()) {
+    if (message.recipient.instance === this.instanceId) {
+      this.handleMessage(message)
+    } else {
       this.sendExternal(message)
-      return
     }
-    const recipient = this.processes[message.recipient]
+  }
+
+  handleMessage(message) {
+    const recipient = this.processes[Pid.toPid(message.recipient)]
     if (!recipient) {
+      this.log(Object.keys(this.processes))
       this.logError()
-      throw new NoSuchPidError(`There is no process ${message.recipient} to read the message ${inspect(message)}`)
+      throw new NoSuchPidError(`There is no process ${Pid.toPid(message.recipient)} to read the message ${inspect(message)}`)
     }
     recipient.addMessage(message)
   }
@@ -63,8 +83,10 @@ class Vm {
     this.modules[module.moduleName] = module
   }
 
-  spawnProcess(module, entryPoint, args) {
-    const pid = new Pid(this.instanceId)
+  spawnProcess(pid, module, entryPoint, args) {
+    if (!pid) {
+      pid = new Pid(this.instanceId, randomHash(), this.host)
+    }
     const process = new Process(this, pid)
     process.bindFunction(module, entryPoint, 'program_result', args)
     this.processes[pid] = process
@@ -102,11 +124,14 @@ class Vm {
     this.waitingProcesses = newWaiting
   }
 
-  start (args) {
+  start (args, startInIdle = false) {
     if (this.modules.length === 0) {
       throw new Error('No modules loaded... It feels a bit silly to start now')
     }
-    this.spawnProcess('main', '_entry', args)
+
+    if (!startInIdle) {
+      this.spawnProcess(undefined, 'main', '_entry', args)
+    }
 
     let countSinceLastOpen = 0
 
@@ -120,12 +145,8 @@ class Vm {
         }
         countSinceLastOpen += 1
       }
-      if(this.runningProcesses.length !== 0 || this.waitingProcesses.length !== 0){
-        countSinceLastOpen = 0
-        setImmediate(() => runner()) // eslint-disable-line
-      } else {
-        process.exit(0) // eslint-disable-line
-      }
+      countSinceLastOpen = 0
+      setImmediate(() => runner()) // eslint-disable-line
     }
 
     runner()
@@ -162,8 +183,7 @@ if (isMainThread) {
     Vm
   }
 } else {
-  const modules = workerData
-  const vm = new Vm()
+  const {modules, host, instance} = workerData
+  const vm = new Vm(instance, host)
   vm.loadModule(modules)
-  vm.start([])
 }

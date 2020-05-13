@@ -45,8 +45,11 @@ def listener_dude(....random_args, sender, payload)
 
 use like:
 ```
-bif:listen('module', listener_dude, ...random_args)
+bif:listen(module, listener_dude, ...random_args)
 ```
+
+### Spawning processes
+
 
 ## Errors
 Errors must be handled between processes using the `bif:link` dude.

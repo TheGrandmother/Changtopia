@@ -1,5 +1,6 @@
 const {h, resolveHash} = require('../../util/hash.js')
 const {toJsString} = require('../../util/strings.js')
+const Pid = require('../pid.js')
 
 const processControlFunctions = [
   {
@@ -28,7 +29,12 @@ const processControlFunctions = [
     functionId: 'spawn',
     bif: true,
     exec: (process, returnLocation, module, functionId, ...args) => {
-      return process.vm.spawnProcess(toJsString(module), toJsString(functionId), args)
+      if (returnLocation === '__dump__') {
+        process.sendMessage({recipient: Pid.ioPid(), payload: [h('spawn_process'), module, functionId, ...args]})
+      } else {
+        process.sendMessage({recipient: Pid.ioPid(), payload: [h('spawn_process'), module, functionId, ...args]}, returnLocation)
+      }
+      //return process.vm.spawnProcess(toJsString(module), toJsString(functionId), args)
     }
   },
   {

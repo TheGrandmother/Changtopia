@@ -1,5 +1,6 @@
 const {fromJsString} = require('../../util/strings.js')
 const ansiEscapes = require('ansi-escapes')
+const ansiStyles = require('ansi-styles')
 
 const ansiFaff = {
   cursor_to: (x, y) => ansiEscapes.cursorTo(x,y),
@@ -26,7 +27,11 @@ const ansiFaff = {
   scroll_up: () => '\u001b[S',
   scroll_down: () => '\u001b[T',
   clear_screen: () => '\u001bc',
-  clear_terminal: () => '\u001b[2J\u001b[3J\u001b[H'
+  clear_terminal: () => '\u001b[2J\u001b[3J\u001b[H',
+  color: (r, g, b) => ansiStyles.color.ansi256.rgb(r, g, b),
+  bg_color: (r, g, b) => ansiStyles.bgColor.ansi256.rgb(r, g, b),
+  color_reset: () => ansiStyles.color.close(),
+  bg_color_reset: () => ansiStyles.bgColor.close(),
 }
 
 const ansi = Object.keys(ansiFaff).map(key => (

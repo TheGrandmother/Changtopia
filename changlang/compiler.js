@@ -22,6 +22,7 @@ const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar))
 function parse(string) {
   const result = parser.feed(string).results
   if (!result || result.length === 0) {
+    console.error(result)
     throw new Error('Input didnt parse at all...')
   }
 
@@ -87,9 +88,9 @@ function compile() {
   }
   const compiledFunctions = {}
 
-  if (!argv.noOptimize) {
-    Object.keys(intermediateCode.functions).forEach(name => intermediateCode.functions[name].body = dropRedundantMoves(intermediateCode.functions[name].body))
-  }
+  //if (!argv.noOptimize) {
+  //  Object.keys(intermediateCode.functions).forEach(name => intermediateCode.functions[name].body = dropRedundantMoves(intermediateCode.functions[name].body))
+  //}
 
   Object.keys(intermediateCode.functions).forEach(name => compiledFunctions[name] = generateCode(intermediateCode.functions[name]))
 

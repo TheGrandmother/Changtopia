@@ -1,0 +1,125 @@
+module brot
+
+def iteration(z, c)
+  [r, i] = z
+  [c_r, c_i] = c
+  return [r*r - i*i + c_r, 2 * r * i + c_i]
+end
+
+def iterate(z, c, n)
+  match n
+    0 ->
+      return $contained
+    end
+    whatever ->
+      [r, i] = z
+      match r*r + i*i > 4
+        true ->
+          return n + 1
+        end
+        false ->
+          return iterate(iteration(z, c), c, n - 1)
+        end
+      end
+    end
+  end
+  return $the_fuck
+end
+
+def plot_seq(width, height)
+  _plot_seq(0, 0, width, height)
+  return $ok
+end
+
+def _plot_seq(x, y, width, height)
+  plot_point(x, y, width, height)
+  match x == width
+    true ->
+      match y == height
+        true ->
+          return $ok
+        end
+      end
+      _plot_seq(0, y + 1, width, height)
+    end
+    false ->
+      _plot_seq(x + 1, y, width, height)
+    end
+  end
+end
+
+def worker(x, y, width, height, max, controler)
+  io:print_strings([bif:ansi_cursor_to(x * 2, y), bif:ansi_color(125,225,125), '██'])
+  result = iterate([0, 0], [y / height / 2, (x / width)], max)
+  color = bif:ansi_color(0,125,125)
+  match result
+    $contained ->
+      color = bif:ansi_color(0,0,0)
+    end
+    whatever ->
+      color = color_ramp(result, max)
+    end
+  end
+  -- bif:send(controler, [result, x, y])
+  io:print_strings([bif:ansi_cursor_to(x * 2, y), color,'██'])
+end
+
+def plot(width, height, max)
+  bif:spawn('brot', '_plot', 0, 0, width, height, max, bif:my_pid())
+  bif:listen('brot', 'listener', width, height, max, 0)
+end
+
+def _plot(x, y, width, height, max, parent)
+  bif:spawn('brot', 'worker', x, y, width, height, max, parent)
+  match x == width - 1
+    true ->
+      match y == height - 1
+        true ->
+          return $ok
+        end
+      end
+      _plot(0, y + 1, width, height, max, parent)
+    end
+    false ->
+      _plot(x + 1, y, width, height, max, parent)
+    end
+  end
+end
+
+def listener(width, height, max, count, sender, payload)
+  [result, x, y] = payload
+  count = count + 1
+  io:print_strings([bif:ansi_cursor_to(0, height), bif:ansi_color(255,255,255), bif:cast(count, 'string'), '/', bif:cast(width*height, 'string')])
+  match count == width * height
+    true ->
+      return $ok
+    end
+  end
+  return bif:listen('brot', 'listener', width, height, max, count)
+end
+
+def color_ramp(m, max)
+  n = max - m
+  match n < max / 3
+    true ->
+      fac = (n * 3 / max)
+      return bif:ansi_color(fac * 255, 0, 0)
+    end
+  end
+  match n < 2*max / 3
+    true ->
+      fac = (n * 3 / max - 1)
+      return bif:ansi_color(255,  fac * 255, 0)
+    end
+  end
+  fac = ((n*3)/(2*max) - 1)
+  return bif:ansi_color(255, 255, fac * 255)
+end
+
+def _entry()
+  io:print_string(bif:ansi_clear_screen())
+  start = bif:time()
+  [width, height] = bif:request(bif:io_pid(), $get_console_size)
+  plot(bif:cast(width / 2, 'integer'), height , 750)
+  return $ok
+end

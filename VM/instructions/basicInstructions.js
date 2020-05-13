@@ -20,11 +20,25 @@ const basicInstructions = {
     evaluate: (process, op, resLocation, a1, a2 ) => {
       const v1 = process.frame.read(a1)
       const v2 = process.frame.read(a2)
-      const func = Function('v1', 'v2', `return v1 ${op} v2`)
-      process.frame.write(resLocation, func(v1, v2))
+      //const func = Function('v1', 'v2', `return v1 ${op} v2`)
+      process.frame.write(resLocation, binops[op](v1, v2))
       process.incrementLine()
     }
   },
+}
+
+const binops = {
+  '==': (a ,b) => a == b,
+  '>': (a ,b) => a > b,
+  '>=': (a ,b) => a >= b,
+  '<=': (a ,b) => a <= b,
+  '<': (a ,b) => a < b,
+  '&&': (a ,b) => a && b,
+  '||': (a ,b) => a || b,
+  '+': (a ,b) => a + b,
+  '-': (a ,b) => a - b,
+  '*': (a ,b) => a * b,
+  '/': (a ,b) => a / b,
 }
 
 module.exports = basicInstructions

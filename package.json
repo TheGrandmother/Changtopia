@@ -23,6 +23,7 @@
   "homepage": "https://github.com/TheGrandmother/TBN#readme",
   "dependencies": {
     "ansi-escapes": "^4.3.1",
+    "ansi-styles": "^4.2.1",
     "deep-equal": "^2.0.1",
     "eslint": "^6.7.2",
     "nearley": "^2.19.0",

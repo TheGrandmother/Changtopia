@@ -178,13 +178,9 @@ class Process {
 
     if (requiresResponse) {
       this.frame.returnCallback =
-        (res, callingFrame) => {
+        (res) => {
           this.handlingRequest = null
-          if (this.vm.pidExists(sender)) {
-            this.sendMessage({recipient: sender, payload: res, requestId: id})
-          } else {
-            callingFrame.write(returnLocation, h('no_such_pid'))
-          }
+          this.sendMessage({recipient: sender, payload: res, requestId: id})
         }
     }
   }
