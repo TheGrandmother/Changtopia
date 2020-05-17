@@ -1,3 +1,7 @@
+const {chainStatements, makeJumpNode} = require('./ast/control')
+const {makeBasicAssignmentNode} = require('./ast/assign')
+const {inspect} = require('util')
+
 const NOT_KNOWN = '___NOT_KNOWN'
 
 module.exports.dropRedundantMoves  = function(code) {
@@ -114,4 +118,65 @@ module.exports.dropRedundantMoves  = function(code) {
   })
 
   return newCode
+}
+
+module.exports.tailOptimize = function (func) {
+  if (func.type !== 'function') {
+    return
+  }
+
+  const name = func.name
+
+  function isTailRecursive(node) {
+    if (!node) {
+      return true
+    }
+
+    if (node.type === 'return') {
+      if (node.rhs.type === 'call' && !node.rhs.module && node.rhs.name === name) {
+        return true
+      }
+    }
+
+    if (node.type === 'call' && node.name === name && !node.module) {
+      return false
+    }
+
+    return isTailRecursive(node.lhs) && isTailRecursive(node.rhs)
+  }
+
+  function optimize(node) {
+    if (!node) {
+      return
+    }
+    if (node.type === 'return') {
+      if (node.rhs.type === 'call' && !node.rhs.module && node.rhs.name === name) {
+        const moves = node.rhs.args.map((arg, i) => makeBasicAssignmentNode(`${func.args[i].name}_tmp`, arg))
+        if (moves.length !== 0) {
+          const thing = chainStatements([...moves, ...func.args.map(({name}) => makeBasicAssignmentNode(name, {type: 'identifier', name: `${name}_tmp`})), makeJumpNode(func.entryLabel)])
+          node.type = thing.type
+          node.rhs = thing.rhs
+          node.lhs = thing.lhs
+          delete node.name
+          delete node.args
+          delete node.module
+        } else {
+          const jumpNode = makeJumpNode(func.entryLabel)
+          node.type = jumpNode.type
+          node.label = jumpNode.label
+          delete node.name
+          delete node.args
+          delete node.module
+        }
+      }
+    }
+    optimize(node.lhs)
+    optimize(node.rhs)
+  }
+
+  if (isTailRecursive(func.body)) {
+    func.entryLabel = `_${func.name}_entry_label`
+    optimize(func.body, 'something')
+  }
+
 }

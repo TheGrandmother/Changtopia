@@ -28,8 +28,8 @@ const ansiFaff = {
   scroll_down: () => '\u001b[T',
   clear_screen: () => '\u001bc',
   clear_terminal: () => '\u001b[2J\u001b[3J\u001b[H',
-  color: (r, g, b) => ansiStyles.color.ansi256.rgb(r, g, b),
-  bg_color: (r, g, b) => ansiStyles.bgColor.ansi256.rgb(r, g, b),
+  color: (r, g, b) => ansiStyles.color.ansi16m.rgb(parseInt(r), parseInt(g), parseInt(b)),
+  bg_color: (r, g, b) => ansiStyles.bgColor.ansi16m.rgb(parseInt(r), parseInt(g), parseInt(b)),
   color_reset: () => ansiStyles.color.close(),
   bg_color_reset: () => ansiStyles.bgColor.close(),
 }

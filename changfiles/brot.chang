@@ -49,7 +49,6 @@ def _plot_seq(x, y, width, height)
 end
 
 def worker(x, y, width, height, max, controler)
-  io:print_strings([bif:ansi_cursor_to(x * 2, y), bif:ansi_color(125,225,125), '██'])
   result = iterate([0, 0], [y / height / 2, (x / width)], max)
   color = bif:ansi_color(0,125,125)
   match result
@@ -61,7 +60,7 @@ def worker(x, y, width, height, max, controler)
     end
   end
   -- bif:send(controler, [result, x, y])
-  io:print_strings([bif:ansi_cursor_to(x * 2, y), color,'██'])
+  io:print_strings([bif:ansi_cursor_to(x, y), color,'█'])
 end
 
 def plot(width, height, max)
@@ -70,6 +69,7 @@ def plot(width, height, max)
 end
 
 def _plot(x, y, width, height, max, parent)
+  io:print_strings([bif:ansi_cursor_to(x, y), bif:ansi_color(125,225,125), '█'])
   bif:spawn('brot', 'worker', x, y, width, height, max, parent)
   match x == width - 1
     true ->
@@ -78,10 +78,10 @@ def _plot(x, y, width, height, max, parent)
           return $ok
         end
       end
-      _plot(0, y + 1, width, height, max, parent)
+      return _plot(0, y + 1, width, height, max, parent)
     end
     false ->
-      _plot(x + 1, y, width, height, max, parent)
+      return _plot(x + 1, y, width, height, max, parent)
     end
   end
 end
@@ -109,17 +109,17 @@ def color_ramp(m, max)
   match n < 2*max / 3
     true ->
       fac = (n * 3 / max - 1)
-      return bif:ansi_color(255,  fac * 255, 0)
+      return bif:ansi_color(255,  0, fac * 255)
     end
   end
   fac = ((n*3)/(2*max) - 1)
-  return bif:ansi_color(255, 255, fac * 255)
+  return bif:ansi_color(255, fac * 255, 255)
 end
 
 def _entry()
   io:print_string(bif:ansi_clear_screen())
   start = bif:time()
   [width, height] = bif:request(bif:io_pid(), $get_console_size)
-  plot(bif:cast(width / 2, 'integer'), height , 750)
+  plot(width, height, 300)
   return $ok
 end

@@ -18,7 +18,7 @@ class Vm {
     this.processes = {}
     this.runningProcesses = []
     this.waitingProcesses = []
-    this.quantum = 25000
+    this.quantum = 50000
     this.openWindow = 1
     this.instanceId = instance
     this.host = host

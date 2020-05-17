@@ -42,15 +42,6 @@ function makeNumber(d) {
   }
 }
 
-function makeIfStatement(d) {
-  d = helpers.strip(d)
-  return {
-    type: 'if',
-    condition: d[0],
-    body: d[1]
-  }
-}
-
 function makeReturn(d) {
   d = helpers.strip(d)
   return {
@@ -104,7 +95,6 @@ function makeConstant(d) {
 module.exports = {
   makeIdentifier,
   makeNumber,
-  makeIfStatement,
   makeReturn,
   makeAtom,
   makeChar,

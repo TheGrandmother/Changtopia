@@ -131,10 +131,10 @@ const _generators = {
   },
 
   'if': (state, node) => {
-    const {condition, body} = node
+    const {lhs, rhs} = node
     const conditionRes = makeInterRef(node)
-    const conditionCode = generateNode(state, condition, conditionRes)
-    const bodyCode = generateNode(state, body)
+    const conditionCode = generateNode(state, lhs, conditionRes)
+    const bodyCode = generateNode(state, rhs)
     const skipLabel = makeUniqueLineLabel('skip')
     const myCode = [makeInstruction('jump_if_false', [conditionRes, skipLabel])]
     return conditionCode.concat(myCode).concat(bodyCode).concat(skipLabel)
@@ -253,7 +253,7 @@ const generators = wrapGenerators()
 
 function generateNode(state, node, res) {
   if (!generators[node.type]) {
-    throw new CompilerError(`Unfortunatley I dont know what the hell to do with ${inspect(node)}`)
+    throw new CompilerError(`Unfortunatley I dont know what the hell to do with ${inspect(node)} in ${state.currentFunction}`)
   }
   return generators[node.type](state, node, res)
 }
@@ -283,6 +283,7 @@ function generateIntermediateCode(ast) {
 
   functions.forEach((func) => {
     const {name, body, args} = func
+    state.currentFunction = name
 
     if (state.functions[name]) {
       throw new Error(`A function named ${name} has already been defined`)
@@ -299,7 +300,10 @@ function generateIntermediateCode(ast) {
       console.log(body.type)
       throw new CompilerError(`I dont know what to do with a ${body.type} node`)
     }
-    const bodyCode = generators[body.type](state, body)
+    let bodyCode = generators[body.type](state, body)
+    if (func.entryLabel) {
+      bodyCode = [makeLineLabel(func.entryLabel), ...bodyCode]
+    }
 
     const argLocations = Object.values(state.refs).filter(({arg}) => arg).map(({ref}) => ref)
 

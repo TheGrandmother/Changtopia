@@ -1,7 +1,7 @@
 const grammar = require('./compiled_grammar.js')
 const {generateIntermediateCode} = require('./intermediate.js')
 const {generateCode} = require('./codegen.js')
-const {dropRedundantMoves} = require('./optimize.js')
+const {tailOptimize, dropRedundantMoves} = require('./optimize.js')
 const nearley = require('nearley')
 const {inspect} = require('util')
 const fs = require('fs')
@@ -75,12 +75,16 @@ function compile() {
   const input = rawInput.replace(/--.*$/mg,'').replace(/^\s*$/mg,'')
 
   const functions = parse(input)
+  functions.forEach(func => tailOptimize(func))
+
+
   if (argv.a) {
     console.log('==============================AST================================')
     console.log(inspect(functions, false, null, true))
   }
 
   const intermediateCode = generateIntermediateCode(functions)
+
 
   if (argv.n) {
     console.log('=========================INTERMEDIATE============================')

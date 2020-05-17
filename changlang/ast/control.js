@@ -36,11 +36,11 @@ function makeBlock(d) {
   }
 }
 
-function makeIfNode(condition, body) {
+function makeIfNode(lhs, rhs) {
   return {
     type: 'if',
-    condition,
-    body
+    lhs,
+    rhs
   }
 }
 
