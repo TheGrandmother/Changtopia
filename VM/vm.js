@@ -16,17 +16,20 @@ class Vm {
   constructor(instance, host) {
     this.modules = {bif: builtins}
     this.processes = {}
-    this.runningProcesses = []
     this.waitingProcesses = []
-    this.quantum = 50000
-    this.openWindow = 1
-    this.instanceId = instance
+    this.topQueue = []
+    this.bottomQueue = []
+    this.skipTop = false
+    this.topQuantum = 2000
+    this.bottomQuantum = 10000
+    this.instance = instance
     this.host = host
+    this.chattyThreshold = 5
     parentPort.on('message', (message) => this.handleExternalMessage(message))
   }
 
   log(...args) {
-    parentPort.postMessage({internal: true, args})
+    parentPort.postMessage({internal: 'log', args})
   }
 
   pidExists(pid) {
@@ -62,11 +65,12 @@ class Vm {
   }
 
   dispatchMessage(message) {
-    if (message.recipient.instance === this.instanceId) {
+    if (message.recipient && message.recipient.instance === this.instance) {
       this.handleMessage(message)
     } else {
       this.sendExternal(message)
     }
+    this.processes[Pid.toPid(message.sender)].messagesSent += 1
   }
 
   handleMessage(message) {
@@ -85,24 +89,47 @@ class Vm {
 
   spawnProcess(pid, module, entryPoint, args) {
     if (!pid) {
-      pid = new Pid(this.instanceId, randomHash(), this.host)
+      pid = new Pid(this.instance, randomHash(), this.host)
     }
     const process = new Process(this, pid)
     process.bindFunction(module, entryPoint, 'program_result', args)
     this.processes[pid] = process
-    this.runningProcesses.push(pid)
+    this.topQueue.push(pid)
     return pid
   }
 
+  fetchPidToExecute() {
+    let processPid = this.topQueue[0]
+    if (!processPid || (this.skipTop && this.bottomQueue.length !== 0)) {
+      processPid = this.bottomQueue.shift()
+      this.skipTop = false
+      this.wePickedTop = false
+      return {processPid, quantum: this.bottomQuantum}
+    }
+    this.topQueue = this.topQueue.slice(1)
+    this.wePickedTop = true
+    if (this.topQueue.length === 0) {
+      this.skipTop = true
+    }
+    return {processPid, quantum: this.topQuantum}
+  }
+
   runProcess() {
-    const processPid = this.runningProcesses[0]
-    this.runningProcesses = this.runningProcesses.slice(1)
+    const {processPid, quantum} = this.fetchPidToExecute()
     const process = this.processes[processPid]
-    for (let i = 0; i < this.quantum && !process.finished && !process.waiting; i++) {
+    if (!process) {
+      throw new Error(`There is no process ${processPid} :O even tho.`)
+    }
+    process.messagesSent = 0
+    for (let i = 0; i < quantum && !process.finished && !process.waiting; i++) {
       process.executeInstruction()
     }
     if (!process.finished && !process.waiting) {
-      this.runningProcesses.push(processPid)
+      if (process.messagesSent > this.chattyThreshold) {
+        this.topQueue.push(processPid)
+      } else {
+        this.bottomQueue.push(processPid)
+      }
     } else if (process.waiting) {
       this.waitingProcesses.push(processPid)
     } else if (process.finished) {
@@ -116,13 +143,22 @@ class Vm {
       const process = this.processes[this.waitingProcesses[i]]
       process.checkInbox()
       if (!process.waiting) {
-        this.runningProcesses.push(process.pid)
+        this.topQueue.push(process.pid)
       } else {
         newWaiting.push(process.pid)
       }
     }
     this.waitingProcesses = newWaiting
   }
+
+  hasQueuedProcesses() {
+    return this.topQueue.length !== 0 || this.bottomQueue.length !== 0
+  }
+
+  hasProcesses() {
+    return  this.hasQueuedProcesses() || this.waitingProcesses.length !== 0
+  }
+
 
   start (args, startInIdle = false) {
     if (this.modules.length === 0) {
@@ -133,27 +169,26 @@ class Vm {
       this.spawnProcess(undefined, 'main', '_entry', args)
     }
 
-    let countSinceLastOpen = 0
-
     const runner = () => {
-      while ((this.runningProcesses.length !== 0 || this.waitingProcesses.length !== 0) && countSinceLastOpen < this.openWindow) {
-        if (this.waitingProcesses.length !== 0){
-          this.processWaitingTasks()
-        }
-        if (this.runningProcesses.length !== 0) {
-          this.runProcess()
-        }
-        countSinceLastOpen += 1
+      if (this.waitingProcesses.length !== 0){
+        this.processWaitingTasks()
       }
-      countSinceLastOpen = 0
-      setImmediate(() => runner()) // eslint-disable-line
+      if (this.hasQueuedProcesses()) {
+        this.runProcess()
+      }
+      this.sendExternal({sender: this.instance, internal: 'info', summary: this.getSummary()})
+      if (this.hasProcesses()) {
+        setImmediate(() => runner()) // eslint-disable-line
+      } else {
+        setTimeout(() => runner(), 100) // eslint-disable-line
+      }
     }
 
     runner()
   }
 
   logError() {
-    const stateLegend = '[W,F,A,B,H]'
+    //const stateLegend = '[W,F,A,B,H]'
     function makeStateDisplay(state) {
       const toMark = val => val ? '✓' : ' '
       return Object.values(state).map(toMark).join(',')
@@ -166,14 +201,18 @@ class Vm {
       return `${pid}\t${state}\t${functionId}:${neatString}`
     })
 
-    const waitingInfo = this.waitingProcesses.map((pid) => {
-      const proc = this.processes[pid]
-      const functionId = proc.frame.functionId
-      const neatString = `${proc.frame.line}: ${prettyInst(proc.getCurrentInstruction())}`
-      const state = makeStateDisplay(proc.getStateDescriptor())
-      return `${pid}\t${state}\t${functionId}:${neatString}`
-    })
+    // const waitingInfo = this.waitingProcesses.map((pid) => {
+    //   const proc = this.processes[pid]
+    //   const functionId = proc.frame.functionId
+    //   const neatString = `${proc.frame.line}: ${prettyInst(proc.getCurrentInstruction())}`
+    //   const state = makeStateDisplay(proc.getStateDescriptor())
+    //   return `${pid}\t${state}\t${functionId}:${neatString}`
+    // })
     this.log(runningInfo)
+  }
+
+  getSummary() {
+    return {topQueue: this.topQueue.length, bottomQueue: this.bottomQueue.length, waiting: this.waitingProcesses.length}
   }
 
 }

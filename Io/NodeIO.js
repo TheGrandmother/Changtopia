@@ -123,17 +123,6 @@ const ioRoutines = {
     } catch (err) {
       return worker.postMessage(makeReply(message, [h('file_not_found')]))
     }
-  },
-
-  [h('spawn_process')]: async (worker, message) => {
-    // Due to me being lazy we just pick a random worker to receive the new process
-    const workers = Object.values(worker.workers)
-    const assignedWorker = workers[parseInt(Math.random() * workers.length)]
-    const pid = new Pid(assignedWorker.instance, randomHash(), assignedWorker.host)
-    assignedWorker.postMessage({payload: [pid, ...message.payload], secret: 'spawn'})
-    if (message.requiresResponse) {
-      return worker.postMessage(makeReply(message, pid))
-    }
   }
 }
 

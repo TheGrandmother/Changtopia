@@ -68,20 +68,24 @@ def plot(width, height, max)
   bif:listen('brot', 'listener', width, height, max, 0)
 end
 
-def _plot(x, y, width, height, max, parent)
+def _plot_line(x, y, width, height, max, parent)
   io:print_strings([bif:ansi_cursor_to(x, y), bif:ansi_color(125,225,125), '█'])
-  bif:spawn('brot', 'worker', x, y, width, height, max, parent)
   match x == width - 1
+    false ->
+      bif:spawn('brot', 'worker', x, y, width, height, max, parent)
+      return _plot_line(x + 1, y, width, height, max, parent)
+    end
+  end
+end
+
+def _plot(x, y, width, height, max, parent)
+  match y == height - 1
     true ->
-      match y == height - 1
-        true ->
-          return $ok
-        end
-      end
-      return _plot(0, y + 1, width, height, max, parent)
+      return $ok
     end
     false ->
-      return _plot(x + 1, y, width, height, max, parent)
+      bif:spawn('brot', '_plot_line', x, y, width, height, max, parent)
+      return _plot(0, y + 1, width, height, max, parent)
     end
   end
 end
@@ -120,6 +124,6 @@ def _entry()
   io:print_string(bif:ansi_clear_screen())
   start = bif:time()
   [width, height] = bif:request(bif:io_pid(), $get_console_size)
-  plot(width, height, 300)
+  plot(width, height, 400)
   return $ok
 end

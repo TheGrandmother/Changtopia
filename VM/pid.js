@@ -20,7 +20,7 @@ class Pid {
   }
 }
 
-Pid.prototype.toString = function () { return `<${this.host}:${this.instance}:${this.id}>` }
+Pid.prototype.toString = function () { return `<${this.host.toString(16)}:${this.instance.toString(16)}:${this.id.toString(16)}>` }
 Pid.hostId = hostId
 Pid.ioPid = () => new Pid(0, 0)
 

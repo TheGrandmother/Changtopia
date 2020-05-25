@@ -30,9 +30,9 @@ const processControlFunctions = [
     bif: true,
     exec: (process, returnLocation, module, functionId, ...args) => {
       if (returnLocation === '__dump__') {
-        process.sendMessage({recipient: Pid.ioPid(), payload: [h('spawn_process'), module, functionId, ...args]})
+        process.sendMessage({payload: [module, functionId, ...args], internal: 'spawn'})
       } else {
-        process.sendMessage({recipient: Pid.ioPid(), payload: [h('spawn_process'), module, functionId, ...args]}, returnLocation)
+        process.sendMessage({payload: [module, functionId, ...args], internal: 'spawn'}, returnLocation)
       }
       //return process.vm.spawnProcess(toJsString(module), toJsString(functionId), args)
     }
