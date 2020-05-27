@@ -1,0 +1,31 @@
+module remote_test
+
+def echo_bro()
+  io:print_strings(['Starting to listen\n'])
+  bif:listen('remote_test', 'echo_listener')
+  io:print_strings(['And so we are outside the listener.....\n'])
+end
+
+def echo_listener(sender, payload)
+  io:print_strings(['Got a cool message: ', payload, '\n'])
+  bif:listen('remote_test', 'echo_listener')
+end
+
+def _entry()
+  echo_pid = bif:spawn('remote_test', 'echo_bro')
+  match bif:request(bif:mediator_pid(), $publish, 'echo_bro', echo_pid)
+    $published ->
+      io:print_string('Echo bro got published\n')
+    end
+  end
+  match bif:request(bif:mediator_pid(), $fetch_a_dude, 'echo_bro')
+    $nothing ->
+      io:print_string('I have no bros :\'(\n')
+    end
+    [pid] ->
+      io:print_strings(['I have the best bro in the world ', bif:pid_to_string(pid), '\n'])
+      bif:send(pid, 'HELLO MY FRIEND 💖💖💖💖💖💖')
+    end
+  end
+  return $ok
+end

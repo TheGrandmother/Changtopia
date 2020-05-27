@@ -85,7 +85,7 @@ def spawn_module(name)
       return $ok
     end
     whatever ->
-      io:print_strings([name, ' Sent us some strange shit...\n', msg, '\n'])
+      io:print_strings([name, ' Sent us some strange shit...\n', response, '\n'])
       return $ok
     end
   end
@@ -94,7 +94,7 @@ def spawn_module(name)
 end
 
 def _spawn_module(name)
-  result =  bif:listen('main', '_spawn_listener', name)
+  result = bif:listen('main', '_spawn_listener', name)
   return result
 end
 

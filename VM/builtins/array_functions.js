@@ -9,10 +9,10 @@ const arrayFunctions = [
       const a1 = a1Location
       const a2 = a2Location
       if (!Array.isArray(a1)) {
-        throw new ArrayTypeError(`Data at location ${a1Location} is not an array, it is ${a1}`)
+        throw new ArrayTypeError(`Data at location ${a1Location} is not an array, it is ${a1} of type ${typeof a1}`)
       }
       if (!Array.isArray(a2)) {
-        throw new ArrayTypeError(`Data at location ${a2Location} is not an array, it is ${a2}`)
+        throw new ArrayTypeError(`Data at location ${a2Location} is not an array, it is ${a2} of type ${typeof a2}`)
       }
       const equals =  a1.length === a2.length && deepEquals(a1, a2)
       return equals

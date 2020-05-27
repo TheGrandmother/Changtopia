@@ -12,8 +12,16 @@ const pidHelpers = [
   {
     functionId: 'io_pid',
     bif: true,
+    exec: (process) => {
+      return Pid.ioPid(process.vm.host)
+    }
+  },
+
+  {
+    functionId: 'mediator_pid',
+    bif: true,
     exec: () => {
-      return Pid.ioPid()
+      return Pid.mediatorPid()
     }
   },
 

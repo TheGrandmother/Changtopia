@@ -20,7 +20,6 @@ function makeConstantClause(clause, resultName, doneLabel) {
   const compare = makeExprNode('==', resultName, clause.pattern)
   const body = makeBlockNode(clause.body, makeJumpNode(doneLabel))
   return makeIfNode(compare, body)
-
 }
 
 function makeImmediateClause(clause, resultName, doneLabel) {
@@ -103,6 +102,13 @@ function makeArrayClause(clause, resultName, doneLabel) {
 
 }
 
+function makeIdentClause(clause, resultName, doneLabel) {
+  return makeBlockNode(
+    makeBasicAssignmentNode(clause.pattern.name, resultName),
+    makeBlockNode(clause.body, makeJumpNode(doneLabel))
+  )
+}
+
 function makeClauses(clauses, resultName, doneLabel) {
 
   return clauses.filter(clause => clause.type).map((clause) => {
@@ -118,7 +124,10 @@ function makeClauses(clauses, resultName, doneLabel) {
     if (clause.pattern.type === 'identifier' && clause.pattern.name === 'whatever') {
       return makeBlockNode(clause.body, makeJumpNode(doneLabel))
     }
-    throw new Error(`The fuck is up with ${inspect(clause, false,null,true)}`)
+    if (clause.pattern.type === 'identifier') {
+      return makeIdentClause(clause, resultName, doneLabel)
+    }
+    throw new Error(`The fuck is up with this clause: ${inspect(clause, false,null,true)}`)
   })
 }
 

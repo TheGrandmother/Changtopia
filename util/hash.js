@@ -18,7 +18,7 @@ const cheat = true
 
 module.exports = {
   hash,
-  h: cheat ? (v) => `#${v}` : hash,
+  h: cheat ? (v) => `$${v}` : hash,
   randomHash,
   resolveHash,
   knownHashes

@@ -6,6 +6,7 @@ const Pid = require('./pid.js')
 const {prettyInst} = require('./instructions/pretty.js')
 const {inspect} = require('util')
 const {toJsString} = require('../util/strings.js')
+const {formatMessage} = require('../util/messages.js')
 
 const {
   isMainThread, parentPort, workerData
@@ -78,7 +79,7 @@ class Vm {
     if (!recipient) {
       this.log(Object.keys(this.processes))
       this.logError()
-      throw new NoSuchPidError(`There is no process ${Pid.toPid(message.recipient)} to read the message ${inspect(message)}`)
+      throw new NoSuchPidError(`There is no process ${Pid.toPid(message.recipient)} to read the message ${formatMessage(message)}`)
     }
     recipient.addMessage(message)
   }
@@ -188,26 +189,22 @@ class Vm {
   }
 
   logError() {
-    //const stateLegend = '[W,F,A,B,H]'
+    const stateLegend = '[W,F,A,B,H]'
     function makeStateDisplay(state) {
       const toMark = val => val ? '✓' : ' '
       return Object.values(state).map(toMark).join(',')
     }
-    const runningInfo = this.runningProcesses.map((pid) => {
-      const proc = this.processes[pid]
+    const runningInfo = Object.values(this.processes).map((proc) => {
       const functionId = proc.frame.functionId
       const neatString = `${proc.frame.line}: ${prettyInst(proc.getCurrentInstruction())}`
       const state = makeStateDisplay(proc.getStateDescriptor())
-      return `${pid}\t${state}\t${functionId}:${neatString}`
-    })
+      return `${proc.pid}  ${state}  ${functionId}:${neatString}`
+    }).join('\n')
 
-    // const waitingInfo = this.waitingProcesses.map((pid) => {
-    //   const proc = this.processes[pid]
-    //   const functionId = proc.frame.functionId
-    //   const neatString = `${proc.frame.line}: ${prettyInst(proc.getCurrentInstruction())}`
-    //   const state = makeStateDisplay(proc.getStateDescriptor())
-    //   return `${pid}\t${state}\t${functionId}:${neatString}`
-    // })
+
+    const header = `                             ${stateLegend}`
+
+    this.log(header)
     this.log(runningInfo)
   }
 

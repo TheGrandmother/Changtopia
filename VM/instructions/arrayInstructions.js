@@ -11,7 +11,7 @@ const arrayInstructions = {
         if (blobLocations.includes(i)) {
           const arr = process.frame.read(entry)
           if (!Array.isArray(arr)) {
-            throw new Errors.ArrayTypeError(`Data at location ${location} is not an array, it is ${array}`)
+            throw new Errors.ArrayTypeError(`Data at location ${entry} is not an array, it is ${arr} of type ${typeof arr}`)
           }
           array.push(...arr)
         } else {
@@ -44,7 +44,7 @@ const arrayInstructions = {
       const index = process.frame.read(indexLocation)
       const value = process.frame.read(valueLocation)
       if (!Array.isArray(array)) {
-        throw new Errors.ArrayTypeError(`Data at location ${location} is not an array, it is ${array}`)
+        throw new Errors.ArrayTypeError(`Data at location ${location} is not an array, it is ${array} of type ${typeof array}`)
       }
       if (index > array.length) {
         throw  new Errors.ArrayIndexError(`Array index ${index} is out of bounds, Array is only ${array.length} long`)
@@ -60,7 +60,7 @@ const arrayInstructions = {
       const array = process.frame.read(location)
       const index = process.frame.read(indexLocation)
       if (!Array.isArray(array)) {
-        throw new Errors.ArrayTypeError(`Data at location ${location} is not an array, it is ${array}`)
+        throw new Errors.ArrayTypeError(`Data at location ${location} is not an array, it is ${array} of type ${typeof array}`)
       }
       if (index > array.length) {
         throw  new Errors.ArrayIndexError(`Array index ${index} is out of bounds, Array is only ${array.length} long`)
@@ -75,7 +75,7 @@ const arrayInstructions = {
     evaluate: (process, location, hasBody, leadingCount, trailingCount, ...args ) => {
       const array = process.frame.read(location)
       if (!Array.isArray(array)) {
-        throw new Errors.ArrayTypeError(`Data at location ${location} is not an array, it is ${array}`)
+        throw new Errors.ArrayTypeError(`Data at location ${location} is not an array, it is ${array} of type ${typeof array}`)
       }
       if (leadingCount + trailingCount > array.length) {
         throw new Errors.ArrayIndexError(`To many values to unpack. Trying to unpack ${leadingCount + trailingCount} but array contains ${array.length} elements`)

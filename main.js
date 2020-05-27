@@ -7,7 +7,15 @@ const ansiStyles = require('ansi-styles')
 const {Worker} = require('worker_threads')
 const {NodeIoHandler} = require('./Io/NodeIO.js')
 const {randomHash} = require('./util/hash.js')
+const {formatMessage} = require('./util/messages.js')
 const Pid = require('./VM/pid.js')
+const ws = require('ws')
+
+const argv = require('yargs')
+  .option('no-mediator', {alias: 'r', description: 'Don\'t connect to remote instances', type:'boolean', default: false})
+  .option('mediator-host', {alias: 'h', description: 'Hostname of remote mediator', type:'string', default: 'ws://localhost:8999'})
+  .argv
+
 
 class Coordinator {
   constructor(instanceCount, modules, ioHandler) {
@@ -17,6 +25,24 @@ class Coordinator {
     this.ioHandler = ioHandler
     this.workers = {}
     this.showStats = false
+
+    console.log(`connecting to remote mediator: ${argv['mediator-host']}`)
+
+    this.pendingRemoteMessages = {}
+
+    this.ws = new ws(argv['mediator-host'])
+    this.ws.on('open', () => {
+      this.ws.once('message', (_message) => {
+        const message = JSON.parse(_message)
+        if (message.type === 'registered') {
+          console.log('Successfully registered with remote mediator')
+          this.ws.on('message', (message) => this.handleRemoteMessage(message))
+          this.start()
+        }
+      })
+      this.ws.send(JSON.stringify({type: 'register', host: this.host}))
+    })
+
   }
 
   findAvaliableInstance() {
@@ -75,6 +101,14 @@ class Coordinator {
     this.workers[sender].load = summary.topQueue + summary.bottomQueue
   }
 
+  handleRemoteMessage(_message) {
+    const message = JSON.parse(_message)
+    if (message.recipient.host !== this.host) {
+      throw new Error(`Ehm.... I got a message that should go to ${message.recipient.host.toString(16)} but I fucking am ${this.host}`)
+    }
+    this.handleMessage(this.workers[message.recipient.instance], message)
+  }
+
   handleMessage(worker, message) {
     const {internal, recipient, sender} = message
     if (internal) {
@@ -88,7 +122,9 @@ class Coordinator {
         this.updateInfo(sender, message.summary)
       }
     } else {
-      if (Pid.toPid(recipient).isIo()) {
+      if (recipient.host !== this.host) {
+        this.ws.send(JSON.stringify(message))
+      } else if (Pid.toPid(recipient).isIo()) {
         this.ioHandler.handleMessage(worker, message)
       } else {
         const instance = recipient.instance
@@ -128,8 +164,7 @@ async function main () {
 
   const cpuCount = os.cpus().length
 
-  const coordinator = new Coordinator(cpuCount, modules, new NodeIoHandler)
-  coordinator.start()
+  new Coordinator(cpuCount, modules, new NodeIoHandler)
 }
 
 main().then().catch((err) => {console.log('Uncaucght fuckup'); console.error(err); process.exit(420)})
