@@ -1,0 +1,197 @@
+module chat
+
+def _entry()
+  [pids, nicks] = fetch_dudes()
+  print_pids(pids)
+  nick = prompt_for_nick(nicks)
+  io:print_string(bif:ansi_clear_screen())
+  _ = bif:send(bif:mediator_pid(), $publish, 'chat', bif:my_pid())
+  broadcast_join([<pids>, bif:my_pid()], nick)
+  bif:spawn(['chat', 'input_handler'], bif:my_pid(), nick)
+  message_listener([], nick)
+  io:print_string(bif:ansi_clear_screen())
+  io:print_string(bif:ansi_cursor_to(0,0))
+  io:print_string('Leaving chat\n')
+  _ = bif:send(bif:mediator_pid(), $unpublish, 'chat')
+  return $ok
+end
+
+
+def print_pids(pids)
+  match pids
+    [pid, <rest>] ->
+      return print_pids(rest)
+    end
+    [] ->
+      return $ok
+    end
+  end
+end
+
+def message_listener(messages, nick)
+  match bif:listen(['chat', '_message_listener'], messages, nick)
+    [$continue, new_messages] ->
+      return message_listener(new_messages, nick)
+    end
+    $quit ->
+      return $ok
+    end
+    whatever ->
+      return message_listener(messages, nick)
+    end
+  end
+end
+
+def _message_listener(messages, nick, sender, message)
+  match message
+    [$chat_message, nick, content] ->
+      new_messages = render([<messages>, [nick, content]])
+      return [$continue, new_messages]
+    end
+    [$get_nick] ->
+      return nick
+    end
+    [$quit] ->
+      return $quit
+    end
+    whatever ->
+      new_messages = render([<messages>, ['error', 'dumb_message']])
+      return [$continue, new_messages]
+    end
+  end
+end
+
+def input_handler(main_pid, nick)
+  [_, height] = bif:send(bif:io_pid(), $get_console_size)
+  io:print_strings([bif:ansi_cursor_to(0,height), bif:ansi_erase_line()])
+  input = io:get_line()
+  match input
+    [":", <command>] ->
+      match command
+        'q' ->
+          broadcast_message(main_pid, 'Has left the chat with a bat', nick)
+          bif:send(main_pid, [$quit])
+        end
+      end
+    end
+    whatever ->
+      broadcast_message(main_pid, input, nick)
+      input_handler(main_pid, nick)
+    end
+  end
+end
+
+def broadcast_message(main_pid, message, nick)
+  [pids] = bif:send(bif:mediator_pid(), $fetch_dem_dudes, 'chat')
+  nicks = message_map([<pids>, main_pid], [$chat_message, nick, message])
+end
+
+def render(messages)
+  [_, _height] = bif:send(bif:io_pid(), $get_console_size)
+  height = _height - 1
+  [message_string, new_messages] = print_messages(messages, height, [], '')
+  strings = [
+    bif:ansi_cursor_save_position(),
+    bif:ansi_cursor_to(0, height + 1),
+    bif:ansi_erase_up(),
+    message_string,
+    bif:ansi_cursor_restore_position()
+  ]
+  io:print_strings(strings)
+  return new_messages
+end
+
+def print_messages(messages, line, new_messages, string)
+  match messages
+    [<head>, m] ->
+      [nick, content] = m
+      message_string = list:flatten([
+        bif:ansi_cursor_to(0, line),
+        bif:ansi_bold(),
+        nick,
+        ': ',
+        bif:ansi_bold_close(),
+        content,
+        '\n'
+        ])
+      match line == 0
+        true ->
+          return [[<message_string>, <string>], [m, <new_messages>]]
+        end
+        false ->
+          return print_messages(head, line - 1, [m, <new_messages>], [<message_string>, <string>])
+        end
+      end
+    end
+    [] ->
+      return [string, new_messages]
+    end
+  end
+end
+
+
+def broadcast_join(pids, nick)
+  match pids
+    [] ->
+      return $ok
+    end
+    [pid, <rest>] ->
+      bif:send(pid, [$chat_message, nick, 'Has joined the chat!'])
+      return broadcast_join(rest, nick)
+    end
+  end
+end
+
+def prompt_for_nick(nicks)
+  io:print_string('Enter your nickname:\n')
+  nick = io:get_line()
+  match is_nick_used(nicks, nick)
+    true ->
+      io:print_string('Dude, that nick is already used.')
+      return prompt_for_nick(nicks)
+    end
+    false ->
+      return nick
+    end
+  end
+end
+
+def is_nick_used(nicks, nick)
+  match nicks
+    [] ->
+      return false
+    end
+    [n, <rest>] ->
+      match bif:array_compare(n, nick)
+        true ->
+          return true
+        end
+        false ->
+          return is_nick_used(rest, nick)
+        end
+      end
+    end
+  end
+end
+
+def fetch_dudes()
+  [pids] = bif:send(bif:mediator_pid(), $fetch_dem_dudes, 'chat')
+  nicks = message_map(pids, [$get_nick])
+  return [pids, nicks]
+end
+
+def message_map(pids, msg)
+  return _message_map(pids, msg, [])
+end
+
+def _message_map(arr, msg, res)
+  match arr
+    [pid, <rest>] ->
+      resp = bif:send(pid, msg)
+      return _message_map(rest, msg, [<res>, resp])
+    end
+    [] ->
+      return res
+    end
+  end
+end

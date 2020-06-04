@@ -70,7 +70,7 @@ def _help(commands)
 end
 
 def spawn_module(name)
-  pid = bif:spawn('main', '_spawn_module', name)
+  pid = bif:spawn(['main', '_spawn_module'], name)
   bif:link(pid)
   response = bif:request(pid, $run)
   match response
@@ -94,14 +94,14 @@ def spawn_module(name)
 end
 
 def _spawn_module(name)
-  result = bif:listen('main', '_spawn_listener', name)
+  result = bif:listen(['main', '_spawn_listener'], name)
   return result
 end
 
 def _spawn_listener(name, sender, payload)
   match payload
     $run ->
-      result = bif:run(name, '_entry')
+      result = bif:run([name, '_entry'])
       return result
     end
     whatever ->
@@ -148,7 +148,7 @@ def run_command(input)
     end
     [_, arg_count, thing, __] ->
       [module, function] = thing
-      return bif:run(module, function, arguments)
+      return bif:run([module, function], arguments)
     end
   end
   return $ok
@@ -190,7 +190,6 @@ def _find_command(name, commands)
 end
 
 def prompt()
-  bif:request(bif:io_pid(), $get_input_stream)
   input_string = io:get_line()
   io:print_string('\n')
   match run_command(list:split_by(input_string, " "))

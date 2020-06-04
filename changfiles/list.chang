@@ -55,3 +55,54 @@ def _split_by(list, delimiter, current_word, res)
   end
   return $ok
 end
+
+def all(list)
+  match list
+    [x] ->
+      return x
+    end
+    [x ,<rest>] ->
+      return x && all(rest)
+    end
+  end
+end
+
+def map(list, fn)
+  return _map(list, fn, [])
+end
+
+def _map(list, fn, res)
+  match list
+    [] ->
+      return res
+    end
+    [x, <rest>] ->
+      return _map(rest, fn, [<res>, bif:run(fn, x)])
+    end
+  end
+end
+
+def zip(list1, list2)
+  return _zip(list1, list2, [])
+end
+
+def _zip(l1, l2, res)
+  match l1
+    [] ->
+      return res
+    end
+    whatever ->
+      return _zip(tail(l1), tail(l2), [<res>, [head(l1), head(l2)]])
+    end
+  end
+end
+
+def head(l)
+  [h, <_>] = l
+  return h
+end
+
+def tail(l)
+  [_, <t>] = l
+  return t
+end

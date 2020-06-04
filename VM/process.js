@@ -229,6 +229,9 @@ class Process {
 
     if (!oldFrame) {
       this.finished = true
+      if (currentFrame.deathHook) {
+        this.sendMessage(currentFrame.deathHook)
+      }
       return
     }
 
@@ -272,6 +275,9 @@ class Process {
           }
           this.waiting = false
           this.finished = true
+          if (this.stack.frames[0].deathHook) {
+            this.sendMessage(this.stack.frames[0].deathHook)
+          }
         } else {
           console.error(this.buildErrorMessage(err.message, instruction))
           //console.error('Frame:\n',this.frame.data, '\ninstruction:\n', instruction)
@@ -312,7 +318,7 @@ class Stack {
   }
 
   getStackTrace() {
-    return this.frames.map((frame) => `  ${frame.functionId}(${frame.line})`).reverse().join('\n')
+    return this.frames.map((frame) => `  ${frame.func.moduleName}:${frame.functionId}(${frame.line})`).reverse().join('\n')
   }
 }
 

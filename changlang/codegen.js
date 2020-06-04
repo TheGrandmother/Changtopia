@@ -45,7 +45,7 @@ function makeBasicInstruction(instruction, labels) {
   return {inst: {id, args: resolvedArgs}, unresolvedArgs: unresolvedArgs}
 }
 
-function generateCode(indtermediateFunction) {
+function generateCode(indtermediateFunction, moduleName) {
   const {body, name, argLocations} = indtermediateFunction
   const resolvedLabels = {}
   const annotatedCode = []
@@ -83,7 +83,7 @@ function generateCode(indtermediateFunction) {
     return {id, args}
   })
 
-  return {name, code, argLocations, functionId: name}
+  return {name, code, argLocations, functionId: name, moduleName}
 }
 
 module.exports = {

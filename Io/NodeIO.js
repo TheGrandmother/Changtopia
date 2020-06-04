@@ -10,7 +10,7 @@ const exec = util.promisify(require('child_process').exec)
 const PATH = '.tbn_runtime/'
 
 let inputStreamOwner = null
-let inputStreamHandler = null
+let registeredInputListener = false
 process.stdin.setRawMode(true)
 process.stdin.setEncoding('utf8')
 process.stdin.on('data', key => {
@@ -77,15 +77,31 @@ const ioRoutines = {
   },
 
   [h('get_input_stream')]: async (worker, message) => {
-    if (inputStreamHandler) {
-      process.stdin.removeListener('data', inputStreamHandler)
+    if (!inputStreamOwner) {
+      process.stdin.addListener('data', (d) => {
+        const replyBro = {sender: Pid.ioPid(inputStreamOwner.host), recipient: inputStreamOwner, id: randomHash(), payload: [[h('input_data'), d.charCodeAt(0)]]}
+        worker.postMessage(replyBro)
+      })
     }
-    inputStreamHandler = (d) => worker.postMessage(makeReply(message, [[h('input_data'), d.charCodeAt(0)]]))
+    inputStreamOwner = message.sender
+  },
 
-    if (process.stdin.readable) {
-      worker.postMessage(makeReply(message, [h('ok')]))
+  [h('get_input_stream')]: async (worker, message) => {
+    if (!registeredInputListener) {
+      registeredInputListener = true
+      process.stdin.addListener('data', (d) => {
+        if (!inputStreamOwner) {
+          return
+        }
+        const replyBro = {sender: Pid.ioPid(inputStreamOwner.host), recipient: inputStreamOwner, id: randomHash(), payload: [[h('input_data'), d.charCodeAt(0)]]}
+        worker.postMessage(replyBro)
+      })
     }
-    process.stdin.addListener('data', inputStreamHandler)
+    inputStreamOwner = message.sender
+  },
+
+  [h('release_input_stream')]: async () => {
+    inputStreamOwner = null
   },
 
   [h('load_module')]: async (worker, message) => {

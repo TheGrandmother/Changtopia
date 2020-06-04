@@ -95,8 +95,7 @@ function compile() {
   //if (!argv.noOptimize) {
   //  Object.keys(intermediateCode.functions).forEach(name => intermediateCode.functions[name].body = dropRedundantMoves(intermediateCode.functions[name].body))
   //}
-
-  Object.keys(intermediateCode.functions).forEach(name => compiledFunctions[name] = generateCode(intermediateCode.functions[name]))
+  Object.keys(intermediateCode.functions).forEach(name => compiledFunctions[name] = generateCode(intermediateCode.functions[name], intermediateCode.moduleName))
 
   fs.writeFileSync(outPath, JSON.stringify({...intermediateCode, functions: compiledFunctions}, undefined, 2))
 

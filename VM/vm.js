@@ -4,7 +4,6 @@ const builtins = require('./builtins/builtins.js')
 const {NoSuchPidError} = require('../errors.js')
 const Pid = require('./pid.js')
 const {prettyInst} = require('./instructions/pretty.js')
-const {inspect} = require('util')
 const {toJsString} = require('../util/strings.js')
 const {formatMessage} = require('../util/messages.js')
 
@@ -77,7 +76,6 @@ class Vm {
   handleMessage(message) {
     const recipient = this.processes[Pid.toPid(message.recipient)]
     if (!recipient) {
-      this.log(Object.keys(this.processes))
       this.logError()
       throw new NoSuchPidError(`There is no process ${Pid.toPid(message.recipient)} to read the message ${formatMessage(message)}`)
     }
@@ -194,8 +192,12 @@ class Vm {
       const toMark = val => val ? '✓' : ' '
       return Object.values(state).map(toMark).join(',')
     }
+    let runningProc = null
     const runningInfo = Object.values(this.processes).map((proc) => {
       const functionId = proc.frame.functionId
+      if (!proc.waiting && !proc.finished) {
+        runningProc = proc
+      }
       const neatString = `${proc.frame.line}: ${prettyInst(proc.getCurrentInstruction())}`
       const state = makeStateDisplay(proc.getStateDescriptor())
       return `${proc.pid}  ${state}  ${functionId}:${neatString}`
@@ -206,6 +208,9 @@ class Vm {
 
     this.log(header)
     this.log(runningInfo)
+    if (runningProc) {
+      this.log(runningProc.stack.getStackTrace())
+    }
   }
 
   getSummary() {

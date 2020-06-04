@@ -64,12 +64,15 @@ def _get_line(input_string, sender, payload)
       bif:send(bif:io_pid(), $print_string, '>Got a message from someone completley different!?\n')
     end
   end
-  return bif:listen('io', '_get_line', input_string)
+  return bif:listen(['io', '_get_line'], input_string)
 end
 
 def get_line()
+  bif:send(bif:io_pid(), $get_input_stream)
   bif:send(bif:io_pid(), $print_string, '>')
-  return bif:listen('io', '_get_line', '')
+  input = bif:listen(['io', '_get_line'], '')
+  bif:send(bif:io_pid(), $release_input_stream)
+  return input
 end
 
 def print_tabs(n)

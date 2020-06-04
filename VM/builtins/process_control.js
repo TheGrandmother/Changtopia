@@ -1,13 +1,24 @@
 const {h, resolveHash} = require('../../util/hash.js')
 const {toJsString} = require('../../util/strings.js')
-const Pid = require('../pid.js')
+//const Pid = require('../pid.js')
 
 const processControlFunctions = [
   {
     functionId: 'send',
     bif: true,
+    exec: (process, returnLocation, recipient, ...payload) => {
+      if (returnLocation === '__dump__') {
+        process.sendMessage({recipient, payload})
+      } else {
+        process.sendMessage({recipient, payload}, returnLocation)
+      }
+    }
+  },
+  {
+    functionId: 'death_hook',
+    bif: true,
     exec: (process, _, recipient, ...payload) => {
-      process.sendMessage({recipient, payload})
+      process.stack.frames[0].deathHook = {recipient, payload}
     }
   },
   {
@@ -20,7 +31,8 @@ const processControlFunctions = [
   {
     functionId: 'listen',
     bif: true,
-    exec: (process, returnLocation, module, functionId, ...args) => {
+    exec: (process, returnLocation, funcRef, ...args) => {
+      const [module, functionId] = funcRef
       process.listen(toJsString(module), toJsString(functionId), returnLocation, args)
       return 0
     }
@@ -28,13 +40,13 @@ const processControlFunctions = [
   {
     functionId: 'spawn',
     bif: true,
-    exec: (process, returnLocation, module, functionId, ...args) => {
+    exec: (process, returnLocation, funcRef, ...args) => {
+      const [module, functionId] = funcRef
       if (returnLocation === '__dump__') {
         process.sendMessage({payload: [module, functionId, ...args], internal: 'spawn'})
       } else {
         process.sendMessage({payload: [module, functionId, ...args], internal: 'spawn'}, returnLocation)
       }
-      //return process.vm.spawnProcess(toJsString(module), toJsString(functionId), args)
     }
   },
   {
@@ -94,7 +106,8 @@ const processControlFunctions = [
   {
     functionId: 'run',
     bif: true,
-    exec: (process, returnLocation, _moduleName, _functionName, ...args) => {
+    exec: (process, returnLocation, funcRef, ...args) => {
+      const [_moduleName, _functionName] = funcRef
       const moduleName = String.fromCharCode(..._moduleName)
       const functionName = String.fromCharCode(..._functionName)
       process.bindFunction(moduleName, functionName, returnLocation, args)
