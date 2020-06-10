@@ -124,6 +124,6 @@ def _entry()
   io:print_string(bif:ansi_clear_screen())
   start = bif:time()
   [width, height] = bif:request(bif:io_pid(), $get_console_size)
-  plot(width, height, 400)
+  plot(width, height, 10)
   return $ok
 end

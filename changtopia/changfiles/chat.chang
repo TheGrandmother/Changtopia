@@ -87,18 +87,30 @@ def broadcast_message(main_pid, message, nick)
 end
 
 def render(messages)
-  [_, _height] = bif:send(bif:io_pid(), $get_console_size)
-  height = _height - 1
+  [width, _height] = bif:send(bif:io_pid(), $get_console_size)
+  height = _height - 3
   [message_string, new_messages] = print_messages(messages, height, [], '')
   strings = [
     bif:ansi_cursor_save_position(),
     bif:ansi_cursor_to(0, height + 1),
     bif:ansi_erase_up(),
     message_string,
+    make_sepparator(0, width, ''),
     bif:ansi_cursor_restore_position()
   ]
   io:print_strings(strings)
   return new_messages
+end
+
+def make_sepparator(n, width, acc)
+  match width == n
+    true ->
+      return acc
+    end
+    false ->
+      return make_sepparator(n + 1, width, [<acc>, "═"])
+    end
+  end
 end
 
 def print_messages(messages, line, new_messages, string)
@@ -108,7 +120,9 @@ def print_messages(messages, line, new_messages, string)
       message_string = list:flatten([
         bif:ansi_cursor_to(0, line),
         bif:ansi_bold(),
+        bif:ansi_color(225,221,143),
         nick,
+        bif:ansi_color_reset(),
         ': ',
         bif:ansi_bold_close(),
         content,

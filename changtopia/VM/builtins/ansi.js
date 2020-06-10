@@ -32,8 +32,8 @@ const ansiFaff = {
   bold_close: () => ansiStyles.bold.close,
   color: (r, g, b) => ansiStyles.color.ansi16m.rgb(parseInt(r), parseInt(g), parseInt(b)),
   bg_color: (r, g, b) => ansiStyles.bgColor.ansi16m.rgb(parseInt(r), parseInt(g), parseInt(b)),
-  color_reset: () => ansiStyles.color.close(),
-  bg_color_reset: () => ansiStyles.bgColor.close(),
+  color_reset: () => ansiStyles.color.close,
+  bg_color_reset: () => ansiStyles.bgColor.close,
 }
 
 const ansi = Object.keys(ansiFaff).map(key => (

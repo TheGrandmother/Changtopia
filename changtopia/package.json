@@ -1,5 +1,5 @@
 {
-  "name": "tbn",
+  "name": "changtopia",
   "version": "1.0.0",
   "description": "",
   "main": "vm.js",
@@ -25,12 +25,13 @@
     "ansi-escapes": "^4.3.1",
     "ansi-styles": "^4.2.1",
     "deep-equal": "^2.0.1",
+    "es-get-iterator": "^1.1.0",
     "eslint": "^6.7.2",
     "express": "^4.17.1",
+    "isarray": "^2.0.5",
     "ndb": "^1.1.5",
     "nearley": "^2.19.0",
     "ulid": "^2.3.0",
-    "ws": "^7.3.0",
     "xxhashjs": "^0.2.2",
     "yargs": "^15.0.2"
   }

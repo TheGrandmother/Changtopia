@@ -211,18 +211,21 @@ def _entry()
       quit([])
     end
   end
+  io:print_string('loaded io\n')
   match bif:request(bif:io_pid(), $load_module, 'list')
     $module_not_found ->
       bif:send(bif:io_pid(), $print_string, 'Could not load list module\n')
       quit([])
     end
   end
+  io:print_string('loaded lists\n')
   match bif:request(bif:io_pid(), $load_module, 'utils')
     $module_not_found ->
       bif:send(bif:io_pid(), $print_string, 'Could not load utils module\n')
       quit([])
     end
   end
+  io:print_string('loaded utils\n')
   prompt()
   return $ok
 end

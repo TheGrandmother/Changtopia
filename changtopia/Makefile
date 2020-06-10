@@ -1,4 +1,4 @@
-CHANGPILE=node changlang/compiler.js -k
+CHANGPILE=node changlang/standalone.js -k
 
 SRC=changfiles
 BIN=tbn_modules

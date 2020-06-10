@@ -105,6 +105,7 @@ end
 
 def print_strings(arr)
   bif:send(bif:io_pid(), $print_string, list:flatten(arr))
+  return $ok
 end
 
 def print_string(str)

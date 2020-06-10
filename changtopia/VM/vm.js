@@ -1,3 +1,4 @@
+/* global  __non_webpack_require__*/
 const {Process} = require('./process.js')
 const {h, randomHash} = require('../util/hash.js')
 const builtins = require('./builtins/builtins.js')
@@ -6,10 +7,31 @@ const Pid = require('./pid.js')
 const {prettyInst} = require('./instructions/pretty.js')
 const {toJsString} = require('../util/strings.js')
 const {formatMessage} = require('../util/messages.js')
+const process = require('process')
 
-const {
-  isMainThread, parentPort, workerData
-} = require('worker_threads')
+
+let isMainThread
+let postToParent
+let workerData
+let parentPort
+
+if (!process.browser) {
+  __non_webpack_require__ = require // eslint-disable-line no-global-assign
+}
+
+if (process.browser) {
+  postToParent = (msg) => postMessage(msg)
+  isMainThread = false
+
+} else {
+  const {
+    isMainThread: _isMainThread, parentPort: _parentPort, workerData: _workerData
+  } = __non_webpack_require__('worker_threads')
+  isMainThread = _isMainThread
+  postToParent = (msg) => _parentPort.postMessage(msg)
+  parentPort = _parentPort
+  workerData = _workerData
+}
 
 class Vm {
 
@@ -25,11 +47,15 @@ class Vm {
     this.instance = instance
     this.host = host
     this.chattyThreshold = 5
-    parentPort.on('message', (message) => this.handleExternalMessage(message))
+    if (process.browser) {
+      onmessage = (e) => this.handleExternalMessage(e.data)
+    } else {
+      parentPort.on('message', (message) => this.handleExternalMessage(message))
+    }
   }
 
   log(...args) {
-    parentPort.postMessage({internal: 'log', args})
+    postToParent({internal: 'log', args})
   }
 
   pidExists(pid) {
@@ -37,7 +63,7 @@ class Vm {
   }
 
   sendExternal(message) {
-    parentPort.postMessage(message)
+    postToParent(message)
   }
 
   handleExternalMessage(message) {
@@ -224,7 +250,21 @@ if (isMainThread) {
     Vm
   }
 } else {
-  const {modules, host, instance} = workerData
-  const vm = new Vm(instance, host)
-  vm.loadModule(modules)
+  if (process.browser) {
+    //uuuuuuugh......... fuuuuuk diss
+    const whyIsLifeSoHacky = (message) => {
+      if (!message || !message.data || message.data.type !== 'init') {
+        onmessage = whyIsLifeSoHacky
+        return
+      }
+      const {modules, host, instance} = message.data
+      const vm = new Vm(instance, host)
+      vm.loadModule(modules)
+    }
+    onmessage = whyIsLifeSoHacky
+  } else {
+    const {modules, host, instance} = workerData
+    const vm = new Vm(instance, host)
+    vm.loadModule(modules)
+  }
 }

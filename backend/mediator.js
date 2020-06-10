@@ -1,8 +1,7 @@
-const ws = require('ws')
-const {h, randomHash} = require('../util/hash.js')
-const {formatMessage} = require('../util/messages.js')
-const {toJsString, fromJsString} = require('../util/strings.js')
-const Pid = require('../VM/pid.js')
+const {Server} = require('ws')
+const {h, randomHash} = require('changtopia/util/hash.js')
+const {toJsString, fromJsString} = require('changtopia/util/strings.js')
+const Pid = require('changtopia/VM/pid.js')
 
 
 function makeReply(message, payload, secret) {
@@ -10,7 +9,7 @@ function makeReply(message, payload, secret) {
 }
 
 //initialize the WebSocket server instance
-const wss = new ws.Server({ port: 8999 })
+const ws = new Server({ port: 8999 })
 
 const hosts = {}
 
@@ -72,7 +71,7 @@ function messageHandler(ws, _message) {
 
 }
 
-wss.on('connection', (ws, req) => {
+ws.on('connection', (ws, req) => {
   console.log(`Received connection from ${req.socket.remoteAddress}`)
   ws.once('message', (message) => {
     const {type, host} = JSON.parse(message)
