@@ -27,6 +27,7 @@
     "deep-equal": "^2.0.1",
     "es-get-iterator": "^1.1.0",
     "eslint": "^6.7.2",
+    "eslint-config-react-app": "^5.2.1",
     "isarray": "^2.0.5",
     "ndb": "^1.1.5",
     "nearley": "^2.19.3",

@@ -6,6 +6,7 @@ const ansiEscapes = require('ansi-escapes')
 const ansiStyles = require('ansi-styles')
 const {randomHash} = require('./util/hash.js')
 const Pid = require('./VM/pid.js')
+const config = require('../config.json')
 
 let ws
 let Worker
@@ -51,7 +52,7 @@ if (process.browser) {
   Worker = __non_webpack_require__('worker_threads').Worker
   argv = __non_webpack_require__('yargs')
     .option('no-mediator', {alias: 'r', description: 'Don\'t connect to remote instances', type:'boolean', default: false})
-    .option('mediator-host', {alias: 'h', description: 'Hostname of remote mediator', type:'string', default: 'ws://localhost:8999'})
+    .option('mediator-host', {alias: 'h', description: 'Hostname of remote mediator', type:'string', default: config.mediator_host})
     .argv
   ws = require('ws')
 }
@@ -209,7 +210,7 @@ function crazyCoolStarter(initModules, term) {
   const cpuCount = window.navigator.hardwareConcurrency
   const {BrowserIO} = require('./Io/BrowserIO.js')
   const browserIO = new BrowserIO(term)
-  new Coordinator(cpuCount, initModules, browserIO, 'ws://e74b76b6f388.ngrok.io')
+  new Coordinator(cpuCount, initModules, browserIO, config.mediator_host)
   return browserIO
 }
 

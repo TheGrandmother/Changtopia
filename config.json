@@ -1,0 +1,5 @@
+{
+  "server_host": "http://localhost:9000",
+  "mediator_host": "ws://localhost:8999",
+  "frontend_host": "http://localhost:8080"
+}

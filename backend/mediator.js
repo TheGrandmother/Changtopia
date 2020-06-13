@@ -9,7 +9,9 @@ function makeReply(message, payload, secret) {
 }
 
 //initialize the WebSocket server instance
-const ws = new Server({ port: 8999 })
+const port = 8999
+const ws = new Server({ port})
+console.log(`mediator listening on port ${port}`)
 
 const hosts = {}
 
