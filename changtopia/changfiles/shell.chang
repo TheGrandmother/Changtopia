@@ -115,7 +115,7 @@ def dump(args)
   match args
     [name] ->
       [_, filePid] = bif:request(bif:io_pid(), $open_file, name)
-      content = bif:request(filePid, $read)
+      content = bif:request(filePid, $read_all)
       io:print_string(content)
       return $ok
     end

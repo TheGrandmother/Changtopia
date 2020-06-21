@@ -18,7 +18,9 @@ app.get('/get_dem_files', (req, res) => {
     }
     return files
   }
-  loadAndCompile().then((modules) => {res.json(modules); res.send()}).catch(err => {res.json(err); res.status(500).send()})
+  loadAndCompile()
+    .then((modules) => {res.json(modules)})
+    .catch(err => {console.log(err); res.json(err); res.status(500).send()})
 })
 
 app.listen(port, () => console.log(`Example app listening at http://localhost:${port}`))

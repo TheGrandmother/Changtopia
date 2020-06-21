@@ -1,15 +1,55 @@
 const {h, randomHash} = require('../util/hash.js')
-const {toJsString} = require('../util/strings.js')
+const {toJsString, fromJsString} = require('../util/strings.js')
 const Pid = require('../VM/pid.js')
-
-const interfaces = {}
+const fileHandles = {}
 
 function makeReply(message, payload, secret) {
   return {sender: message.recipient, recipient: message.sender, id: randomHash(), payload, requestId: message.id, secret}
 }
 
+class BaseFileHandle {
+  constructor (owner, fileName) {
+    this.fileName = fileName
+    this.owner = owner
+    this.pid = new Pid(0, undefined, owner.host)
+  }
+
+  async handleMessage(worker, message) {
+    const [kind] = message.payload
+    await this[kind](worker, message)
+  }
+
+  async [h('read_all')](worker, message) {
+    const content = await this.getFullContent()
+    worker.postMessage(makeReply(message, fromJsString(content)))
+  }
+
+  async [h('stat')](worker, message) {
+    const stat = await this.stat()
+    worker.postMessage(makeReply(message, stat))
+  }
+
+  async [h('delete')](worker, message) {
+    const content = await this.delete()
+    worker.postMessage(makeReply(message, fromJsString(content)))
+  }
+
+  async [h('write')](worker, message) {
+    const [content] = message.payload
+    await this.writeComplete(this.fileName, toJsString(content))
+    worker.postMessage(makeReply(message, h('ok')))
+  }
+
+  async [h('append')](worker, message) {
+    const [content] = message.payload
+    await this.writeAppend(toJsString(content))
+    worker.postMessage(makeReply(message, h('ok')))
+  }
+}
+
 class BaseIO {
-  constructor() {
+  constructor(FileHandleInterface) {
+    this.FileHandleInterface = FileHandleInterface
     this.ioRoutines = {
       [h('shut_down')]: async () => {
         this.shutDown()
@@ -85,14 +125,41 @@ class BaseIO {
       //    return worker.postMessage(makeReply(message, [h('file_not_found')]))
       //  }
       //}
+
+      [h('list_files')]: async (worker, message) => {
+        const filePaths = await this.listFiles()
+        return worker.postMessage(makeReply(message, filePaths.map(fromJsString)))
+      },
+
+      [h('open_file')]: async (worker, message) => {
+        const fileName = toJsString(message.payload[0])
+        if (await this.doesFileExist(fileName)) {
+          const fileHandle = new this.FileHandleInterface(message.sender, fileName)
+          fileHandles[fileHandle.pid.id] = fileHandle
+          return worker.postMessage(makeReply(message, [h('opened'), fileHandle.pid]))
+        } else {
+          return worker.postMessage(makeReply(message, [h('file_not_found')]))
+        }
+      },
+
+      [h('create_file')]: async (worker, message) => {
+        const fileName = toJsString(message.payload[0])
+        if (await this.doesFileExist(fileName)) {
+          return worker.postMessage(makeReply(message, [h('file_exists')]))
+        } else {
+          const fileHandle = new this.FileHandleInterface(message.sender, fileName)
+          fileHandles[fileHandle.pid.id] = fileHandle
+          return worker.postMessage(makeReply(message, [h('file_not_found')]))
+        }
+      }
     }
   }
   async handleMessage(worker, message) {
     if (message.recipient.id !== 0) {
       //Request To interface
-      if (interfaces[message.recipient.id]) {
-        const systemInterface = interfaces[message.recipient.id]
-        await systemInterface.handleMessage(worker, message)
+      if (fileHandles[message.recipient.id]) {
+        const fileHandle = fileHandles[message.recipient.id]
+        await fileHandle.handleMessage(worker, message)
       } else {
         console.error('no interface')
         return worker.postMessage(makeReply(message, [h('interface_not_found')]))
@@ -111,3 +178,4 @@ class BaseIO {
 }
 
 module.exports.BaseIO = BaseIO
+module.exports.BaseFileHandle = BaseFileHandle

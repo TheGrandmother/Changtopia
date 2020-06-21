@@ -71,6 +71,9 @@ class Coordinator {
     this.pendingRemoteMessages = {}
     this.ws = new ws(mediatorHost)
     this.ws.on('open', () => {
+      this.ws.on('close', () => {
+        console.log('For some strange fucking reason we were closed.')
+      })
       this.ws.once('message', (_message) => {
         const message = JSON.parse(_message)
         if (message.type === 'registered') {
@@ -140,6 +143,7 @@ class Coordinator {
   }
 
   handleRemoteMessage(_message) {
+    console.log(_message)
     const message = JSON.parse(_message)
     if (message.recipient.host !== this.host) {
       throw new Error(`Ehm.... I got a message that should go to ${message.recipient.host.toString(16)} but I fucking am ${this.host}`)

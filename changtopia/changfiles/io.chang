@@ -70,6 +70,7 @@ end
 def get_line()
   bif:send(bif:io_pid(), $get_input_stream)
   bif:send(bif:io_pid(), $print_string, '>')
+  bif:send(bif:io_pid(), $print_string, bif:ansi_cursor_show())
   input = bif:listen(['io', '_get_line'], '')
   bif:send(bif:io_pid(), $release_input_stream)
   return input

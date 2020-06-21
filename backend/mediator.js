@@ -81,7 +81,6 @@ ws.on('connection', (ws, req) => {
       console.log(`Registering host: ${host.toString(16)}`)
 
       if (hosts[host]) {
-        console.log(`Host ${host.toString(16)} allready registered`)
         ws.send(JSON.stringify({type: 'error', msg: 'Host already registered'}))
       } else {
         hosts[host] = {socket: ws, publishedPids: {}, lives: true}
@@ -95,8 +94,7 @@ ws.on('connection', (ws, req) => {
             hosts[host].lives = false
             ws.ping()
           }
-
-        }, 500)
+        }, 5000)
 
         ws.on('message', (message) => messageHandler(ws, message))
         ws.on('close', () => {
