@@ -2,7 +2,6 @@ module main
 -- Lets try to write the basics for a shell like thing!
 
 def bob()
- a = 1
- b = 2
- a = b
+  otto = ['a', 'b']
+  @otto(1,2,3)
 end

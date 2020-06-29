@@ -1,4 +1,4 @@
-const {h, resolveHash} = require('../../util/hash.js')
+const {h} = require('../../util/hash.js')
 const {toJsString} = require('../../util/strings.js')
 //const Pid = require('../pid.js')
 
@@ -79,14 +79,6 @@ const processControlFunctions = [
     exec: (process) => {
       process.unsetTimeout()
       return 0
-    }
-  },
-
-  {
-    functionId: 'atomToString',
-    bif: true,
-    exec: (process, returnLocation, atom) => {
-      return resolveHash(atom).split('').map(c => c.charCodeAt(0))
     }
   },
 

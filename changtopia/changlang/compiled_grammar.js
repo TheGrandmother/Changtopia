@@ -1,4 +1,4 @@
-// Generated automatically by nearley, version 2.19.0
+// Generated automatically by nearley, version 2.19.3
 // http://github.com/Hardmath123/nearley
 (function () {
 function id(x) { return x[0]; }
@@ -91,10 +91,13 @@ var grammar = {
     {"name": "constant", "symbols": ["char"], "postprocess": ast.makeChar},
     {"name": "constant", "symbols": ["atom"]},
     {"name": "atom", "symbols": [{"literal":"$"}, "identifier"], "postprocess": ast.makeAtom},
-    {"name": "function_call$ebnf$1$subexpression$1", "symbols": ["identifier", {"literal":":"}]},
-    {"name": "function_call$ebnf$1", "symbols": ["function_call$ebnf$1$subexpression$1"], "postprocess": id},
-    {"name": "function_call$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "function_call", "symbols": ["function_call$ebnf$1", "identifier", "expr_tuple"], "postprocess": ast.makeFunctionCall},
+    {"name": "function_call", "symbols": ["explicit_call"]},
+    {"name": "function_call", "symbols": ["refference_call"]},
+    {"name": "explicit_call$ebnf$1$subexpression$1", "symbols": ["identifier", {"literal":":"}]},
+    {"name": "explicit_call$ebnf$1", "symbols": ["explicit_call$ebnf$1$subexpression$1"], "postprocess": id},
+    {"name": "explicit_call$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "explicit_call", "symbols": ["explicit_call$ebnf$1", "identifier", "expr_tuple"], "postprocess": ast.makeFunctionCall},
+    {"name": "refference_call", "symbols": [{"literal":"@"}, "identifier", "expr_tuple"], "postprocess": ast.makeRefferenceCall},
     {"name": "array_indexed", "symbols": ["identifier", {"literal":"#"}, "parenthesized"], "postprocess": ast.makeArrayIndexing},
     {"name": "name_tuple", "symbols": [{"literal":"("}, "_", "ident_list", "_", {"literal":")"}], "postprocess": ast.makeTuple},
     {"name": "name_tuple", "symbols": [{"literal":"("}, "_", {"literal":")"}], "postprocess": ast.makeTuple},

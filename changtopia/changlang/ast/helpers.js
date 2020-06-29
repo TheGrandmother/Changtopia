@@ -1,13 +1,12 @@
 const ignoreUs = [
   ',', ';', '(', ')',
-  '\n', 'spawn', 'def',
-  'end', 'if', 'await',
+  '\n', 'def',
+  'end', 'if',
   '[', ']', '|',
   '->', '!', null,
   '#', '<', '>',
   '$', '\'', '"',
-  'shared', 'import', 'module',
-  ':']
+  'module', ':', '@']
 
 function strip (arr, preserveArray = false) {
   if (!Array.isArray(arr)) {

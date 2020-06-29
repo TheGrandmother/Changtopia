@@ -37,7 +37,18 @@ function makeModule(d) {
   }
 }
 
+function makeRefferenceCallNode(identifier, args) {
+  return makeFunctionCallNode('run', [identifier, ...args], 'bif')
+}
+
+function makeRefferenceCall(d) {
+  d = helpers.deepStrip(d)
+  return makeRefferenceCallNode(d[0], d[1].body.entries)
+}
+
 module.exports = {
+  makeRefferenceCall,
+  makeRefferenceCallNode,
   makeFunctionCall,
   makeFunctionCallNode,
   makeFunction,
