@@ -58,17 +58,22 @@ const MyComponent = ({id}) => {
   }
 
   return (
-    <>
-      <Term 
-        ref_={handleTermRef} 
-        onData={(d) => thing(d)} 
-        uid={id} 
+    <div className="chang-window">
+      <Term
+        ref_={handleTermRef}
+        onData={(d) => thing(d)}
+        uid={id}
         scrollback={false}
-        cursorStyle={'block'}
         cursorBlink={true}
         cursorColor={'white'}
+        backgroundColor="#454545"
+        foregroundColor="#c0c0c0"
+        fontFamily='Share Tech Mono'
+        fontSize='16'
+        fontWeight='200'
+        webGLREnderer={false}
         style={{overflowY: 'null'}}/>
-    </>
+    </div>
   );
 };
 
