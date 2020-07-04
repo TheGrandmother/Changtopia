@@ -1,5 +1,6 @@
 const {CompilerError} = require('../errors.js')
 const {inspect} = require('util')
+const {fromJsString} = require('../util/strings.js')
 
 const _inspect = (obj) => inspect(obj,false,null,true) /* eslint-disable-line */
 
@@ -14,7 +15,7 @@ function makeName() {
 
 function makeInterRef(node) {
   __currentIndex += 1
-  return {ref: makeName(node) + '_i'}
+  return {ref: `i${makeName(node)}`}
 }
 
 function makeAssignRef(name) {
@@ -33,7 +34,12 @@ function makeInstruction(id, args) {
 
 function makeUniqueLineLabel(name) {
   __currentIndex += 1
-  return {lineLabel: `${name}_arg${__currentIndex}_l`}
+  return {lineLabel: `${name}_l${__currentIndex}`}
+}
+
+function makeClosureName(module) {
+  __currentIndex += 1
+  return `${module}_closure_${__currentIndex}`
 }
 
 function makeLineLabel(name) {
@@ -106,18 +112,6 @@ const _generators = {
       res = DUMP
     }
     return argCode.concat([makeInstruction('call', [{constant: module || state.moduleName}, {constant: name}, res, ...argRefs])])
-  },
-
-  'spawn': (state, node, res) => {
-    const {name, args} = node
-    const argRefs = args.map(() => makeInterRef())
-    const argCode = args.map((arg, i) => generateNode(state, arg, argRefs[i])).flat()
-    return argCode.concat([makeInstruction('spawn', [{constant: name}, res, ...argRefs])])
-  },
-
-  'await': (state, node) => {
-    const {handler} = node
-    return [makeInstruction('await', [{constant: handler}])]
   },
 
   'binop': (state, node, res) => {
@@ -237,6 +231,19 @@ const _generators = {
       return lhsCode.concat(rhsCode).concat([makeLineLabel(doneLabel)])
     }
   },
+
+  'closure': (state, node, res) => {
+    const {args, body, unbound} = node
+    const name = makeClosureName(state.moduleName)
+    generateFunction({...state, refs: {}, labels: {}}, {name, body, args: args.body.entries, unbound: unbound.map(name => ({ref: getRef(state, name), name}))})
+    const moduleRef = makeInterRef()
+    const nameRef = makeInterRef()
+    return [
+      makeInstruction('arrayCreateImmediate', [moduleRef, {array: fromJsString(state.moduleName)}]),
+      makeInstruction('arrayCreateImmediate', [nameRef, {array: fromJsString(name)}]),
+      makeInstruction('arrayCreate', [res, {constant: 0}, moduleRef, nameRef])
+    ]
+  },
 }
 
 function wrapGenerators() {
@@ -258,9 +265,41 @@ function generateNode(state, node, res) {
   return generators[node.type](state, node, res)
 }
 
+function generateFunction(state, func) {
+  const {name, body, args, unbound} = func
+  state.currentFunction = name
+
+  if (state.functions[name]) {
+    throw new Error(`A function named ${name} has already been defined`)
+  }
+  state.refs = {}
+  state.labels = {}
+  Object.values(args).forEach((argument, i) => {
+    state.refs[argument.name] = makeArgumentRef(argument.name, i)
+  })
+
+  unbound && Object.values(unbound).forEach(ref => {
+    state.refs[ref.name] = ref
+  })
+
+  state.returnRef = {ref: '__return__'}
+
+  if (!generators[body.type]) {
+    throw new CompilerError(`I dont know what to do with a ${body.type} node`)
+  }
+
+  let bodyCode = generators[body.type](state, body)
+  if (func.entryLabel) {
+    bodyCode = [makeLineLabel(func.entryLabel), ...bodyCode]
+  }
+
+  const argLocations = Object.values(state.refs).filter(({arg}) => arg).map(({ref}) => ref)
+
+  state.functions[name] = {name, body: bodyCode, refs: state.refs, argLocations, unbound: unbound && unbound.map(({ref}) => ref)}
+}
+
 function generateIntermediateCode(ast) {
   const state = {
-    imports: {},
     functions: {},
     refs: {},
     labels: {},
@@ -279,36 +318,7 @@ function generateIntermediateCode(ast) {
     }
   })
 
-
-
-  functions.forEach((func) => {
-    const {name, body, args} = func
-    state.currentFunction = name
-
-    if (state.functions[name]) {
-      throw new Error(`A function named ${name} has already been defined`)
-    }
-    state.refs = {}
-    state.labels = {}
-    Object.values(args).forEach((argument, i) => {
-      state.refs[argument.name] = makeArgumentRef(argument.name, i)
-    })
-    state.returnRef = {ref: '__return__'}
-
-    if (!generators[body.type]) {
-      console.log(body)
-      console.log(body.type)
-      throw new CompilerError(`I dont know what to do with a ${body.type} node`)
-    }
-    let bodyCode = generators[body.type](state, body)
-    if (func.entryLabel) {
-      bodyCode = [makeLineLabel(func.entryLabel), ...bodyCode]
-    }
-
-    const argLocations = Object.values(state.refs).filter(({arg}) => arg).map(({ref}) => ref)
-
-    state.functions[name] = {name, body: bodyCode, refs: state.refs, argLocations}
-  })
+  functions.forEach(f => generateFunction(state, f))
 
   return {
     moduleName: state.moduleName,

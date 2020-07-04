@@ -195,6 +195,11 @@ class Process {
     func.argLocations.forEach((loc, i) => argData[loc] = args[i])
 
     const frame = new Frame(func, returnLocation, argData)
+
+    if (func.unbound) {
+      func.unbound.forEach(name => frame.write(name, this.frame.read(name)))
+    }
+
     this.stack.addFrame(frame)
     this.frame = frame
   }

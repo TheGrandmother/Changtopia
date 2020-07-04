@@ -33,7 +33,7 @@ function makeAssignment(d) {
   if (d[0].type === 'arrayIndexing') {
     return makeIndexAssigntNode(d[0].name, d[0].index, d[2])
   }
-  return makeBasicAssignmentNode(d[0].name, d[2])
+  return makeBasicAssignmentNode(d[0].name, helpers.dropArray(d[2]))
 }
 
 module.exports = {

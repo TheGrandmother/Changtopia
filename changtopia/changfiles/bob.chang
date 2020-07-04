@@ -1,6 +1,13 @@
 module bob
 
 def _entry()
-  bif:send(bif:io_pid(), $print_string, 'WE ARE IN BOB!!!!!!!!!!!!!!\n')
+  x = 'Guggenheim\n'
+  y = 'njkldsfa'
+  aron = def (y)
+    bif:send(bif:io_pid(), $print_string, x)
+    bif:send(bif:io_pid(), $print_string, y)
+    bif:send(bif:io_pid(), $print_string, 'WE ARE IN BOB!!!!!!!!!!!!!!\n')
+  end
+  @aron(y)
   return $ok
 end

@@ -29,6 +29,43 @@ function makeFunction(d) {
   }
 }
 
+function makeClosureNode(args, body) {
+  return {
+    type: 'closure',
+    args,
+    body,
+    unbound: identifyUnbound(args.body.entries.map(e => e.name), body)
+  }
+}
+
+function identifyUnbound(argNames, body) {
+  const unbound = {}
+  function traverse(node) {
+    if (!node) {
+      return
+    }
+    if (node.type && node.type === 'identifier') {
+      if (!argNames.includes(node.name)) {
+        unbound[node.name] = null
+        return
+      }
+    }
+    node.lhs && traverse(node.lhs)
+    node.rhs && traverse(node.rhs)
+    node.body && traverse(node.body)
+    node.args && node.args.forEach(a => traverse(a))
+    node.entries && !node.entries.array && node.entries.forEach(e => traverse(e))
+  }
+  traverse(body)
+  return Object.keys(unbound)
+
+}
+
+function makeClosure(d) {
+  d = helpers.strip(d)
+  return makeClosureNode(d[0], d[1])
+}
+
 function makeModule(d) {
   d = helpers.strip(d)
   return {
@@ -52,5 +89,6 @@ module.exports = {
   makeFunctionCall,
   makeFunctionCallNode,
   makeFunction,
-  makeModule
+  makeModule,
+  makeClosure
 }
