@@ -1,4 +1,5 @@
 const {randomHash, h} = require('../util/hash')
+const {fromJsString} = require('../util/strings.js')
 const {evaluateInstruction} = require('./instructions/ops.js')
 const {pretty, prettyInst} = require('./instructions/pretty.js')
 const {inspect} = require('util')
@@ -9,7 +10,9 @@ const {
   ArgumentCountError,
   OddLineError,
   RuntimeError,
-  UndefinedWrite
+  UndefinedWrite,
+  StackOverflow,
+  IncorectClosureBindings
 } = require('../errors.js')
 
 class Process {
@@ -185,7 +188,7 @@ class Process {
     }
   }
 
-  bindNormalFunction(func, returnLocation, args) {
+  bindNormalFunction(func, returnLocation, args, bindings) {
     if (func.argLocations.length !== args.length) {
       throw new ArgumentCountError(`Argument length mismatch calling ${func.functionId}. You gave me [${args}] but i need stuff to fill [${func.argLocations}]`)
 
@@ -194,10 +197,20 @@ class Process {
 
     func.argLocations.forEach((loc, i) => argData[loc] = args[i])
 
+    if (this.stack.frames.length > 10000) {
+      throw new StackOverflow()
+    }
+
     const frame = new Frame(func, returnLocation, argData)
 
     if (func.unbound) {
-      func.unbound.forEach(name => frame.write(name, this.frame.read(name)))
+      console.log(func.unbound)
+      console.log(bindings)
+      if (bindings.length === func.unbound.length) {
+        func.unbound.forEach((name, i) => frame.write(name, bindings[i]))
+      } else {
+        throw new IncorectClosureBindings()
+      }
     }
 
     this.stack.addFrame(frame)
@@ -262,21 +275,21 @@ class Process {
           this.linkedProcesses.forEach(linkedPid => {
             this.sendMessage({
               recipient: linkedPid,
-              payload: [h('error'), err.errorAtom, msg]})
+              payload: [h('error'), err.errorAtom, msg, fromJsString(this.buildErrorMessage(err.message, instruction))]})
           })
           this.inbox.forEach(message => {
             if (message.requiresResponse) {
               this.sendMessage({
                 recipient: message.sender,
                 requestId: message.id,
-                payload: [h('error'), err.errorAtom, msg]})
+                payload: [h('error'), err.errorAtom, msg, fromJsString(this.buildErrorMessage(err.message, instruction))]})
             }
           })
           if (this.handlingRequest) {
             this.sendMessage({
               recipient: this.handlingRequest.sender,
               requestId: this.handlingRequest.id,
-              payload: [h('error'), err.errorAtom, msg]})
+              payload: [h('error'), err.errorAtom, msg, fromJsString(this.buildErrorMessage(err.message, instruction))]})
           }
           this.waiting = false
           this.finished = true
@@ -291,13 +304,13 @@ class Process {
       } else {
         pretty(this.pid, this.frame.functionId, this.frame.line, instruction)
         console.log('Pesant error')
-        console.log('This be our data:', this.frame.data)
+        console.log('This be our data:', this.buildErrorMessage(err.message, instruction, true))
         throw err
       }
     }
   }
 
-  buildErrorMessage(msg, instruction) {
+  buildErrorMessage(msg, instruction, inspectFrame=false) {
     const stackTrace = this.stack.getStackTrace()
     return (
       '================================\n' +
@@ -306,8 +319,6 @@ class Process {
       `Running in process ${this.pid}\n` +
       `Evaluating line ${this.frame.line}: ${prettyInst(instruction)}\n`+
       `Stack trace\n${stackTrace}\n` +
-      'Frame data:\n' +
-      `${inspect(this.frame.data, false, null, true)}\n` +
       '================================\n')
   }
 
@@ -323,7 +334,7 @@ class Stack {
   }
 
   getStackTrace() {
-    return this.frames.map((frame) => `  ${frame.func.moduleName}:${frame.functionId}(${frame.line})`).reverse().join('\n')
+    return this.frames.slice(-5).map((frame) => `  ${frame.func.moduleName}:${frame.functionId}(${frame.line})`).reverse().join('\n')
   }
 }
 

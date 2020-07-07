@@ -235,13 +235,23 @@ const _generators = {
   'closure': (state, node, res) => {
     const {args, body, unbound} = node
     const name = makeClosureName(state.moduleName)
-    generateFunction({...state, refs: {}, labels: {}}, {name, body, args: args.body.entries, unbound: unbound.map(name => ({ref: getRef(state, name), name}))})
+    console.log(unbound)
+    console.log(unbound.map(name => ({ref: getRef(state, name)})))
+    const unboundRefs = unbound.map(name => {
+      if (name !== res.name) {
+        return {ref: getRef(state, name), name}
+      } else {
+        // We are creating a recursive closure.... Great hacks are needed
+        return {ref: getRef(state, name), name}
+      }
+    })
+    generateFunction({...state, refs: {}, labels: {}}, {name, body, args: args.body.entries, unbound: unboundRefs})
     const moduleRef = makeInterRef()
     const nameRef = makeInterRef()
     return [
       makeInstruction('arrayCreateImmediate', [moduleRef, {array: fromJsString(state.moduleName)}]),
       makeInstruction('arrayCreateImmediate', [nameRef, {array: fromJsString(name)}]),
-      makeInstruction('arrayCreate', [res, {constant: 0}, moduleRef, nameRef])
+      makeInstruction('arrayCreate', [res, {constant: 0}, moduleRef, nameRef, ...unboundRefs])
     ]
   },
 }

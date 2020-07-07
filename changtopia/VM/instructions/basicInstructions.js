@@ -39,6 +39,7 @@ const binops = {
   '-': (a ,b) => a - b,
   '*': (a ,b) => a * b,
   '/': (a ,b) => a / b,
+  '%': (a ,b) => a % b,
 }
 
 module.exports = basicInstructions

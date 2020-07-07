@@ -99,10 +99,10 @@ const processControlFunctions = [
     functionId: 'run',
     bif: true,
     exec: (process, returnLocation, funcRef, ...args) => {
-      const [_moduleName, _functionName] = funcRef
+      const [_moduleName, _functionName, ...bindings] = funcRef
       const moduleName = String.fromCharCode(..._moduleName)
       const functionName = String.fromCharCode(..._functionName)
-      process.bindFunction(moduleName, functionName, returnLocation, args)
+      process.bindFunction(moduleName, functionName, returnLocation, args, bindings)
       return h('__ignore_return')
     }
   }

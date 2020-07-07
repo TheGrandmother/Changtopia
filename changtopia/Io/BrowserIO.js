@@ -76,7 +76,7 @@ class BrowserIO extends BaseIO {
   }
 
   async getModule(moduleName) {
-    return JSON.parse(localStorage[`_module_${moduleName}`])
+    return localStorage[`_module_${moduleName}`] && JSON.parse(localStorage[`_module_${moduleName}`])
   }
 
   async listFiles() {
@@ -87,12 +87,16 @@ class BrowserIO extends BaseIO {
     return !!localStorage[getFileKey(name)]
   }
 
-  shutdown() {
-    process.exit()
+  shutDown() {
+    location.reload()
   }
 
   writeOut(data) {
     this.term.write(data.replace(/\n/g, '\n\r'))
+  }
+
+  debugPrint(data) {
+    console.log(data)
   }
 }
 

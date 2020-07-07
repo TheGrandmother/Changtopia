@@ -10,7 +10,7 @@ module -> "module" _ identifier "\n":*                                        {%
 function_def ->
   "def" _ identifier _ name_tuple _ "\n" _ block _ "\n" _ "end" "\n":*        {% ast.makeFunction %}
 
-closure -> "def" _ name_tuple _ "\n" _ block _ "\n" _ "end" "\n":*            {% ast.makeClosure %}
+closure -> "def" _ name_tuple _ "\n" _ block _ "\n" _ "end"                   {% ast.makeClosure %}
 
 block ->
     compound                                                                  {% ast.makeBlock %}
@@ -57,13 +57,13 @@ logic ->
     logic _ ("&&" | "||") _ comparison                                        {% ast.makeMath %}
   | comparison                                                                {% ast.makeMath %}
 comparison ->
-    comparison _ ("=="  | "!=" | ">" | "<") _ arithmetic                      {% ast.makeMath %}
+    comparison _ ("=="  | "!=" | ">" | "<" | ">=" | "<=") _ arithmetic        {% ast.makeMath %}
   | arithmetic                                                                {% ast.makeMath %}
 arithmetic ->
     arithmetic _ ("+" | "-") _ multiplicative                                 {% ast.makeMath %}
   | multiplicative                                                            {% ast.makeMath %}
 multiplicative ->
-    multiplicative _ ("*" | "/") _ thing                                      {% ast.makeMath %}
+    multiplicative _ ("*" | "/" | "%") _ thing                                {% ast.makeMath %}
   | thing                                                                     {% ast.makeMath %}
 
 parenthesized -> "(" _ expr _ ")"                                             {% ast.strip %}

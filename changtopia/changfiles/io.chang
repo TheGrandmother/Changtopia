@@ -113,3 +113,8 @@ def print_string(str)
   bif:send(bif:io_pid(), $print_string, str)
   return $ok
 end
+
+def debug(str)
+  bif:send(bif:io_pid(), $debug, str)
+  return $ok
+end

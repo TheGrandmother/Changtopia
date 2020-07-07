@@ -1,5 +1,21 @@
 module list
 
+def pad_left(list, pad, length)
+  if bif:length(list) >= length
+    return list
+  end
+end
+
+def repeat(x, length)
+  _ = def (n, acc)
+    if n == length
+      return acc
+    end
+    return @_(n + 1, [<acc>, x])
+  end
+  return @_(0, [])
+end
+
 def flatten(lists)
   return _flatten(lists, [])
 end
@@ -95,6 +111,48 @@ def _zip(l1, l2, res)
       return _zip(tail(l1), tail(l2), [<res>, [head(l1), head(l2)]])
     end
   end
+end
+
+def slice(from, to, arr)
+  _skip = $fuckall
+  skip = def (n, acc)
+    match acc
+      [_ , <rest>] ->
+        match n < from
+          true ->
+            return @_skip(n + 1, rest)
+          end
+          false ->
+            return acc
+          end
+        end
+      end
+    end
+    return []
+  end
+  _skip = skip
+
+  arr = @skip(0, arr)
+
+  grab = def (n, arr, res)
+    match arr
+      [x, <rest>] ->
+        match n < to - from
+          true ->
+            return @grab(n + 1, rest, [<res>, x])
+          end
+          false ->
+            return [<res>, x]
+          end
+        end
+      end
+      whatever ->
+        return res
+      end
+    end
+  end
+
+  return @grab(0, arr, [])
 end
 
 def head(l)

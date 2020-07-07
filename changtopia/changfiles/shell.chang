@@ -74,8 +74,8 @@ def spawn_module(name)
   bif:link(pid)
   response = bif:request(pid, $run)
   match response
-    [$error, error_atom, msg] ->
-      io:print_strings(['Error running: ', name, ':\n  ', msg, '\n'])
+    [$error, error_atom, msg, verbose] ->
+      io:print_strings(['Error running: ', name, '\n', verbose])
       return $error
     end
     $ok ->

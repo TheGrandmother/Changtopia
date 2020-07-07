@@ -63,6 +63,10 @@ class BaseIO {
         this.writeOut(String.fromCharCode(...message.payload[0]))
       },
 
+      [h('debug')]: async (worker, message) => {
+        this.debugPrint(String.fromCharCode(...message.payload[0]))
+      },
+
       [h('move_cursor')]: async () => {
         throw new Error('the io operation move_cursor has been grevely deprecated')
       },

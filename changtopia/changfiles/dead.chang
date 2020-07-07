@@ -1,31 +1,69 @@
 module dead
 
--- this is and will be the worlds worst editor
+-- This is and will continue to be the worlds worst editor
 
 def split_into_lines(content)
   lines = list:split_by(content, "\n")
   return lines
 end
 
-def print_lines(lines, line_no)
-  match lines
-    [line, <rest>] ->
-      io:print_strings([bif:cast(line_no, 'string'), ': ', line, '\n'])
-      print_lines(rest, line_no+1)
+def process_onscreen_lines(starting_line, line_count, content)
+  line_number = def (line_no)
+    width = bif:length(bif:cast(line_count, $string))
+    line_marker = list:pad_left(bif:cast(line_no, $string), " ", width)
+    return list:flatten([bif:ansi_bg_color(128,128,128), bif:ansi_color(69,69,69), line_marker, bif:ansi_color_reset(), bif:ansi_bg_color_reset()])
+  end
+  process_lines = def (line_no, rest, acc)
+    match rest
+      [line, <rest>] ->
+        processed_line = list:flatten([@line_number(line_no), line, '\n'])
+        return @process_lines(line_no + 1, rest, [<acc>, processed_line])
+      end
+      [line] ->
+        processed_line = list:flatten([@line_number(line_no), line])
+        return [<acc>, processed_line]
+      end
     end
   end
+  return @process_lines(starting_line, content, [])
 end
 
--- def print_file(content, startLine)
---   [width, height] = bif:request(bif:io_pid(), $get_console_size)
--- end
+def draw_screen(content, starting_line, height)
+  io:print_strings([bif:ansi_cursor_to(0, 0)])
 
-def input_listener(current_content, starting_line, cursor, sender, payload)
+  onscreen_content = list:slice(starting_line, starting_line + height - 4, content)
+
+  processed_lines = process_onscreen_lines(starting_line, bif:length(content), onscreen_content)
+
+  io:print_string(list:flatten(processed_lines))
+end
+
+def input_listener(current_content, starting_line, sender, payload)
+  [width, height] = bif:request(bif:io_pid(), $get_console_size)
+  redraw = false
   match payload
     [$input_data, "k"] ->
-      print_file(current_content)
+      match starting_line == 0
+        false ->
+          starting_line = starting_line - 1
+          redraw = true
+        end
+      end
+    end
+    [$input_data, "j"] ->
+      match starting_line + height + 1 < bif:length(current_content)
+        true ->
+          starting_line = starting_line + 1
+          redraw = true
+        end
+      end
     end
   end
+  if redraw
+    io:print_strings([bif:ansi_erase_screen()])
+    draw_screen(current_content, starting_line, height)
+  end
+  return bif:listen(['dead', 'input_listener'], current_content, starting_line)
 end
 
 def _entry()
@@ -35,7 +73,9 @@ def _entry()
     [$opened, file_pid] ->
       content = bif:request(file_pid, $read_all)
       lines = split_into_lines(content)
-      print_lines(lines, 1)
+      bif:send(bif:io_pid(), $get_input_stream)
+      bif:listen(['dead', 'input_listener'], lines, 0)
+      bif:send(bif:io_pid(), $release_input_stream)
     end
     [error] ->
       io:print_strings(['Could not read file: ', file_name, '\n'])

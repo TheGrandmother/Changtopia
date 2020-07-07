@@ -34,9 +34,17 @@ const MyComponent = ({id}) => {
         term.write('Compiling sources\n\r')
         Object.entries(files).forEach(([name, content]) => {
           createFile(name, content)
-          const module = changpile(content)
-          localStorage[`_module_${module.moduleName}`] = JSON.stringify(module)
-          loadedModules.push(module.moduleName)
+          try {
+            const module = changpile(content)
+            localStorage[`_module_${module.moduleName}`] = JSON.stringify(module)
+            loadedModules.push(module.moduleName)
+          } catch (err) {
+            console.log(err.message)
+            term.write(`Error compiling ${name}:${'\n\r'}`)
+            term.write(err.message.replace(/\n/g, '\n\r') + '\n\r')
+            term.write('Could not start changtopia\n\r')
+            throw err
+          }
         })
         term.write('Loaded and compiled:\n\r' + loadedModules.map(name => `  ${name}${'\n\r'}`).join(''))
         term.write('Starting changtopia\n\r');
@@ -71,7 +79,7 @@ const MyComponent = ({id}) => {
         fontFamily='Share Tech Mono'
         fontSize='16'
         fontWeight='200'
-        webGLREnderer={false}
+        isTermActive={true}
         style={{overflowY: 'null'}}/>
     </div>
   );

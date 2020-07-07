@@ -27,6 +27,18 @@ class LocationInvalidError extends RuntimeError {
   }
 }
 
+class IncorectClosureBindings extends RuntimeError {
+  constructor() {
+    super('Incorect number of bindings received', h('location_error'))
+  }
+}
+
+class StackOverflow extends RuntimeError {
+  constructor() {
+    super('Bro... chill it with the fucking recursion.', h('stack_overflow'))
+  }
+}
+
 class LocationEmptyError extends RuntimeError {
   constructor(msg) {
     super(`There is no data at location ${msg}`, h('location_empty'))
@@ -122,5 +134,7 @@ module.exports = {
   LocationEmptyError,
   UnknownInstance,
   MallformedPid,
-  UndefinedWrite
+  UndefinedWrite,
+  StackOverflow,
+  IncorectClosureBindings
 }

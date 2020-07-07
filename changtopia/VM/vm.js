@@ -143,7 +143,7 @@ class Vm {
     const {processPid, quantum} = this.fetchPidToExecute()
     const process = this.processes[processPid]
     if (!process) {
-      throw new Error(`There is no process ${processPid} :O even tho.`)
+      throw new Error(`There is no process ${processPid} :O`)
     }
     process.messagesSent = 0
     for (let i = 0; i < quantum && !process.finished && !process.waiting; i++) {
