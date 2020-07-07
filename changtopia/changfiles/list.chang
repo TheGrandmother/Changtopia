@@ -4,6 +4,8 @@ def pad_left(list, pad, length)
   if bif:length(list) >= length
     return list
   end
+  head = repeat(pad, length - bif:length(list))
+  return [<head>, <list>]
 end
 
 def repeat(x, length)
@@ -114,13 +116,12 @@ def _zip(l1, l2, res)
 end
 
 def slice(from, to, arr)
-  _skip = $fuckall
   skip = def (n, acc)
     match acc
       [_ , <rest>] ->
         match n < from
           true ->
-            return @_skip(n + 1, rest)
+            return @skip(n + 1, rest)
           end
           false ->
             return acc
@@ -130,7 +131,6 @@ def slice(from, to, arr)
     end
     return []
   end
-  _skip = skip
 
   arr = @skip(0, arr)
 

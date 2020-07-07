@@ -1,10 +1,15 @@
 const helpers = require('./helpers')
 
 function makeBasicAssignmentNode(name, rhs) {
+  if (rhs.type === 'closure') {
+    // We are, or I rather, are forced to pass the name
+    // onto the rhs if it is a closure to solve recursion
+    rhs.cannonicalName = name
+  }
   return {
     type: 'assignment',
     name,
-    rhs,
+    rhs
   }
 }
 

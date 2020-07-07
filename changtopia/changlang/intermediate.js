@@ -1,6 +1,7 @@
 const {CompilerError} = require('../errors.js')
 const {inspect} = require('util')
 const {fromJsString} = require('../util/strings.js')
+const {h} = require('../util/hash.js')
 
 const _inspect = (obj) => inspect(obj,false,null,true) /* eslint-disable-line */
 
@@ -37,9 +38,9 @@ function makeUniqueLineLabel(name) {
   return {lineLabel: `${name}_l${__currentIndex}`}
 }
 
-function makeClosureName(module) {
+function makeClosureName(module, cannonicalName) {
   __currentIndex += 1
-  return `${module}_closure_${__currentIndex}`
+  return `${module}_${cannonicalName}_c${__currentIndex}`
 }
 
 function makeLineLabel(name) {
@@ -233,25 +234,19 @@ const _generators = {
   },
 
   'closure': (state, node, res) => {
-    const {args, body, unbound} = node
-    const name = makeClosureName(state.moduleName)
-    console.log(unbound)
-    console.log(unbound.map(name => ({ref: getRef(state, name)})))
-    const unboundRefs = unbound.map(name => {
-      if (name !== res.name) {
-        return {ref: getRef(state, name), name}
-      } else {
-        // We are creating a recursive closure.... Great hacks are needed
-        return {ref: getRef(state, name), name}
-      }
-    })
+    const {args, body, unbound, cannonicalName} = node
+    const name = makeClosureName(state.moduleName, cannonicalName)
+    const unboundRefs = unbound.map(name => ({ref: getRef(state, name), name}))
     generateFunction({...state, refs: {}, labels: {}}, {name, body, args: args.body.entries, unbound: unboundRefs})
     const moduleRef = makeInterRef()
     const nameRef = makeInterRef()
+    const selfRef = makeInterRef()
+    const bindingRefs = unboundRefs.map(ref => ref.name === cannonicalName ? selfRef : ref)
     return [
+      makeInstruction('imove',[{constant: h('__SELF__')}, selfRef]),
       makeInstruction('arrayCreateImmediate', [moduleRef, {array: fromJsString(state.moduleName)}]),
       makeInstruction('arrayCreateImmediate', [nameRef, {array: fromJsString(name)}]),
-      makeInstruction('arrayCreate', [res, {constant: 0}, moduleRef, nameRef, ...unboundRefs])
+      makeInstruction('arrayCreate', [res, {constant: 0}, moduleRef, nameRef, ...bindingRefs])
     ]
   },
 }

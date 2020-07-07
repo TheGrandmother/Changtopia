@@ -9,19 +9,26 @@ end
 
 def process_onscreen_lines(starting_line, line_count, content)
   line_number = def (line_no)
-    width = bif:length(bif:cast(line_count, $string))
-    line_marker = list:pad_left(bif:cast(line_no, $string), " ", width)
-    return list:flatten([bif:ansi_bg_color(128,128,128), bif:ansi_color(69,69,69), line_marker, bif:ansi_color_reset(), bif:ansi_bg_color_reset()])
+    width = bif:length(bif:cast(line_count, 'string'))
+    line_marker = list:pad_left(bif:cast(line_no, 'string'), " ", width)
+    return list:flatten([
+      bif:ansi_bg_color(128,128,128),
+      bif:ansi_color(69,69,69),
+      line_marker,
+      ' ',
+      bif:ansi_color_reset(),
+      bif:ansi_bg_color_reset()
+    ])
   end
   process_lines = def (line_no, rest, acc)
     match rest
-      [line, <rest>] ->
-        processed_line = list:flatten([@line_number(line_no), line, '\n'])
-        return @process_lines(line_no + 1, rest, [<acc>, processed_line])
-      end
       [line] ->
         processed_line = list:flatten([@line_number(line_no), line])
         return [<acc>, processed_line]
+      end
+      [line, <rest>] ->
+        processed_line = list:flatten([@line_number(line_no), line, '\n'])
+        return @process_lines(line_no + 1, rest, [<acc>, processed_line])
       end
     end
   end
@@ -34,6 +41,8 @@ def draw_screen(content, starting_line, height)
   onscreen_content = list:slice(starting_line, starting_line + height - 4, content)
 
   processed_lines = process_onscreen_lines(starting_line, bif:length(content), onscreen_content)
+
+  io:debug(processed_lines)
 
   io:print_string(list:flatten(processed_lines))
 end

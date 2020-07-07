@@ -66,7 +66,7 @@ class Process {
     return func
   }
 
-  bindFunction (module, functionId, returnLocation, args) {
+  bindFunction (module, functionId, returnLocation, args, bindings) {
     const func = this.getFunction(module, functionId)
     if (module === 'bif') {
       const retval = func.exec(this, returnLocation, ...args)
@@ -75,7 +75,7 @@ class Process {
         this.incrementLine()
       }
     } else {
-      this.bindNormalFunction(func, returnLocation, args)
+      this.bindNormalFunction(func, returnLocation, args, bindings)
     }
 
   }
@@ -204,10 +204,14 @@ class Process {
     const frame = new Frame(func, returnLocation, argData)
 
     if (func.unbound) {
-      console.log(func.unbound)
-      console.log(bindings)
       if (bindings.length === func.unbound.length) {
-        func.unbound.forEach((name, i) => frame.write(name, bindings[i]))
+        func.unbound.forEach((name, i) => {
+          if (bindings[i] === h('__SELF__')) {
+            frame.write(name, [fromJsString(func.moduleName), fromJsString(func.functionId), ...bindings])
+          } else {
+            frame.write(name, bindings[i])
+          }
+        })
       } else {
         throw new IncorectClosureBindings()
       }

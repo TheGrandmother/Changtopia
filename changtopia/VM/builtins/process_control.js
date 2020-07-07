@@ -103,7 +103,7 @@ const processControlFunctions = [
       const moduleName = String.fromCharCode(..._moduleName)
       const functionName = String.fromCharCode(..._functionName)
       process.bindFunction(moduleName, functionName, returnLocation, args, bindings)
-      return h('__ignore_return')
+      return h('__ignore_return') //The binding does the returning not this call
     }
   }
 ]
