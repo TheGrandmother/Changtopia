@@ -32,7 +32,7 @@ function makeFunction(d) {
 function makeClosureNode(args, body) {
   return {
     type: 'closure',
-    args,
+    args: args.body.entries,
     body,
     unbound: identifyUnbound(args.body.entries.map(e => e.name), body)
   }

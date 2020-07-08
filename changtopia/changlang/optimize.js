@@ -120,25 +120,41 @@ module.exports.dropRedundantMoves  = function(code) {
   return newCode
 }
 
-module.exports.tailOptimize = function (func) {
-  if (func.type !== 'function') {
+function tailOptimize (func) {
+
+  if (!(func.type === 'function' || func.type === 'closure')) {
     return
   }
 
-  const name = func.name
+  const name = func.cannonicalName || func.name
+  console.log('Optimizing: ',  name)
+
+  function isCallRecursive(node) {
+    if (node.type !== 'call') {
+      return false
+    }
+    if (node.module === 'bif' && node.name === 'run') {
+      return node.args[0].name === name
+    } else {
+      return !node.module && node.name === name
+    }
+  }
 
   function isTailRecursive(node) {
     if (!node) {
       return true
     }
 
-    if (node.type === 'return') {
-      if (node.rhs.type === 'call' && !node.rhs.module && node.rhs.name === name) {
-        return true
-      }
+    if (node.type === 'closure') {
+      tailOptimize(node)
+      return true
     }
 
-    if (node.type === 'call' && node.name === name && !node.module) {
+    if (node.type === 'return' && isCallRecursive(node.rhs)) {
+      return true
+    }
+
+    if (isCallRecursive(node)) {
       return false
     }
 
@@ -150,7 +166,11 @@ module.exports.tailOptimize = function (func) {
       return
     }
     if (node.type === 'return') {
-      if (node.rhs.type === 'call' && !node.rhs.module && node.rhs.name === name) {
+      if (isCallRecursive(node.rhs)) {
+        if (node.rhs.module === 'bif') {
+          // Here we know that the first argument is the fucntion ref. We can drop it like it was hot
+          node.rhs.args = node.rhs.args.slice(1)
+        }
         const moves = node.rhs.args.map((arg, i) => makeBasicAssignmentNode(`${func.args[i].name}_tmp`, arg))
         if (moves.length !== 0) {
           const thing = chainStatements([...moves, ...func.args.map(({name}) => makeBasicAssignmentNode(name, {type: 'identifier', name: `${name}_tmp`})), makeJumpNode(func.entryLabel)])
@@ -175,8 +195,11 @@ module.exports.tailOptimize = function (func) {
   }
 
   if (isTailRecursive(func.body)) {
-    func.entryLabel = `_${func.name}_entry_label`
-    optimize(func.body, 'something')
+    console.log(name, 'IS TEJL REKÖRSIVE!!!!!!!!!')
+    func.entryLabel = `_${name}_entry_label`
+    optimize(func.body)
   }
 
 }
+
+module.exports.tailOptimize = tailOptimize

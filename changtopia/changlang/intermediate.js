@@ -234,10 +234,10 @@ const _generators = {
   },
 
   'closure': (state, node, res) => {
-    const {args, body, unbound, cannonicalName} = node
+    const {unbound, cannonicalName} = node
     const name = makeClosureName(state.moduleName, cannonicalName)
     const unboundRefs = unbound.map(name => ({ref: getRef(state, name), name}))
-    generateFunction({...state, refs: {}, labels: {}}, {name, body, args: args.body.entries, unbound: unboundRefs})
+    generateFunction({...state, refs: {}, labels: {}}, {...node, name, unbound: unboundRefs})
     const moduleRef = makeInterRef()
     const nameRef = makeInterRef()
     const selfRef = makeInterRef()

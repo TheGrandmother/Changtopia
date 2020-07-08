@@ -1,12 +1,9 @@
 module main
 -- Lets try to write the basics for a shell like thing!
 
-def bob(meh)
-  a = 5
-  glenn = ['aaa', 'bbb']
-  viktor = def (x)
-    bob(a)
-    @glenn(x)
-    return a + x
+def bob(p)
+  glenn = def (a)
+        @glenn(a + 1)
+        return @glenn(a)
   end
 end

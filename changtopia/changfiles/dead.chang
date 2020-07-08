@@ -10,7 +10,7 @@ end
 def process_onscreen_lines(starting_line, line_count, content)
   line_number = def (line_no)
     width = bif:length(bif:cast(line_count, 'string'))
-    line_marker = list:pad_left(bif:cast(line_no, 'string'), " ", width)
+    line_marker = list:pad_left(bif:cast(line_no + 1, 'string'), " ", width)
     return list:flatten([
       bif:ansi_bg_color(128,128,128),
       bif:ansi_color(69,69,69),
@@ -38,7 +38,7 @@ end
 def draw_screen(content, starting_line, height)
   io:print_strings([bif:ansi_cursor_to(0, 0)])
 
-  onscreen_content = list:slice(starting_line, starting_line + height - 4, content)
+  onscreen_content = list:slice(starting_line, starting_line + height - 2, content)
 
   processed_lines = process_onscreen_lines(starting_line, bif:length(content), onscreen_content)
 
@@ -47,11 +47,11 @@ def draw_screen(content, starting_line, height)
   io:print_string(list:flatten(processed_lines))
 end
 
-def input_listener(current_content, starting_line, sender, payload)
+def input_listener(current_content, starting_line, marker_pos, sender, payload)
   [width, height] = bif:request(bif:io_pid(), $get_console_size)
   redraw = false
   match payload
-    [$input_data, "k"] ->
+    [$input_data, "K"] ->
       match starting_line == 0
         false ->
           starting_line = starting_line - 1
@@ -59,7 +59,7 @@ def input_listener(current_content, starting_line, sender, payload)
         end
       end
     end
-    [$input_data, "j"] ->
+    [$input_data, "k"] ->
       match starting_line + height + 1 < bif:length(current_content)
         true ->
           starting_line = starting_line + 1
