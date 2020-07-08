@@ -127,7 +127,6 @@ function tailOptimize (func) {
   }
 
   const name = func.cannonicalName || func.name
-  console.log('Optimizing: ',  name)
 
   function isCallRecursive(node) {
     if (node.type !== 'call') {
@@ -195,7 +194,6 @@ function tailOptimize (func) {
   }
 
   if (isTailRecursive(func.body)) {
-    console.log(name, 'IS TEJL REKÖRSIVE!!!!!!!!!')
     func.entryLabel = `_${name}_entry_label`
     optimize(func.body)
   }
