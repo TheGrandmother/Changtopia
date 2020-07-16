@@ -133,9 +133,9 @@ function makeClauses(clauses, resultName, doneLabel) {
 }
 
 function makeMatcher(d) {
-  d = helpers.wrapInArray(helpers.strip(d))
-  const clauses = helpers.deepStrip(helpers.wrapInArray(helpers.strip(helpers.wrapInArray(d[2].flat())))).flat(Infinity)
-  const expr = d[1]
+  d = helpers.strip(d)
+  const clauses = helpers.deepStrip(helpers.wrapInArray(helpers.strip(helpers.wrapInArray(d[1].flat())))).flat(Infinity)
+  const expr = d[0]
   const matchIdentifier = randomHash()
   const exprResult = makeIdentifier(`match_expr_${matchIdentifier}`)
   const doneLabel = `match_done_${matchIdentifier}`
@@ -147,7 +147,7 @@ function makeMatcher(d) {
 }
 
 function makeClause(d) {
-  d = helpers.strip(d.flat())
+  d = helpers.deepStrip(d.flat())
   return {
     type: 'clause',
     pattern: helpers.strip(d[0]),

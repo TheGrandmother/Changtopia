@@ -1,38 +1,34 @@
 @{%
   const ast = require('./ast/ast.js')
+  const lexer = require('./tokenizer.js')
   //const ast = {}
 %}
 
+@lexer lexer
+
 main -> module (function_def):+ {% ast.flattenAndStrip%}
 
-module -> "module" _ identifier "\n":*                                        {% ast.makeModule %}
+module -> %module _ identifier %nl                                        {% ast.makeModule %}
 
 function_def ->
-  "def" _ identifier _ name_tuple _ "\n" _ block _ "\n" _ "end" "\n":*        {% ast.makeFunction %}
+  "def" _ identifier _ name_tuple %nl block %nl "end" %nl        {% ast.makeFunction %}
 
-closure -> "def" _ name_tuple _ "\n" _ block _ "\n" _ "end"                   {% ast.makeClosure %}
+closure -> "def" _ name_tuple (%ws | %nl) block (%ws | %nl) "end"                  {% ast.makeClosure %}
 
 block ->
     compound                                                                  {% ast.makeBlock %}
-  | compound _ (";"|"\n") _ block                                             {% ast.makeBlock %}
-  | (";"|"\n") _ block                                                        {% ast.makeBlock %}
-  | match _ ("\n") _  block                                                   {% ast.makeBlock %}
+  | compound _ (";"|%nl|%ws)  block                                             {% ast.makeBlock %}
+  | match  %nl   block                                                   {% ast.makeBlock %}
   | match
 
-match -> "match" __ expr _ "\n" _ match_clauses                               {% ast.makeMatcher %}
+match -> "match" __ expr _ %nl _ match_clauses              {% ast.makeMatcher %}
 
 match_clauses ->
     match_clause _ match_clauses
   | "end"
 
-match_clause ->  pattern __ "->" _ "\n"  _ block  "\n" _ "end" _ "\n"         {% ast.makeClause %}
-
-pattern ->
-    constant                                                                  {% ast.makeConstant %}
-  | string
-  | identifier
-  | array_litteral
-
+match_clause ->
+  thing __ "->" (%ws | %nl) block  (%ws | %nl) "end" %nl       {% ast.makeClause %}
 
 compound ->
     assignment
@@ -40,11 +36,10 @@ compound ->
   | "return" _ expr                                                           {% ast.makeReturn %}
   | if                                                                        {% ast.makeIfStatement %}
 
-if -> "if" __ math _ "\n" _ block _ "\n" _ "end"
+if -> "if" __ math (%ws | %nl) block (%ws | %nl) "end"
 
 assignment ->
     unpack __ "=" _ expr                                                      {% ast.makeAssignment %}
-  | array_indexed __ "=" _ expr                                               {% ast.makeAssignment %}
   | identifier __ "=" _ expr                                                  {% ast.makeAssignment %}
 
 expr ->
@@ -54,16 +49,16 @@ expr ->
 math ->
     logic                                                                     {% ast.makeMath %}
 logic ->
-    logic _ ("&&" | "||") _ comparison                                        {% ast.makeMath %}
+    logic _ %logic _ comparison                                               {% ast.makeMath %}
   | comparison                                                                {% ast.makeMath %}
 comparison ->
-    comparison _ ("=="  | "!=" | ">" | "<" | ">=" | "<=") _ arithmetic        {% ast.makeMath %}
+    comparison _ %comparison _ arithmetic                                     {% ast.makeMath %}
   | arithmetic                                                                {% ast.makeMath %}
 arithmetic ->
-    arithmetic _ ("+" | "-") _ multiplicative                                 {% ast.makeMath %}
+    arithmetic _ %arithmetic _ multiplicative                                 {% ast.makeMath %}
   | multiplicative                                                            {% ast.makeMath %}
 multiplicative ->
-    multiplicative _ ("*" | "/" | "%") _ thing                                {% ast.makeMath %}
+    multiplicative _ %multiplicative _ thing                                  {% ast.makeMath %}
   | thing                                                                     {% ast.makeMath %}
 
 parenthesized -> "(" _ expr _ ")"                                             {% ast.strip %}
@@ -73,24 +68,21 @@ thing ->
     function_call                                                             {% ast.strip %}
   | parenthesized                                                             {% ast.strip %}
   | array_litteral
-  | array_indexed
-  | string
+  | %string                                                                   {% ast.makeString %}
   | identifier
   | constant                                                                  {% ast.makeConstant %}
 
 constant ->
-    number
-  | char                                                                      {% ast.makeChar%}
-  | atom
+    %number                                                                   {% ast.makeNumber %}
+  | %char                                                                     {% ast.makeChar%}
+  | %atom                                                                     {% ast.makeAtom %}
+  | %bool                                                                     {% ast.makeBool %}
 
-atom -> "$" identifier                                                        {% ast.makeAtom %}
 
 function_call -> explicit_call | refference_call
 
 explicit_call -> (identifier ":"):? identifier expr_tuple                     {% ast.makeFunctionCall %}
-refference_call -> "@" identifier expr_tuple                                   {% ast.makeRefferenceCall %}
-
-array_indexed -> identifier "#" parenthesized                                 {% ast.makeArrayIndexing %}
+refference_call -> "@" identifier expr_tuple                                  {% ast.makeRefferenceCall %}
 
 name_tuple ->
     "(" _ ident_list _ ")"                                                    {% ast.makeTuple %}
@@ -98,69 +90,15 @@ name_tuple ->
 
 ident_list ->
     _ident_list                                                               {% ast.makeIdentList %}
-  | _ident_list _ "," "\n":?                                                  {% ast.makeIdentList %}
+  | _ident_list _ "," _ %nl:?                                                 {% ast.makeIdentList %}
 
 _ident_list ->
     identifier                                                                {% ast.flattenAndStrip %}
-  | _ident_list _ "," "\n":? _ identifier                                            {% ast.flattenAndStrip %}
+  | _ident_list _ "," (%nl | %ws):? identifier                                {% ast.flattenAndStrip %}
 
 expr_tuple ->
-    "(" _ expr_list _ ")"                                                     {% ast.makeTuple %}
+    "(" %nl:? _ expr_list _ %nl:? ")"                                         {% ast.makeTuple %}
   | "(" _ ")"                                                                 {% ast.makeTuple %}
-
-array_litteral ->
-    "[" (_ "\n"):? _ repack_list _ ("\n" _):? "]"                                                   {% ast.makeArrayLitteral %}
-  | "[" _ "]"                                                                 {% ast.makeArrayLitteral %}
-
-repack_list ->
-    _repack_list
-  | _repack_list _ "," "\n":?
-
-_repack_list ->
-    expr
-  | array_blob
-  | _repack_list _ "," "\n":? _ expr
-  | _repack_list _ "," "\n":? _ array_blob
-
-_repack ->
-    expr_list
-  | expr_list _ "," "\n":? _ array_blob
-
-array_blob -> "<" _ identifier _ ">"                                          {% ast.makeBlob %}
-
-unpack ->
-     "[" (_ "\n"):? _ _unpack _ "\n":? "]"                                                      {% ast.makeUnpack %}
-
-_unpack ->
-    ident_list                                                                {% ast.strip %}
-  | (_ident_list _ "," "\n":? {% ast.strip %}):? _
-    array_blob
-    _ ("," ("\n" _):? _ident_list {% ast.strip %}):?
-
-
-string ->
-    "'" _string "'"                                                           {% ast.makeString %}
-_string ->
-    null
-  | _string _stringchar
-
-_stringchar ->
-    [^\\']
-  | "\\"
-  | "\\'" {% () => ["'"] %}
-
-_charcharbinks ->
-    "\"" {% () => ["\""] %}
-  | ("\\"):? [^\"]
-
-char ->
-    "\"\"\""
-  | "\"" ("\\"):? [^\"] "\""
-
-bool -> _bool                                                                 {% ast.makeBool %}
-_bool ->
-    "true"
-  | "false"
 
 expr_list ->
     _expr_list                                                                {% ast.makeExprList %}
@@ -168,19 +106,35 @@ expr_list ->
 
 _expr_list ->
     expr
-  | _expr_list _ "," _ expr                                                   {% ast.flattenAndStrip %}
+  | _expr_list _ "," %nl:? _ expr                                             {% ast.flattenAndStrip %}
 
-crazy_identifier -> identifier | array_indexed
+array_litteral ->
+    "[" %nl:? _ repack_list _ %nl:? "]"                                       {% ast.makeArrayLitteral %}
+  | "[" _ "]"                                                                 {% ast.makeArrayLitteral %}
+
+repack_list ->
+    _repack_list
+  | _repack_list _ "," %nl:?
+
+_repack_list ->
+    expr
+  | array_blob
+  | _repack_list _ "," %nl:? _ expr
+  | _repack_list _ "," %nl:? _ array_blob
+
+array_blob -> %blob                                          {% ast.makeBlob %}
+
+unpack ->
+     "[" %nl:? _ _unpack _ %nl:? "]"                                                      {% ast.makeUnpack %}
+
+_unpack ->
+    ident_list                                                                {% ast.strip %}
+  | (_ident_list _ "," %nl:?):? _
+    array_blob
+    _ ("," %nl:? _ident_list {% ast.strip %}):?
 
 identifier ->
-  [a-zA-Z_] [\w]:*                                                            {% ast.makeIdentifier %}
+  %identifier                                                                 {% ast.makeIdentifier %}
 
-number -> "-":? [\d]:+ {% ast.makeNumber %}
-
-
-_  -> wschar:* {% ast.skip %}
-__ -> wschar:+ {% ast.skip %}
-
-any_wschar -> [ \t\n\v\f] {% ast.skip %}
-wschar -> [ \t\v\f] {% ast.skip %}
-break -> [\n;]:+ {% ast.skip %}
+_  -> %ws:* {% ast.skip %}
+__ -> %ws:+ {% ast.skip %}

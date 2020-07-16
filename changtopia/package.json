@@ -25,13 +25,14 @@
     "ansi-escapes": "^4.3.1",
     "ansi-styles": "^4.2.1",
     "deep-equal": "^2.0.1",
+    "moo": "^0.5.1",
     "nearley": "^2.19.3",
     "xxhashjs": "^0.2.2",
     "yargs": "^15.0.2"
   },
   "devDependencies": {
-    "ndb": "^1.1.5",
     "eslint": "^6.7.2",
-    "eslint-config-react-app": "^5.2.1"
+    "eslint-config-react-app": "^5.2.1",
+    "ndb": "^1.1.5"
   }
 }

@@ -1,4 +1,5 @@
 const helpers = require('./helpers')
+const basics = require('./basics.js')
 
 function makeArrayLitteral(d) {
   d = helpers.flattenAndStrip(d)
@@ -21,7 +22,7 @@ function makeBlob(d) {
   d = helpers.strip(d)
   return {
     type: 'blob',
-    value: d
+    value: basics.makeIdentifierNode(d.value)
   }
 }
 
@@ -53,15 +54,14 @@ function makeUnpack(d) {
 
 function makeString(d) {
   d = helpers.strip(d)
-  d = d.flat(Infinity)
-  d = d.join('')
+  const s = d.value
     .replace(/\\n/g,'\n')
     .replace(/\\t/g,'\t')
     .replace(/\\r/g,'\r')
     .replace(/\\0/g,'\0')
   return {
     type: 'arrayLitterallImmediate',
-    entries: {array: d.split('').map(c => c.charCodeAt(0))}
+    entries: {array: s.split('').map(c => c.charCodeAt(0))}
   }
 }
 

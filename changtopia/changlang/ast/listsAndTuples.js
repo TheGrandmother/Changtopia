@@ -19,7 +19,7 @@ function makeExprList(d) {
 function makeTuple(d) {
   d = helpers.flattenAndStrip(d)
   if (d.length === 0) {
-    return {type: 'emptyTuple', body: {type: 'emptyList', entries: []}}
+    return {type: 'tuple', body: {type: 'exprList', entries: []}}
   } else {
     return {type: 'tuple', body: d}
   }

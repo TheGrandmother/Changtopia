@@ -57,7 +57,7 @@ function changpile(_input, options = {}) {
     showAmbigous = false,
   } = options
 
-  const input = _input.replace(/--.*$/mg,'').replace(/^\s*$/mg,'')
+  const input = _input.replace(/--.*$/mg,'')
 
   const functions = parse(input, showAmbigous)
 

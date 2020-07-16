@@ -20,7 +20,7 @@ function makeFunctionCall(d) {
 }
 
 function makeFunction(d) {
-  d = helpers.strip(d)
+  d = helpers.deepStrip(d)
   return {
     type: 'function',
     name: d[0].name,
@@ -74,7 +74,7 @@ function identifyUnbound(argNames, body) {
 }
 
 function makeClosure(d) {
-  d = helpers.strip(d)
+  d = helpers.flattenAndStrip(d)
   return makeClosureNode(d[0], helpers.dropArray(d[1]))
 }
 
@@ -82,7 +82,7 @@ function makeModule(d) {
   d = helpers.strip(d)
   return {
     type: 'module',
-    moduleName: d[0].name
+    moduleName: d[1].name
   }
 }
 

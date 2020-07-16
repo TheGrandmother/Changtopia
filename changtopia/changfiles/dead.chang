@@ -20,6 +20,12 @@ def process_onscreen_lines(starting_line, line_count, content)
       bif:ansi_bg_color_reset()
     ])
   end
+
+  -- process_line = def (line_no, line)
+  --   [line, column] = marker_pos
+  --   return $ok
+  -- end
+
   process_lines = def (line_no, rest, acc)
     match rest
       [line] ->
@@ -51,6 +57,7 @@ def input_listener(current_content, starting_line, marker_pos, sender, payload)
   [width, height] = bif:request(bif:io_pid(), $get_console_size)
   redraw = false
   match payload
+
     [$input_data, "K"] ->
       match starting_line == 0
         false ->
@@ -59,7 +66,8 @@ def input_listener(current_content, starting_line, marker_pos, sender, payload)
         end
       end
     end
-    [$input_data, "k"] ->
+
+    [$input_data, "J"] ->
       match starting_line + height + 1 < bif:length(current_content)
         true ->
           starting_line = starting_line + 1
@@ -67,12 +75,20 @@ def input_listener(current_content, starting_line, marker_pos, sender, payload)
         end
       end
     end
+
   end
+
   if redraw
     io:print_strings([bif:ansi_erase_screen()])
     draw_screen(current_content, starting_line, height)
   end
-  return bif:listen(['dead', 'input_listener'], current_content, starting_line)
+
+  return bif:listen(
+    ['dead', 'input_listener'],
+    current_content,
+    starting_line,
+    marker_pos
+  )
 end
 
 def _entry()
@@ -82,8 +98,10 @@ def _entry()
     [$opened, file_pid] ->
       content = bif:request(file_pid, $read_all)
       lines = split_into_lines(content)
+      [width, height] = bif:request(bif:io_pid(), $get_console_size)
+      draw_screen(lines, 0, height)
       bif:send(bif:io_pid(), $get_input_stream)
-      bif:listen(['dead', 'input_listener'], lines, 0)
+      bif:listen(['dead', 'input_listener'], lines, 0, [0,0])
       bif:send(bif:io_pid(), $release_input_stream)
     end
     [error] ->

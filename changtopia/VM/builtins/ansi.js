@@ -1,4 +1,4 @@
-const {fromJsString} = require('../../util/strings.js')
+const {fromJsString, toJsString} = require('../../util/strings.js')
 const ansiEscapes = require('ansi-escapes')
 const ansiStyles = require('ansi-styles')
 
@@ -31,7 +31,9 @@ const ansiFaff = {
   bold: () => ansiStyles.bold.open,
   bold_close: () => ansiStyles.bold.close,
   color: (r, g, b) => ansiStyles.color.ansi16m.rgb(parseInt(r), parseInt(g), parseInt(b)),
+  color_hex: (s) => ansiStyles.color.ansi16m.hex(toJsString(s)),
   bg_color: (r, g, b) => ansiStyles.bgColor.ansi16m.rgb(parseInt(r), parseInt(g), parseInt(b)),
+  bg_color_hex: (s) => ansiStyles.bgColor.ansi16m.hex(toJsString(s)),
   color_reset: () => ansiStyles.color.close,
   bg_color_reset: () => ansiStyles.bgColor.close,
 }

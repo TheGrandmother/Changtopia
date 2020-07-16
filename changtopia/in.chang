@@ -2,8 +2,9 @@ module main
 -- Lets try to write the basics for a shell like thing!
 
 def bob(p)
-  glenn = def (a)
-        @glenn(a + 1)
-        return @glenn(a)
+  match p
+    0 ->
+      return 0
+    end
   end
 end

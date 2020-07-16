@@ -1,44 +1,34 @@
 const helpers = require('./helpers.js')
 const {h} = require('../../util/hash.js')
 
+function makeIdentifierNode(name) {
+  return {
+    type: 'identifier',
+    name
+  }
+}
+
 function makeIdentifier(d) {
   d = helpers.flattenAndStrip(d)
   if (!Array.isArray(d)) {
     d = [d]
   }
+  return makeIdentifierNode(d[0].value)
+}
 
-  d = d.join('')
-  // THIS IS SO FUCKING UGLY
-  // But i couldnt for the life of me
-  // disambiguate the fokkin grammar.
-  if (d === 'true') {
-    return {
-      type: 'constant',
-      valueType: 'bool',
-      value: true
-    }
-  } else if (d === 'false') {
-    return {
-      type: 'constant',
-      valueType: 'bool',
-      value: false
-    }
-  }
-
+function makeBool(d) {
   return {
-    type: 'identifier',
-    name: d,
+    type: 'constant',
+    valueType: 'bool',
+    value: d[0].value
   }
 }
 
 function makeNumber(d) {
   d = helpers.flattenAndStrip(d)
-  if (!Array.isArray(d)) {
-    d = [d]
-  }
   return {
     type: 'number',
-    value: parseInt(d.join('')),
+    value: d.value,
   }
 }
 
@@ -54,16 +44,14 @@ function makeAtom(d) {
   d = helpers.strip(d)
   return {
     type: 'atom',
-    name: d.name,
-    value: h(d.name)
+    name: d.value,
+    value: h(d.value)
   }
 }
 
 function makeChar(d) {
   //Well do a manual strip here to handle
   //skipping of sane chars and stupid slashes
-  d = d.flat()
-  const c = (d[1] ? d[1] : '') + d[2]
   function unFuckEscapes(c) {
     switch (c) {
     case '\\n': return '\n'
@@ -75,11 +63,14 @@ function makeChar(d) {
   }
   return {
     type: 'char',
-    value: unFuckEscapes(c).charCodeAt(0)
+    value: unFuckEscapes(d[0].value).charCodeAt(0)
   }
 }
 
 function makeConstantNode (value, valueType) {
+  if (value === undefined) {
+    throw new Error('Value cannot be undefined')
+  }
   return {
     type: 'constant',
     valueType,
@@ -94,10 +85,12 @@ function makeConstant(d) {
 
 module.exports = {
   makeIdentifier,
+  makeIdentifierNode,
   makeNumber,
   makeReturn,
   makeAtom,
   makeChar,
   makeConstant,
-  makeConstantNode
+  makeConstantNode,
+  makeBool
 }

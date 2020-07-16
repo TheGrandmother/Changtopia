@@ -32,10 +32,12 @@ const MyComponent = ({id}) => {
         const files = (await axios(`${config.server_host}/get_dem_files`)).data
         const loadedModules = []
         term.write('Compiling sources\n\r')
+        console.log(files)
         Object.entries(files).forEach(([name, content]) => {
           createFile(name, content)
           try {
             const module = changpile(content)
+            console.log(module)
             localStorage[`_module_${module.moduleName}`] = JSON.stringify(module)
             loadedModules.push(module.moduleName)
           } catch (err) {

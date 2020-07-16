@@ -147,8 +147,8 @@ def run_command(input)
       return $ok
     end
     [_, arg_count, thing, __] ->
-      [module, function] = thing
-      return bif:run([module, function], arguments)
+      [module_name, function] = thing
+      return bif:run([module_name, function], arguments)
     end
   end
   return $ok

@@ -45,8 +45,8 @@ function makeIfNode(lhs, rhs) {
 }
 
 function makeIfStatement(d) {
-  d = helpers.strip(d)
-  return makeIfNode(d[0], d[1])
+  d = helpers.flattenAndStrip(d)
+  return makeIfNode(d[1], d[2])
 }
 
 module.exports = {
