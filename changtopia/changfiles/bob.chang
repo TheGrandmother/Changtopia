@@ -4,9 +4,4 @@ def _entry()
   bob = def ()
     return 4
   end
-
-
-  bob = def ()
-    return 79
-  end
 end

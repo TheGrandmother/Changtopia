@@ -8,8 +8,8 @@ const ignoreUs = [
   '$', '\'', '"',
   'module', ':', '@']
 
-const ignoredTypes = [
-  'stuff', 'end', 'match', 'nl', 'bracket', 'def', 'ws'
+const ignoredTokens = [
+  'STUFF', 'END', 'MATCH', 'NL', 'BRACKET', 'DEF', 'WS', 'CLAUSE'
 ]
 
 function strip (arr, preserveArray = false) {
@@ -19,7 +19,7 @@ function strip (arr, preserveArray = false) {
   if (arr.length === 1 && Array.isArray(arr[0])) {
     return strip(arr[0])
   } else {
-    const stripped =  arr.filter(e => !ignoreUs.includes(e) && !ignoredTypes.includes(e.type))
+    const stripped =  arr.filter(e => !ignoreUs.includes(e) && !ignoredTokens.includes(e.type))
     if (stripped.length === 1 && !preserveArray) {
       return stripped[0]
     } else {
@@ -29,7 +29,7 @@ function strip (arr, preserveArray = false) {
 }
 
 function deepStrip(arr) {
-  return arr.filter(e => !ignoreUs.includes(e) && !ignoredTypes.includes(e.type)).map(subArray => {
+  return arr.filter(e => !ignoreUs.includes(e) && !ignoredTokens.includes(e.type)).map(subArray => {
     if (Array.isArray(subArray)) {
       const stripped =  subArray.filter(e => !ignoreUs.includes(e))
       return deepStrip(stripped)

@@ -8,39 +8,39 @@
 
 main -> module (function_def):+ {% ast.flattenAndStrip%}
 
-module -> %module _ identifier %nl                                        {% ast.makeModule %}
+module -> %MODULE _ identifier %NL                                        {% ast.makeModule %}
 
 function_def ->
-  "def" _ identifier _ name_tuple %nl block %nl "end" %nl        {% ast.makeFunction %}
+  %DEF _ identifier _ name_tuple %NL block %NL %END %NL        {% ast.makeFunction %}
 
-closure -> "def" _ name_tuple (%ws | %nl) block (%ws | %nl) "end"                  {% ast.makeClosure %}
+closure -> %DEF _ name_tuple (%WS | %NL) block (%WS | %NL) %END                  {% ast.makeClosure %}
 
 block ->
     compound                                                                  {% ast.makeBlock %}
-  | compound _ (";"|%nl|%ws)  block                                             {% ast.makeBlock %}
-  | match  %nl   block                                                   {% ast.makeBlock %}
+  | compound _ (";"|%NL|%WS)  block                                             {% ast.makeBlock %}
+  | match  %NL   block                                                   {% ast.makeBlock %}
   | match
 
-match -> "match" __ expr _ %nl _ match_clauses              {% ast.makeMatcher %}
+match -> %MATCH __ expr _ %NL _ match_clauses              {% ast.makeMatcher %}
 
 match_clauses ->
     match_clause _ match_clauses
-  | "end"
+  | %END
 
 match_clause ->
-  thing __ "->" (%ws | %nl) block  (%ws | %nl) "end" %nl       {% ast.makeClause %}
+  thing __ %CLAUSE (%WS | %NL) block  (%WS | %NL) %END %NL       {% ast.makeClause %}
 
 compound ->
     assignment
   | function_call
-  | "return" _ expr                                                           {% ast.makeReturn %}
+  | %RETURN _ expr                                                           {% ast.makeReturn %}
   | if                                                                        {% ast.makeIfStatement %}
 
-if -> "if" __ math (%ws | %nl) block (%ws | %nl) "end"
+if -> %IF __ math (%WS | %NL) block (%WS | %NL) %END
 
 assignment ->
-    unpack __ "=" _ expr                                                      {% ast.makeAssignment %}
-  | identifier __ "=" _ expr                                                  {% ast.makeAssignment %}
+    unpack __ %ASSIGN _ expr                                                      {% ast.makeAssignment %}
+  | identifier __ %ASSIGN _ expr                                                  {% ast.makeAssignment %}
 
 expr ->
     math                                                                      {% ast.makeExpr %}
@@ -49,16 +49,16 @@ expr ->
 math ->
     logic                                                                     {% ast.makeMath %}
 logic ->
-    logic _ %logic _ comparison                                               {% ast.makeMath %}
+    logic _ %LOGIC _ comparison                                               {% ast.makeMath %}
   | comparison                                                                {% ast.makeMath %}
 comparison ->
-    comparison _ %comparison _ arithmetic                                     {% ast.makeMath %}
+    comparison _ %COMPARISON _ arithmetic                                     {% ast.makeMath %}
   | arithmetic                                                                {% ast.makeMath %}
 arithmetic ->
-    arithmetic _ %arithmetic _ multiplicative                                 {% ast.makeMath %}
+    arithmetic _ %ARITHMETIC _ multiplicative                                 {% ast.makeMath %}
   | multiplicative                                                            {% ast.makeMath %}
 multiplicative ->
-    multiplicative _ %multiplicative _ thing                                  {% ast.makeMath %}
+    multiplicative _ %MULTIPLICATIVE _ thing                                  {% ast.makeMath %}
   | thing                                                                     {% ast.makeMath %}
 
 parenthesized -> "(" _ expr _ ")"                                             {% ast.strip %}
@@ -68,15 +68,15 @@ thing ->
     function_call                                                             {% ast.strip %}
   | parenthesized                                                             {% ast.strip %}
   | array_litteral
-  | %string                                                                   {% ast.makeString %}
   | identifier
+  | %STRING                                                                   {% ast.makeString %}
   | constant                                                                  {% ast.makeConstant %}
 
 constant ->
-    %number                                                                   {% ast.makeNumber %}
-  | %char                                                                     {% ast.makeChar%}
-  | %atom                                                                     {% ast.makeAtom %}
-  | %bool                                                                     {% ast.makeBool %}
+    %NUMBER                                                                   {% ast.makeNumber %}
+  | %CHAR                                                                     {% ast.makeChar%}
+  | %ATOM                                                                     {% ast.makeAtom %}
+  | %BOOL                                                                     {% ast.makeBool %}
 
 
 function_call -> explicit_call | refference_call
@@ -90,14 +90,14 @@ name_tuple ->
 
 ident_list ->
     _ident_list                                                               {% ast.makeIdentList %}
-  | _ident_list _ "," _ %nl:?                                                 {% ast.makeIdentList %}
+  | _ident_list _ "," _ %NL:?                                                 {% ast.makeIdentList %}
 
 _ident_list ->
     identifier                                                                {% ast.flattenAndStrip %}
-  | _ident_list _ "," (%nl | %ws):? identifier                                {% ast.flattenAndStrip %}
+  | _ident_list _ "," (%NL | %WS):? identifier                                {% ast.flattenAndStrip %}
 
 expr_tuple ->
-    "(" %nl:? _ expr_list _ %nl:? ")"                                         {% ast.makeTuple %}
+    "(" %NL:? _ expr_list _ %NL:? ")"                                         {% ast.makeTuple %}
   | "(" _ ")"                                                                 {% ast.makeTuple %}
 
 expr_list ->
@@ -106,35 +106,35 @@ expr_list ->
 
 _expr_list ->
     expr
-  | _expr_list _ "," %nl:? _ expr                                             {% ast.flattenAndStrip %}
+  | _expr_list _ "," %NL:? _ expr                                             {% ast.flattenAndStrip %}
 
 array_litteral ->
-    "[" %nl:? _ repack_list _ %nl:? "]"                                       {% ast.makeArrayLitteral %}
+    "[" %NL:? _ repack_list _ %NL:? "]"                                       {% ast.makeArrayLitteral %}
   | "[" _ "]"                                                                 {% ast.makeArrayLitteral %}
 
 repack_list ->
     _repack_list
-  | _repack_list _ "," %nl:?
+  | _repack_list _ "," %NL:?
 
 _repack_list ->
     expr
   | array_blob
-  | _repack_list _ "," %nl:? _ expr
-  | _repack_list _ "," %nl:? _ array_blob
+  | _repack_list _ "," %NL:? _ expr
+  | _repack_list _ "," %NL:? _ array_blob
 
-array_blob -> %blob                                          {% ast.makeBlob %}
+array_blob -> %BLOB                                          {% ast.makeBlob %}
 
 unpack ->
-     "[" %nl:? _ _unpack _ %nl:? "]"                                                      {% ast.makeUnpack %}
+     "[" %NL:? _ _unpack _ %NL:? "]"                                                      {% ast.makeUnpack %}
 
 _unpack ->
     ident_list                                                                {% ast.strip %}
-  | (_ident_list _ "," %nl:?):? _
+  | (_ident_list _ "," %NL:?):? _
     array_blob
-    _ ("," %nl:? _ident_list {% ast.strip %}):?
+    _ ("," %NL:? _ident_list {% ast.strip %}):?
 
 identifier ->
-  %identifier                                                                 {% ast.makeIdentifier %}
+  %IDENTIFIER                                                                 {% ast.makeIdentifier %}
 
-_  -> %ws:* {% ast.skip %}
-__ -> %ws:+ {% ast.skip %}
+_  -> %WS:* {% ast.skip %}
+__ -> %WS:+ {% ast.skip %}

@@ -9,7 +9,8 @@
     "compile_grammar": "nearleyc changlang/grammar.ne -o changlang/compiled_grammar.js",
     "_changpile": "yarn compile_grammar && node changlang/standalone.js -i in.chang -o __out.tbn",
     "test_run": "yarn _changpile && node main.js __out.tbn; rm __out.tbn",
-    "changpile": "node changlang/standalone.js"
+    "changpile": "yarn compile_grammar && node changlang/standalone.js",
+    "preinstall": "yarn compile_grammar"
   },
   "repository": {
     "type": "git",
@@ -27,12 +28,11 @@
     "deep-equal": "^2.0.1",
     "moo": "^0.5.1",
     "nearley": "^2.19.3",
+    "ws": "^7.3.1",
     "xxhashjs": "^0.2.2",
     "yargs": "^15.0.2"
   },
   "devDependencies": {
-    "eslint": "^6.7.2",
-    "eslint-config-react-app": "^5.2.1",
-    "ndb": "^1.1.5"
+    "eslint": "^7.4.0"
   }
 }

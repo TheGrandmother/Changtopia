@@ -1,25 +1,25 @@
 const moo = require('moo')
 
 const lexer = moo.compile({
-  string:  {
+  STRING:  {
     match:/'(?:\\['\\]|[^'])*'/,
     value: (s) => s.replace(/\\'/g,'\'').replace(/\\\\/g,'\\').slice(1,-1)
   },
-  char:  {
+  CHAR:  {
     match:/"(?:\\.|[^"])"/,
     value: (s) => s.replace(/\\"/g,'"').slice(1,-1)
   },
-  ws: /[ \t]+/,
-  number: {
+  WS: /[ \t]+/,
+  NUMBER: {
     match: /-?[0-9]+(?:\.?[0-9]+)?/,
     value: (n) => parseFloat(n)
   },
-  blob:  {
+  BLOB:  {
     match:/<[_a-zA-Z]+\w*>/,
     value: (s) => s.slice(1,-1)
   },
-  bool: {match: /(?:true)|(?:false)/, value: (x) => x === 'true'},
-  bracket: {
+  BOOL: {match: /(?:true)|(?:false)/, value: (x) => x === 'true'},
+  BRACKET: {
     match: [
       '(',
       ')',
@@ -29,28 +29,29 @@ const lexer = moo.compile({
       ']',
     ]
   },
-  identifier: {
+  IDENTIFIER: {
     match: /[_a-zA-Z]+\w*/,
     type: moo.keywords({
-      def: 'def',
-      module: 'module',
-      end: 'end',
-      match: 'match',
-      if: 'if',
-      return: 'return',
+      DEF: 'def',
+      MODULE: 'module',
+      END: 'end',
+      MATCH: 'match',
+      IF: 'if',
+      RETURN: 'return',
     })
   },
-  atom: {
+  ATOM: {
     match: /\$[_a-zA-Z0-9]+/,
     value: s => s.slice(1)
   },
-  comparison: ['=='  ,  '!=' ,  '>=' ,  '>' ,  '<' ,  '<='],
-  stuff: [':', ',', '<', '>', '@', ';', '->'],
-  logic: ['&&' , '||'],
-  arithmetic: ['+' , '-'],
-  multiplicative: ['*' , '/', '%'],
-  assign: '=',
-  nl: { match: /\s*\n\s*/, lineBreaks: true },
+  COMPARISON: ['=='  ,  '!=' ,  '>=' ,  '>' ,  '<' ,  '<='],
+  STUFF: [':', ',', '<', '>', '@', ';'],
+  LOGIC: ['&&' , '||'],
+  CLAUSE: '->',
+  ARITHMETIC: ['+' , '-'],
+  MULTIPLICATIVE: ['*' , '/', '%'],
+  ASSIGN: '=',
+  NL: { match: /\s*\n\s*/, lineBreaks: true },
 })
 
 module.exports = lexer
