@@ -7,7 +7,7 @@ function pretty(pid, functionId, line, inst) {
 }
 
 function prettyInst(inst) {
-  return inst ? `${inst.id} ${inst.args.join(', ')}` : 'Instruction unkown'
+  return inst ? `${inst.id} ${inst.args.join(', ')}${inst.sourcePos ? `  (Line: ${inst.sourcePos.line} Column:${inst.sourcePos.col}` : ''})` : 'Instruction unkown'
 }
 
 module.exports = {

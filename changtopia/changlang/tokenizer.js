@@ -2,23 +2,23 @@ const moo = require('moo')
 
 const lexer = moo.compile({
   STRING:  {
-    match:/'(?:\\['\\]|[^'])*'/,
-    value: (s) => s.replace(/\\'/g,'\'').replace(/\\\\/g,'\\').slice(1,-1)
+    match: new RegExp(/'(?:\\['\\]|[^'])*'/,'u'),
+    value: (s) => s.replace(/\\'/ug,'\'').replace(/\\\\/ug,'\\').slice(1,-1)
   },
   CHAR:  {
-    match:/"(?:\\.|[^"])"/,
-    value: (s) => s.replace(/\\"/g,'"').slice(1,-1)
+    match:/"(?:\\.|[^"])"/u,
+    value: (s) => s.replace(/\\"/ug,'"').slice(1,-1)
   },
-  WS: /[ \t]+/,
+  WS: /[ \t]+/u,
   NUMBER: {
-    match: /-?[0-9]+(?:\.?[0-9]+)?/,
+    match: /-?[0-9]+(?:\.?[0-9]+)?/u,
     value: (n) => parseFloat(n)
   },
   BLOB:  {
-    match:/<[_a-zA-Z]+\w*>/,
+    match:/<[_a-zA-Z](?:[\p{L}\p{N}]|_)*>/u,
     value: (s) => s.slice(1,-1)
   },
-  BOOL: {match: /(?:true)|(?:false)/, value: (x) => x === 'true'},
+  BOOL: {match: /(?:true)|(?:false)/u, value: (x) => x === 'true'},
   BRACKET: {
     match: [
       '(',
@@ -30,7 +30,7 @@ const lexer = moo.compile({
     ]
   },
   IDENTIFIER: {
-    match: /[_a-zA-Z]+\w*/,
+    match: /[_a-zA-Z](?:[\p{L}\p{N}]|_)*/u,
     type: moo.keywords({
       DEF: 'def',
       MODULE: 'module',
@@ -41,17 +41,18 @@ const lexer = moo.compile({
     })
   },
   ATOM: {
-    match: /\$[_a-zA-Z0-9]+/,
+    match: /\$\w+/u,
     value: s => s.slice(1)
   },
   COMPARISON: ['=='  ,  '!=' ,  '>=' ,  '>' ,  '<' ,  '<='],
-  STUFF: [':', ',', '<', '>', '@', ';'],
+  STUFF: [':', ',', '<', '>', ';'],
+  REF_CALL: '@',
   LOGIC: ['&&' , '||'],
-  CLAUSE: '->',
-  ARITHMETIC: ['+' , '-'],
+  CLAUSE: /->/u,
+  ARITHMETIC: ['+' , /-/u],
   MULTIPLICATIVE: ['*' , '/', '%'],
   ASSIGN: '=',
-  NL: { match: /\s*\n\s*/, lineBreaks: true },
+  NL: { match: /\s*\n\s*/u, lineBreaks: true },
 })
 
 module.exports = lexer

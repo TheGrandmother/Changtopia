@@ -75,7 +75,7 @@ var grammar = {
     {"name": "explicit_call$ebnf$1", "symbols": ["explicit_call$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "explicit_call$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "explicit_call", "symbols": ["explicit_call$ebnf$1", "identifier", "expr_tuple"], "postprocess": ast.makeFunctionCall},
-    {"name": "refference_call", "symbols": [{"literal":"@"}, "identifier", "expr_tuple"], "postprocess": ast.makeRefferenceCall},
+    {"name": "refference_call", "symbols": [(lexer.has("REF_CALL") ? {type: "REF_CALL"} : REF_CALL), "identifier", "expr_tuple"], "postprocess": ast.makeRefferenceCall},
     {"name": "name_tuple", "symbols": [{"literal":"("}, "_", "ident_list", "_", {"literal":")"}], "postprocess": ast.makeTuple},
     {"name": "name_tuple", "symbols": [{"literal":"("}, "_", {"literal":")"}], "postprocess": ast.makeTuple},
     {"name": "ident_list", "symbols": ["_ident_list"], "postprocess": ast.makeIdentList},

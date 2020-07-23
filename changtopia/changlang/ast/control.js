@@ -4,7 +4,8 @@ function makeBlockNode(lhs, rhs) {
   return {
     type: 'block',
     lhs: lhs,
-    rhs: rhs
+    rhs: rhs,
+    pos: lhs.pos
   }
 }
 
@@ -36,17 +37,19 @@ function makeBlock(d) {
   }
 }
 
-function makeIfNode(lhs, rhs) {
+function makeIfNode(lhs, rhs, pos) {
   return {
     type: 'if',
     lhs,
-    rhs
+    rhs,
+    pos
   }
 }
 
 function makeIfStatement(d) {
+  const pos = helpers.findPositionOfToken(d, 'IF')
   d = helpers.flattenAndStrip(d)
-  return makeIfNode(d[1], d[2])
+  return makeIfNode(d[1], d[2], pos)
 }
 
 module.exports = {

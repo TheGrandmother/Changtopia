@@ -314,14 +314,14 @@ class Process {
     }
   }
 
-  buildErrorMessage(msg, instruction, inspectFrame=false) {
+  buildErrorMessage(msg, instruction) {
     const stackTrace = this.stack.getStackTrace()
     return (
       '================================\n' +
       'An unhandled error occured!\n' +
       `${msg}\n` +
       `Running in process ${this.pid}\n` +
-      `Evaluating line ${this.frame.line}: ${prettyInst(instruction)}\n`+
+      `Evaluating instruction ${this.frame.line}: ${prettyInst(instruction)}\n`+
       `Stack trace\n${stackTrace}\n` +
       '================================\n')
   }

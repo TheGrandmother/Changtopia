@@ -29,10 +29,6 @@ function makeArgumentRef(name, order) {
   return {ref: `${name}_arg${__currentIndex}`, name, arg: true, order}
 }
 
-function makeInstruction(id, args) {
-  return {instruction: {id, args}}
-}
-
 function makeUniqueLineLabel(name) {
   __currentIndex += 1
   return {lineLabel: `${name}_l${__currentIndex}`}
@@ -45,6 +41,10 @@ function makeClosureName(module, cannonicalName) {
 
 function makeLineLabel(name) {
   return {lineLabel: `${name}`}
+}
+
+function makeInstruction(id, args, pos) {
+  return {instruction: {id, args, pos}}
 }
 
 function createAssignment(state, name) {
@@ -77,18 +77,18 @@ const _generators = {
     const res_subtree = makeInterRef(node)
     const assignRef = createAssignment(state, name)
     const subtreeCode = generateNode(state, rhs, res_subtree)
-    const myCode = [makeInstruction('move', [res_subtree, assignRef])]
+    const myCode = [makeInstruction('move', [res_subtree, assignRef], node.pos)]
     return subtreeCode.concat(myCode)
   },
 
   'constant': (state, node, res) => {
-    return [makeInstruction('imove',[{constant: node.value}, res])]
+    return [makeInstruction('imove',[{constant: node.value}, res], node.pos)]
   },
 
   'return': (state, node) => {
     const {rhs} = node
     const rhsCode = generateNode(state, rhs, state.returnRef)
-    const myCode = [makeInstruction('return', [state.returnRef])]
+    const myCode = [makeInstruction('return', [state.returnRef], node.pos)]
     return rhsCode.concat(myCode)
   },
 
@@ -98,9 +98,9 @@ const _generators = {
       throw new CompilerError(`Name ${node.name} has not been defined`)
     } else {
       if (varReference.constant) {
-        return [makeInstruction('imove', [varReference, res])]
+        return [makeInstruction('imove', [varReference, res], node.pos)]
       } else {
-        return [makeInstruction('move', [varReference, res])]
+        return [makeInstruction('move', [varReference, res], node.pos)]
       }
     }
   },
@@ -112,7 +112,7 @@ const _generators = {
     if (!res) {
       res = DUMP
     }
-    return argCode.concat([makeInstruction('call', [{constant: module || state.moduleName}, {constant: name}, res, ...argRefs])])
+    return argCode.concat([makeInstruction('call', [{constant: module || state.moduleName}, {constant: name}, res, ...argRefs], node.pos)])
   },
 
   'binop': (state, node, res) => {
@@ -120,7 +120,7 @@ const _generators = {
     const resRhs = makeInterRef(node)
     const lhsCode = generateNode(state, node.lhs, resLhs)
     const rhsCode = generateNode(state, node.rhs, resRhs)
-    const myCode = [makeInstruction('op', [{constant: node.operand}, res, resLhs, resRhs])]
+    const myCode = [makeInstruction('op', [{constant: node.operand}, res, resLhs, resRhs], node.pos)]
     return lhsCode.concat(rhsCode).concat(myCode)
     // op res_lhs res_rhs res
   },
@@ -131,7 +131,7 @@ const _generators = {
     const conditionCode = generateNode(state, lhs, conditionRes)
     const bodyCode = generateNode(state, rhs)
     const skipLabel = makeUniqueLineLabel('skip')
-    const myCode = [makeInstruction('jump_if_false', [conditionRes, skipLabel])]
+    const myCode = [makeInstruction('jump_if_false', [conditionRes, skipLabel], node.pos)]
     return conditionCode.concat(myCode).concat(bodyCode).concat(skipLabel)
     // op res_lhs res_rhs res
   },
@@ -140,18 +140,18 @@ const _generators = {
     const {entries} = node
     const resultLocations = entries.map(() => makeInterRef())
     const valueCodes = entries.map((entry, i) => generateNode(state, entry, resultLocations[i]))
-    const myCode = [makeInstruction('arrayCreate', [res, ...resultLocations])]
+    const myCode = [makeInstruction('arrayCreate', [res, ...resultLocations], node.pos)]
     return valueCodes.flat().concat(myCode)
   },
 
   'jump': (state, node) => {
     const {label} = node
-    return [makeInstruction('jump', [makeLineLabel(label)])]
+    return [makeInstruction('jump', [makeLineLabel(label)], node.pos)]
   },
 
   'arrayLitterallImmediate': (state, node, res) => {
     const {entries} = node
-    const myCode = [makeInstruction('arrayCreateImmediate', [res, entries])]
+    const myCode = [makeInstruction('arrayCreateImmediate', [res, entries], node.pos)]
     return myCode
   },
 
@@ -163,7 +163,7 @@ const _generators = {
     if (!arrayRef) {
       throw new CompilerError(`Name ${node.name} has not been defined`)
     }
-    return indexCode.concat([makeInstruction('arrayIndexGet', [arrayRef, indexRef, res])])
+    return indexCode.concat([makeInstruction('arrayIndexGet', [arrayRef, indexRef, res], node.pos)])
   },
 
   'arrayLitteral': (state, node, res) => {
@@ -186,7 +186,7 @@ const _generators = {
     normalEntries.forEach(entry => entryRefs[entry.index] = entry.ref)
     const blobCount = {constant: blobs.length}
     const blobIndexes = blobs.map(blob => ({constant: blob.index}))
-    return entryCode.concat([makeInstruction('arrayCreate', [res, blobCount, ...blobIndexes, ...entryRefs])])
+    return entryCode.concat([makeInstruction('arrayCreate', [res, blobCount, ...blobIndexes, ...entryRefs], node.pos)])
   },
 
   'indexingAssign': (state, node) => {
@@ -199,7 +199,7 @@ const _generators = {
     }
     const indexRef = makeInterRef()
     const indexCode = generateNode(state, index, indexRef)
-    return indexCode.concat(rhsCode).concat([makeInstruction('arrayIndexAssign', [arrayRef, indexRef, rhsRes])])
+    return indexCode.concat(rhsCode).concat([makeInstruction('arrayIndexAssign', [arrayRef, indexRef, rhsRes], node.pos)])
   },
 
   'unpackingAssignment': (state, node) => {
@@ -219,7 +219,7 @@ const _generators = {
       ...trailingRefs,
     ]
     body && args.push(bodyRef)
-    return rhsCode.concat([makeInstruction('arrayUnpack', args)])
+    return rhsCode.concat([makeInstruction('arrayUnpack', args, node.pos)])
   },
 
   'block': (state, node) => {
@@ -243,10 +243,10 @@ const _generators = {
     const selfRef = makeInterRef()
     const bindingRefs = unboundRefs.map(ref => ref.name === cannonicalName ? selfRef : ref)
     return [
-      makeInstruction('imove',[{constant: h('__SELF__')}, selfRef]),
-      makeInstruction('arrayCreateImmediate', [moduleRef, {array: fromJsString(state.moduleName)}]),
-      makeInstruction('arrayCreateImmediate', [nameRef, {array: fromJsString(name)}]),
-      makeInstruction('arrayCreate', [res, {constant: 0}, moduleRef, nameRef, ...bindingRefs])
+      makeInstruction('imove',[{constant: h('__SELF__')}, selfRef], node.pos),
+      makeInstruction('arrayCreateImmediate', [moduleRef, {array: fromJsString(state.moduleName)}], node.pos),
+      makeInstruction('arrayCreateImmediate', [nameRef, {array: fromJsString(name)}], node.pos),
+      makeInstruction('arrayCreate', [res, {constant: 0}, moduleRef, nameRef, ...bindingRefs], node.pos)
     ]
   },
 }
@@ -264,10 +264,19 @@ function wrapGenerators() {
 const generators = wrapGenerators()
 
 function generateNode(state, node, res) {
-  if (!generators[node.type]) {
-    throw new CompilerError(`Unfortunatley I dont know what the hell to do with ${inspect(node)} in ${state.currentFunction}`)
+  try {
+    if (!generators[node.type]) {
+      throw new CompilerError(`Unfortunatley I dont know what the hell to do with a node of type: '${node.type}'`)
+    }
+    return generators[node.type](state, node, res)
+  } catch (err) {
+    if (!err.tagged) {
+      err.position = node.pos
+      err.nodeType = node.type
+      err.tagged = true
+    }
+    throw err
   }
-  return generators[node.type](state, node, res)
 }
 
 function generateFunction(state, func) {

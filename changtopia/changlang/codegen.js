@@ -29,7 +29,7 @@ function resolveArgument(arg, labels) {
 }
 
 function makeBasicInstruction(instruction, labels) {
-  const {id, args} = instruction
+  const {id, args, pos} = instruction
   const unresolvedArgs = {}
 
   const resolvedArgs = args.map( (arg, i) => {
@@ -42,7 +42,7 @@ function makeBasicInstruction(instruction, labels) {
     }
   })
 
-  return {inst: {id, args: resolvedArgs}, unresolvedArgs: unresolvedArgs}
+  return {inst: {id, args: resolvedArgs, sourcePos: pos}, unresolvedArgs: unresolvedArgs}
 }
 
 function generateCode(indtermediateFunction, moduleName) {
@@ -72,7 +72,7 @@ function generateCode(indtermediateFunction, moduleName) {
 
   const code = annotatedCode.map((line) => {
     const {inst, unresolvedArgs} = line
-    const {id, args} = inst
+    const {id, args, sourcePos} = inst
     Object.keys(unresolvedArgs).forEach((label) => {
       const val = resolvedLabels[label]
       if(val === undefined) {
@@ -80,7 +80,7 @@ function generateCode(indtermediateFunction, moduleName) {
       }
       args[unresolvedArgs[label]] = val
     })
-    return {id, args}
+    return {id, args, sourcePos}
   })
 
   return {name, code, argLocations, functionId: name, moduleName, unbound}

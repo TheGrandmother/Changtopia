@@ -82,7 +82,7 @@ constant ->
 function_call -> explicit_call | refference_call
 
 explicit_call -> (identifier ":"):? identifier expr_tuple                     {% ast.makeFunctionCall %}
-refference_call -> "@" identifier expr_tuple                                  {% ast.makeRefferenceCall %}
+refference_call -> %REF_CALL identifier expr_tuple                                  {% ast.makeRefferenceCall %}
 
 name_tuple ->
     "(" _ ident_list _ ")"                                                    {% ast.makeTuple %}

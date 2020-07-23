@@ -9,8 +9,13 @@ const ignoreUs = [
   'module', ':', '@']
 
 const ignoredTokens = [
-  'STUFF', 'END', 'MATCH', 'NL', 'BRACKET', 'DEF', 'WS', 'CLAUSE'
+  'STUFF', 'END', 'MATCH', 'NL', 'BRACKET', 'DEF', 'WS', 'CLAUSE', 'REF_CALL'
 ]
+
+function findPositionOfToken(parserData, tokenType) {
+  const token = parserData.find(e => e && e.type === tokenType)
+  return token && {line: token.line, col: token.col}
+}
 
 function strip (arr, preserveArray = false) {
   if (!Array.isArray(arr)) {
@@ -92,5 +97,6 @@ module.exports = {
   log,
   annotateLog,
   wrapInArray,
-  deepStrip
+  deepStrip,
+  findPositionOfToken
 }

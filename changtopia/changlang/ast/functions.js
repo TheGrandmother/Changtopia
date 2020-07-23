@@ -1,11 +1,12 @@
 const helpers = require('./helpers')
 
-function makeFunctionCallNode(name, args, module=false) {
+function makeFunctionCallNode(name, args, module=false, pos) {
   return {
     type: 'call',
     name,
     args,
-    module
+    module,
+    pos
   }
 }
 
@@ -16,25 +17,34 @@ function makeFunctionCall(d) {
     module = d[0][0].name
     d = d.slice(1)
   }
-  return makeFunctionCallNode(d[0].name, d[1].body.entries, module)
+  return makeFunctionCallNode(d[0].name, d[1].body.entries, module, d[0].pos)
 }
 
 function makeFunction(d) {
+  const position = helpers.findPositionOfToken(d, 'DEF')
   d = helpers.deepStrip(d)
   return {
     type: 'function',
     name: d[0].name,
     args: d[1].body.entries,
-    body: helpers.dropArray(d[2])
+    body: helpers.dropArray(d[2]),
+    pos: position
   }
 }
 
-function makeClosureNode(args, body) {
+function makeClosure(d) {
+  const pos = helpers.findPositionOfToken(d, 'DEF')
+  d = helpers.flattenAndStrip(d)
+  return makeClosureNode(d[0], helpers.dropArray(d[1]), pos)
+}
+
+function makeClosureNode(args, body, pos) {
   return {
     type: 'closure',
     args: args.body.entries,
     body,
-    unbound: identifyUnbound(args.body.entries.map(e => e.name), body)
+    unbound: identifyUnbound(args.body.entries.map(e => e.name), body),
+    pos
   }
 }
 
@@ -73,11 +83,6 @@ function identifyUnbound(argNames, body) {
 
 }
 
-function makeClosure(d) {
-  d = helpers.flattenAndStrip(d)
-  return makeClosureNode(d[0], helpers.dropArray(d[1]))
-}
-
 function makeModule(d) {
   d = helpers.strip(d)
   return {
@@ -86,13 +91,14 @@ function makeModule(d) {
   }
 }
 
-function makeRefferenceCallNode(identifier, args) {
-  return makeFunctionCallNode('run', [identifier, ...args], 'bif')
+function makeRefferenceCallNode(identifier, args, pos) {
+  return makeFunctionCallNode('run', [identifier, ...args], 'bif', pos)
 }
 
 function makeRefferenceCall(d) {
+  const pos = helpers.findPositionOfToken(d, 'REF_CALL')
   d = helpers.deepStrip(d)
-  return makeRefferenceCallNode(d[0], d[1].body.entries)
+  return makeRefferenceCallNode(d[0], d[1].body.entries, pos)
 }
 
 module.exports = {
