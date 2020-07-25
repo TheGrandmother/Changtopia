@@ -1,0 +1,54 @@
+module colors
+
+-- The only good thing about this whole shindig is the color theme
+-- qualia by this dude: https://github.com/isaacwhanson
+
+-- ! black/dark-gray
+-- *.color0:       #101010
+-- *.color8:       #454545
+-- ! red/orange
+-- *.color1:       #EFA6A2
+-- *.color9:       #E0AF85
+-- ! green/aquamarine
+-- *.color2:       #80C990
+-- *.color10:      #5ACCAF
+-- ! amber/yellow
+-- *.color3:       #A69460
+-- *.color11:      #C8C874
+-- ! blue/violet
+-- *.color4:       #A3B8EF
+-- *.color12:      #CCACED
+-- ! magenta/rose
+-- *.color5:       #E6A3DC
+-- *.color13:      #F2A1C2
+-- ! cyan/azure
+-- *.color6:       #50CACD
+-- *.color14:      #74C3E4
+-- ! gray/white
+-- *.color7:       #808080
+-- *.color15:      #C0C0C0
+
+def _getColor(isBg, number)
+  colorFn = ['bif', 'ansi_color_hex']
+  if isBg
+    colorFn = ['bif', 'ansi_bg_color_hex']
+  end
+  match number
+    0  -> return @colorFn('#101010') end
+    1  -> return @colorFn('#EFA6A2') end
+    2  -> return @colorFn('#80C990') end
+    3  -> return @colorFn('#A69460') end
+    4  -> return @colorFn('#A3B8EF') end
+    5  -> return @colorFn('#E6A3DC') end
+    6  -> return @colorFn('#50CACD') end
+    7  -> return @colorFn('#808080') end
+    8  -> return @colorFn('#454545') end
+    9  -> return @colorFn('#E0AF85') end
+    10 -> return @colorFn('#5ACCAF') end
+    11 -> return @colorFn('#C8C874') end
+    12 -> return @colorFn('#CCACED') end
+    13 -> return @colorFn('#F2A1C2') end
+    14 -> return @colorFn('#74C3E4') end
+    15 -> return @colorFn('#C0C0C0') end
+  end
+end

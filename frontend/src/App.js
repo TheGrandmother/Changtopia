@@ -28,16 +28,16 @@ const MyComponent = ({id}) => {
   useEffect(() => {
     async function loadStuff() {
       if (!loaded && term) {
-        term.write('Fetching sources\n\r')
+        console.log(term)
+        term.write('Fetching source files...')
         const files = (await axios(`${config.server_host}/get_dem_files`)).data
+        term.write(' Ok\n\r')
         const loadedModules = []
-        term.write('Compiling sources\n\r')
-        console.log(files)
+        term.write('Compiling sources...')
         Object.entries(files).forEach(([name, content]) => {
           createFile(name, content)
           try {
             const module = changpile(content)
-            console.log(module)
             localStorage[`_module_${module.moduleName}`] = JSON.stringify(module)
             loadedModules.push(module.moduleName)
           } catch (err) {
@@ -48,10 +48,16 @@ const MyComponent = ({id}) => {
             throw err
           }
         })
-        term.write('Loaded and compiled:\n\r' + loadedModules.map(name => `  ${name}${'\n\r'}`).join(''))
-        term.write('Starting changtopia\n\r');
+        term.write(' Ok\n\r')
+        term.write('Starting changtopia!\n\r');
 
-        const ioDude = crazyCoolStarter(JSON.parse(localStorage._module_main), term)
+        let mediatorUrl;
+        if (config.use_location_as_m_host) {
+          mediatorUrl = `ws://${window.location.host}:${config.mediator_port}`
+        } else {
+          mediatorUrl = `${config.mediator_host}:${config.mediator_port}`
+        }
+        const ioDude = crazyCoolStarter(JSON.parse(localStorage._module_main), term, mediatorUrl)
         ioDude.getTerminalSize = async () => [term.term.cols, term.term.rows]
         thing = (d) => ioDude.inputListener(d)
         setLoaded(true)
@@ -62,9 +68,6 @@ const MyComponent = ({id}) => {
 
   function handleTermRef(uid, xterm) {
     setTerm(xterm);
-  }
-
-  function handleStart() {
   }
 
   return (

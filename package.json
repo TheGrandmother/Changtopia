@@ -1,0 +1,11 @@
+{
+  "name": "Changtopia",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:TheGrandmother/Changtopia.git",
+  "author": "Henrik Sommerland <henrik.sommerland@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "deploy": "docker build . -t gcr.io/changtopia/changtopia:latest && docker tag gcr.io/changtopia/changtopia:latest gcr.io/changtopia/changtopia:latest && docker push gcr.io/changtopia/changtopia:latest"
+  }
+}

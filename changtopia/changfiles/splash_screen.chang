@@ -1,0 +1,63 @@
+module splash_screen
+
+def logo()
+  return [
+        bif:ansi_bold(),
+        colors:_getColor(false, 6),
+        '                                                                                                 ',
+        '     _/_/_/  _/                                        _/                          _/            ',
+        '  _/        _/_/_/      _/_/_/  _/_/_/      _/_/_/  _/_/_/_/    _/_/    _/_/_/          _/_/_/   ',
+        ' _/        _/    _/  _/    _/  _/    _/  _/    _/    _/      _/    _/  _/    _/  _/  _/    _/    ',
+        '_/        _/    _/  _/    _/  _/    _/  _/    _/    _/      _/    _/  _/    _/  _/  _/    _/     ',
+        ' _/_/_/  _/    _/    _/_/_/  _/    _/    _/_/_/      _/_/    _/_/    _/_/_/    _/    _/_/_/      ',
+        '                                            _/                      _/                           ',
+        '                                       _/_/                        _/                            ',
+        bif:ansi_bold_close(),
+        bif:ansi_color_reset(),
+  ]
+end
+
+def greeting()
+  return [
+    '',
+    'Version: ε',
+    'ε ∈ ℝ ∧ ε > 0 ∧ ∄x ∈ ℝ: (0 < x < ε)',
+    '',
+    'Welcome to Changtopia!',
+    'There isn\'t much to do here, if anything, and whatever you can do, is barely working',
+    '',
+    'Changtopia is just a little VM, OS and language thingy that I\'m playing with.',
+    'Changtopia will never have any practical applications',
+    '',
+    'Type help to be somewhat dissapointed',
+    '',
+    'Have an acceptable day!',
+    '//TheGrandmother',
+
+  ]
+end
+
+def center(strings)
+  [width, <_>] = bif:request(bif:io_pid(), $get_console_size)
+  _center = def (strings, acc)
+    match strings
+      [] -> return acc end
+      [head, <tail>] ->
+        pad_length = bif:cast((width - bif:length(head)) / 2, 'integer')
+        padding = list:repeat(" ", pad_length)
+        return @_center(tail, [<acc>, [<padding>, <head>]])
+      end
+    end
+  end
+
+  return @_center(strings, [])
+
+end
+
+def splash()
+  logo = logo()
+  greeting = greeting()
+  justified = center([<logo>, <greeting>])
+  io:print_string(list:join_with(justified, '\n'))
+  return $ok
+end

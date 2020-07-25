@@ -2,10 +2,13 @@ const mediator = require('./mediator.js')
 const express = require('express')
 const fs = require('fs').promises
 const cors = require('cors')
+const config = require('../config.json')
 
 const app = express()
 app.use(cors())
-const port = 9000
+const port = config.server_port
+
+app.use(express.static(__dirname + '/public'))
 
 app.get('/get_dem_files', (req, res) => {
   async function loadAndCompile() {
@@ -22,5 +25,7 @@ app.get('/get_dem_files', (req, res) => {
     .then((modules) => {res.json(modules)})
     .catch(err => {console.log(err); res.json(err); res.status(500).send()})
 })
+
+app.get('/health', (req, res) => res.json('ok'))
 
 app.listen(port, () => console.log(`Example app listening at http://localhost:${port}`))

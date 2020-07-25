@@ -203,29 +203,44 @@ def prompt()
   return $ok
 end
 
-def _entry()
-  bif:send(bif:io_pid(), $print_string, 'Starting the Shell.\nLoading Modules:\n')
+def load_core_modules()
+  bif:send(bif:io_pid(), $print_string, 'Loading Core Modules...')
   match bif:request(bif:io_pid(), $load_module, 'io')
     $module_not_found ->
       bif:send(bif:io_pid(), $print_string, 'Could not load io module\n')
       quit([])
     end
   end
-  io:print_string('loaded io\n')
   match bif:request(bif:io_pid(), $load_module, 'list')
     $module_not_found ->
       bif:send(bif:io_pid(), $print_string, 'Could not load list module\n')
       quit([])
     end
   end
-  io:print_string('loaded lists\n')
   match bif:request(bif:io_pid(), $load_module, 'utils')
     $module_not_found ->
       bif:send(bif:io_pid(), $print_string, 'Could not load utils module\n')
       quit([])
     end
   end
-  io:print_string('loaded utils\n')
+  match bif:request(bif:io_pid(), $load_module, 'splash_screen')
+    $module_not_found ->
+      bif:send(bif:io_pid(), $print_string, 'Could not load splash_screen module\n')
+      quit([])
+    end
+  end
+  match bif:request(bif:io_pid(), $load_module, 'colors')
+    $module_not_found ->
+      bif:send(bif:io_pid(), $print_string, 'Could not load colors module\n')
+      quit([])
+    end
+  end
+  io:print_string(' Ok\n')
+end
+
+def _entry()
+  load_core_modules()
+  splash_screen:splash()
   prompt()
   return $ok
 end

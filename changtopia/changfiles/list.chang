@@ -8,6 +8,14 @@ def pad_left(list, pad, length)
   return [<head>, <list>]
 end
 
+def pad_right(list, pad, length)
+  if bif:length(list) >= length
+    return list
+  end
+  head = repeat(pad, length - bif:length(list))
+  return [<list>, <head>]
+end
+
 def repeat(x, length)
   _ = def (n, acc)
     if n == length

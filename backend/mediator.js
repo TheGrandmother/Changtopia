@@ -2,6 +2,7 @@ const {Server} = require('ws')
 const {h, randomHash} = require('changtopia/util/hash.js')
 const {toJsString, fromJsString} = require('changtopia/util/strings.js')
 const Pid = require('changtopia/VM/pid.js')
+const config = require('../config.json')
 
 
 function makeReply(message, payload, secret) {
@@ -9,8 +10,8 @@ function makeReply(message, payload, secret) {
 }
 
 //initialize the WebSocket server instance
-const port = 8999
-const ws = new Server({ port})
+const port = config.mediator_port
+const ws = new Server({port})
 console.log(`mediator listening on port ${port}`)
 
 const hosts = {}

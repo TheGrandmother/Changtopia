@@ -48,14 +48,24 @@ def draw_screen(content, starting_line, height)
 
   processed_lines = process_onscreen_lines(starting_line, bif:length(content), onscreen_content)
 
-  io:debug(processed_lines)
+  clear_and_draw = def (lines)
+    match lines
+      [] -> return $ok end
+      [l, <rest>] ->
+        io:print_strings([bif:ansi_erase_line(), l])
+        return clear_and_draw(rest)
+      end
+    end
+  end
 
-  io:print_string(list:flatten(processed_lines))
+  -- io:print_string(list:flatten(processed_lines))
+  @clear_and_draw(processed_lines)
 end
 
 def input_listener(current_content, starting_line, marker_pos, sender, payload)
   [width, height] = bif:request(bif:io_pid(), $get_console_size)
   redraw = false
+  continue = true
   match payload
 
     [$input_data, "K"] ->
@@ -76,19 +86,23 @@ def input_listener(current_content, starting_line, marker_pos, sender, payload)
       end
     end
 
+    [$input_data, "q"] -> continue = false end
   end
 
   if redraw
-    io:print_strings([bif:ansi_erase_screen()])
+    _ = bif:send(bif:io_pid(), $chillax, 10)
     draw_screen(current_content, starting_line, height)
   end
 
-  return bif:listen(
-    ['dead', 'input_listener'],
-    current_content,
-    starting_line,
-    marker_pos
-  )
+  if continue
+    return bif:listen(
+      ['dead', 'input_listener'],
+      current_content,
+      starting_line,
+      marker_pos
+    )
+  end
+  return $ok
 end
 
 def _entry()

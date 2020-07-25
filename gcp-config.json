@@ -1,0 +1,8 @@
+{
+  "server_host": "",
+  "server_port": 80,
+  "mediator_port": "8999",
+  "use_location_as_m_host": true,
+  "mediator_host": "",
+  "frontend_host": ""
+}

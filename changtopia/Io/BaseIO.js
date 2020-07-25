@@ -51,6 +51,13 @@ class BaseIO {
   constructor(FileHandleInterface) {
     this.FileHandleInterface = FileHandleInterface
     this.ioRoutines = {
+
+      [h('chillax')]: async (worker, message) => {
+        setTimeout(()=> {
+          worker.postMessage(makeReply(message, [h('oki')]))
+        }, message.payload[0])
+      },
+
       [h('shut_down')]: async () => {
         this.shutDown()
       },

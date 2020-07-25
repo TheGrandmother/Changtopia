@@ -30,6 +30,13 @@ module.exports = {
             loader: 'html-loader'
           }
         ]
+      },
+      {
+        test: /\.(eot|woff|woff2|svg|ttf)([?]?.*)$/,
+        loader: 'file-loader',
+        options: {
+          name: '[name].[ext]'
+        }
       }
     ]
   },

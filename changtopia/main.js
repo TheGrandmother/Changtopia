@@ -210,11 +210,11 @@ async function main () {
   new Coordinator(cpuCount, modules, new NodeIoHandler(), argv['mediator-host'])
 }
 
-function crazyCoolStarter(initModules, term) {
+function crazyCoolStarter(initModules, term, mediatorHost) {
   const cpuCount = window.navigator.hardwareConcurrency
   const {BrowserIO} = require('./Io/BrowserIO.js')
   const browserIO = new BrowserIO(term)
-  new Coordinator(cpuCount, initModules, browserIO, config.mediator_host)
+  new Coordinator(cpuCount, initModules, browserIO, mediatorHost)
   return browserIO
 }
 

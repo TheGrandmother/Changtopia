@@ -14,10 +14,8 @@
     "axios": "^0.19.2",
     "babel-loader": "^8.1.0",
     "css-loader": "^3.5.3",
-    "eslint": "^7.2.0",
-    "eslint-config-react-app": "^5.2.1",
-    "eslint-loader": "^4.0.2",
     "extra-watch-webpack-plugin": "^1.0.3",
+    "file-loader": "^6.0.0",
     "html-loader": "^1.1.0",
     "html-webpack-plugin": "^4.3.0",
     "react": "^16.13.1",
@@ -28,5 +26,10 @@
     "webpack-dev-server": "^3.11.0",
     "webpack-shell-plugin-next": "^1.1.9",
     "xterm": "^4.6.0"
+  },
+  "devDependencies": {
+    "eslint": "^7.2.0",
+    "eslint-config-react-app": "^5.2.1",
+    "eslint-loader": "^4.0.2"
   }
 }
