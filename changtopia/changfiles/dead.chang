@@ -89,7 +89,6 @@ def input_listener(current_content, starting_line, marker_pos, sender, payload)
   end
 
   if redraw
-    _ = bif:send(bif:io_pid(), $chillax, 10)
     draw_screen(current_content, starting_line, height)
   end
 
