@@ -6,8 +6,18 @@ const nearley = require('nearley')
 const {inspect} = require('util')
 
 function parse(string, showAmbigous) {
+
   const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar))
-  const result = parser.feed(string).results
+
+  let result
+  try {
+    result = parser.feed(string).results
+  } catch (err) {
+    const newErr = new Error(`${err.token.line}:${err.token.col} Syntax Error: Unexpected token ${err.token.type}:${err.token.value}`)
+    newErr.token = err.token
+    throw newErr
+  }
+
   if (!result || result.length === 0) {
     console.error(result)
     throw new Error('Input didnt parse at all...')
@@ -47,7 +57,6 @@ function pretty(functions) {
 }
 
 function changpile(_input, options = {}) {
-
   const {
     doTailOptimization = true,
     doMoveOptimization = false, //Diss dude be broken

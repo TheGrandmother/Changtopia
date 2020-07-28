@@ -1,6 +1,5 @@
 module bob
 
 def _entry()
-  otto = bruno_k_öijer()
   return $ok
 end

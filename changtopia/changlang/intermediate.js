@@ -271,6 +271,9 @@ function generateNode(state, node, res) {
     return generators[node.type](state, node, res)
   } catch (err) {
     if (!err.tagged) {
+      if (node.pos) {
+        err.message = `L:${node.pos.line} C:${node.pos.col} : ${err.message}`
+      }
       err.position = node.pos
       err.nodeType = node.type
       err.tagged = true

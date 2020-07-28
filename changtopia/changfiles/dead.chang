@@ -85,7 +85,6 @@ def input_listener(current_content, starting_line, marker_pos, sender, payload)
         end
       end
     end
-
     [$input_data, "q"] -> continue = false end
   end
 
