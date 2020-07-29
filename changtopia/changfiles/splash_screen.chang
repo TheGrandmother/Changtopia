@@ -13,7 +13,7 @@ def logo()
         '                                            _/                      _/                           ',
         '                                       _/_/                        _/                            ',
         bif:ansi_bold_close(),
-        bif:ansi_color_reset(),
+        bif:ansi_color_reset()
   ]
 end
 

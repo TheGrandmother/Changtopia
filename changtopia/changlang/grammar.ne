@@ -114,7 +114,7 @@ array_litteral ->
 
 repack_list ->
     _repack_list
-  | _repack_list _ "," %NL:?
+  | _repack_list _ ","
 
 _repack_list ->
     expr
