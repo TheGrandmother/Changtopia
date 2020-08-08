@@ -318,10 +318,10 @@ class Process {
     const stackTrace = this.stack.getStackTrace()
     return (
       '================================\n' +
-      'An unhandled error occured!\n' +
+      `An unhandled error occured in process ${this.pid}\n` +
       `${msg}\n` +
-      `Running in process ${this.pid}\n` +
-      `Evaluating instruction ${this.frame.line}: ${prettyInst(instruction)}\n`+
+      '\n' +
+      `${this.frame.func.moduleName}: ${prettyInst(instruction)}\n`+
       `Stack trace\n${stackTrace}\n` +
       '================================\n')
   }
@@ -338,7 +338,14 @@ class Stack {
   }
 
   getStackTrace() {
-    return this.frames.slice(-5).map((frame) => `  ${frame.func.moduleName}:${frame.functionId}(${frame.line})`).reverse().join('\n')
+    let trace = this.frames.slice(-5).map((frame) => {
+      const line = frame.func.code[frame.line].sourcePos.line
+      return `  ${frame.func.moduleName}:${frame.functionId} (Line: ${line})`
+    }).reverse().join('\n')
+    if (this.frames.length > 5) {
+      trace = `${trace}\n  (${this.frames.length - 5} frames hidden)`
+    }
+    return trace
   }
 }
 
