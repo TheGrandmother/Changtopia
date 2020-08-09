@@ -28,4 +28,4 @@ app.get('/get_dem_files', (req, res) => {
 
 app.get('/health', (req, res) => res.json('ok'))
 
-app.listen(port, () => console.log(`Example app listening at http://localhost:${port}`))
+app.listen(port, () => console.log(`Server up and listening on ${port}`))
