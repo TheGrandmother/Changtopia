@@ -315,7 +315,7 @@ class Process {
   }
 
   buildErrorMessage(msg, instruction) {
-    const stackTrace = this.stack.getStackTrace()
+    const stackTrace = this.stack.getStackTrace(this.vm)
     return (
       '================================\n' +
       `An unhandled error occured in process ${this.pid}\n` +
@@ -337,10 +337,11 @@ class Stack {
     this.frames.push(frame)
   }
 
-  getStackTrace() {
+  getStackTrace(vm) {
     let trace = this.frames.slice(-5).map((frame) => {
       const line = frame.func.code[frame.line].sourcePos.line
-      return `  ${frame.func.moduleName}:${frame.functionId} (Line: ${line})`
+      console.log(vm.getModule(frame.func.moduleName))
+      return `  ${frame.func.moduleName}:${frame.functionId}:${line}   ${vm.getModule(frame.func.moduleName).source[line - 1].trim()})`
     }).reverse().join('\n')
     if (this.frames.length > 5) {
       trace = `${trace}\n  (${this.frames.length - 5} frames hidden)`

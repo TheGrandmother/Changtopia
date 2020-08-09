@@ -99,7 +99,7 @@ function changpile(_input, options = {}) {
     pretty(Object.values(compiledFunctions))
   }
 
-  return {...intermediateCode, functions: compiledFunctions}
+  return {...intermediateCode, functions: compiledFunctions, source: input.split('\n')}
 }
 
 module.exports = {changpile}

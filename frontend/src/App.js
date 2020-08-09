@@ -28,7 +28,6 @@ const MyComponent = ({id}) => {
   useEffect(() => {
     async function loadStuff() {
       if (!loaded && term) {
-        console.log(term)
         term.write('Fetching source files...')
         const files = (await axios(`${config.server_host}/get_dem_files`)).data
         term.write(' Ok\n\r')

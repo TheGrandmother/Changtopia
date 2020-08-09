@@ -243,6 +243,10 @@ class Vm {
     return {topQueue: this.topQueue.length, bottomQueue: this.bottomQueue.length, waiting: this.waitingProcesses.length}
   }
 
+  getModule(name) {
+    return this.modules[name]
+  }
+
 }
 
 if (isMainThread) {

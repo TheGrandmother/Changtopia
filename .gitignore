@@ -68,3 +68,6 @@ changlang/compiled_grammar.js
 *.swm
 *.swj
 *.swk
+.monitor
+.tbn_runtime/
+frontend/dist
