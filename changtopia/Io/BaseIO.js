@@ -50,121 +50,103 @@ class BaseFileHandle {
 class BaseIO {
   constructor(FileHandleInterface) {
     this.FileHandleInterface = FileHandleInterface
-    this.ioRoutines = {
+  }
 
-      [h('chillax')]: async (worker, message) => {
-        setTimeout(()=> {
-          worker.postMessage(makeReply(message, [h('oki')]))
-        }, message.payload[0])
-      },
+  async [h('chillax')](worker, message) {
+    setTimeout(()=> {
+      worker.postMessage(makeReply(message, [h('oki')]))
+    }, message.payload[0])
+  }
 
-      [h('shut_down')]: async () => {
-        this.shutDown()
-      },
+  async [h('shut_down')]() {
+    this.shutDown()
+  }
 
-      [h('print_raw')]: async (worker, message) => {
-        this.writeOut(`Printing: From ${message.sender}: ${message.payload}`)
-      },
+  async [h('print_raw')](worker, message) {
+    this.writeOut(`Printing: From ${message.sender}: ${message.payload}`)
+  }
 
-      [h('print_string')]: async (worker, message) => {
-        this.writeOut(String.fromCharCode(...message.payload[0]))
-      },
+  async [h('print_string')](worker, message) {
+    this.writeOut(String.fromCharCode(...message.payload[0]))
+  }
 
-      [h('debug')]: async (worker, message) => {
-        this.debugPrint(String.fromCharCode(...message.payload[0]))
-      },
+  async [h('debug')](worker, message) {
+    this.debugPrint(String.fromCharCode(...message.payload[0]))
+  }
 
-      [h('move_cursor')]: async () => {
-        throw new Error('the io operation move_cursor has been grevely deprecated')
-      },
+  async [h('move_cursor')]() {
+    throw new Error('the io operation move_cursor has been grevely deprecated')
+  }
 
-      [h('random')]: async (worker, message) => {
-        const val = (Math.random() * Number.MAX_SAFE_INTEGER)
-        worker.postMessage(makeReply(message, val))
-      },
+  async [h('random')](worker, message) {
+    const val = (Math.random() * Number.MAX_SAFE_INTEGER)
+    worker.postMessage(makeReply(message, val))
+  }
 
-      [h('get_console_size')]: async (worker, message) => {
-        worker.postMessage(makeReply(message, await this.getTerminalSize()))
-      },
+  async [h('get_console_size')](worker, message) {
+    worker.postMessage(makeReply(message, await this.getTerminalSize()))
+  }
 
-      [h('get_input_stream')]: async (worker, message) => {
-        if (!this.registeredInputListener) {
-          this.registeredInputListener = true
-          this.inputListener = (d) => {
-            if (!this.inputStreamOwner) {
-              return
-            }
-            const replyBro = {sender: Pid.ioPid(this.inputStreamOwner.host), recipient: this.inputStreamOwner, id: randomHash(), payload: [[h('input_data'), d.charCodeAt(0)]]}
-            worker.postMessage(replyBro)
-          }
+  async [h('get_input_stream')](worker, message) {
+    if (!this.registeredInputListener) {
+      this.registeredInputListener = true
+      this.inputListener = (d) => {
+        if (!this.inputStreamOwner) {
+          return
         }
-        this.inputStreamOwner = message.sender
-      },
-
-      [h('release_input_stream')]: async () => {
-        this.inputStreamOwner = null
-      },
-
-      [h('load_module')]: async (worker, message) => {
-        const module = await this.getModule(toJsString(message.payload[0]))
-        if (module) {
-          Object.values(worker.workers).forEach(worker => {
-            if (worker.instance === message.sender.instance) {
-              worker.postMessage(makeReply(message, {module}, 'module'))
-            } else {
-              worker.postMessage(makeReply(message, {module, sneaky: true}, 'module'))
-            }
-          })
-        } else {
-          return worker.postMessage(makeReply(message, h('module_not_found')))
-        }
-      },
-
-      //[h('list_files')]: async (worker, message) => {
-      //  const filePaths = await fs.readdir(PATH)
-      //  return worker.postMessage(makeReply(message, filePaths.map(fromJsString)))
-      //},
-
-      //[h('open_file')]: async (worker, message) => {
-      //  const fileName = PATH + toJsString(message.payload[0])
-      //  try {
-      //    await fs.access(fileName)
-      //    const systemInterface = new FileInterface(message.sender, fileName)
-      //    interfaces[systemInterface.pid.id] = systemInterface
-      //    return worker.postMessage(makeReply(message, [h('opened'), systemInterface.pid]))
-      //  } catch (err) {
-      //    return worker.postMessage(makeReply(message, [h('file_not_found')]))
-      //  }
-      //}
-
-      [h('list_files')]: async (worker, message) => {
-        const filePaths = await this.listFiles()
-        return worker.postMessage(makeReply(message, filePaths.map(fromJsString)))
-      },
-
-      [h('open_file')]: async (worker, message) => {
-        const fileName = toJsString(message.payload[0])
-        if (await this.doesFileExist(fileName)) {
-          const fileHandle = new this.FileHandleInterface(message.sender, fileName)
-          fileHandles[fileHandle.pid.id] = fileHandle
-          return worker.postMessage(makeReply(message, [h('opened'), fileHandle.pid]))
-        } else {
-          return worker.postMessage(makeReply(message, [h('file_not_found')]))
-        }
-      },
-
-      [h('create_file')]: async (worker, message) => {
-        const fileName = toJsString(message.payload[0])
-        if (await this.doesFileExist(fileName)) {
-          return worker.postMessage(makeReply(message, [h('file_exists')]))
-        } else {
-          const fileHandle = new this.FileHandleInterface(message.sender, fileName)
-          fileHandles[fileHandle.pid.id] = fileHandle
-          return worker.postMessage(makeReply(message, [h('file_not_found')]))
-        }
+        const replyBro = {sender: Pid.ioPid(this.inputStreamOwner.host), recipient: this.inputStreamOwner, id: randomHash(), payload: [[h('input_data'), d.charCodeAt(0)]]}
+        worker.postMessage(replyBro)
       }
     }
+    this.inputStreamOwner = message.sender
   }
+
+  async [h('release_input_stream')]() {
+    this.inputStreamOwner = null
+  }
+
+  async [h('load_module')](worker, message) {
+    const module = await this.getModule(toJsString(message.payload[0]))
+    if (module) {
+      Object.values(worker.workers).forEach(worker => {
+        if (worker.instance === message.sender.instance) {
+          worker.postMessage(makeReply(message, {module}, 'module'))
+        } else {
+          worker.postMessage(makeReply(message, {module, sneaky: true}, 'module'))
+        }
+      })
+    } else {
+      return worker.postMessage(makeReply(message, h('module_not_found')))
+    }
+  }
+
+  async [h('list_files')](worker, message) {
+    const filePaths = await this.listFiles()
+    return worker.postMessage(makeReply(message, filePaths.map(fromJsString)))
+  }
+
+  async [h('open_file')](worker, message) {
+    const fileName = toJsString(message.payload[0])
+    if (await this.doesFileExist(fileName)) {
+      const fileHandle = new this.FileHandleInterface(message.sender, fileName)
+      fileHandles[fileHandle.pid.id] = fileHandle
+      return worker.postMessage(makeReply(message, [h('opened'), fileHandle.pid]))
+    } else {
+      return worker.postMessage(makeReply(message, [h('file_not_found')]))
+    }
+  }
+
+  async [h('create_file')](worker, message) {
+    const fileName = toJsString(message.payload[0])
+    if (await this.doesFileExist(fileName)) {
+      return worker.postMessage(makeReply(message, [h('file_exists')]))
+    } else {
+      const fileHandle = new this.FileHandleInterface(message.sender, fileName)
+      fileHandles[fileHandle.pid.id] = fileHandle
+      return worker.postMessage(makeReply(message, [h('file_not_found')]))
+    }
+  }
+
   async handleMessage(worker, message) {
     if (message.recipient.id !== 0) {
       //Request To interface
@@ -179,7 +161,7 @@ class BaseIO {
       const [kind, ...payload] = message.payload
       message.payload = payload
       try {
-        await this.ioRoutines[kind](worker, message)
+        await this[kind](worker, message)
       } catch(err) {
         console.error(`Chaos happened when trying to process IO message:\n ${kind}, ${payload}`)
         throw err
@@ -190,3 +172,4 @@ class BaseIO {
 
 module.exports.BaseIO = BaseIO
 module.exports.BaseFileHandle = BaseFileHandle
+module.exports.makeReply = makeReply

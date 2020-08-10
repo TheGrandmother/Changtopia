@@ -19,11 +19,12 @@ function App() {
 const known_modules ={}
 
 let thing = () => console.log('Not loaded')
+let fileDude = () => {}
 
 const MyComponent = ({id}) => {
+
   const [term, setTerm] = useState(undefined);
   const [loaded, setLoaded] = useState(false);
-
 
   useEffect(() => {
     async function loadStuff() {
@@ -58,6 +59,7 @@ const MyComponent = ({id}) => {
         }
         const ioDude = crazyCoolStarter(JSON.parse(localStorage._module_main), term, mediatorUrl)
         ioDude.getTerminalSize = async () => [term.term.cols, term.term.rows]
+        ioDude.importFile = async () => await importFile()
         thing = (d) => ioDude.inputListener(d)
         setLoaded(true)
       }
@@ -65,26 +67,59 @@ const MyComponent = ({id}) => {
     loadStuff()
   });
 
+  function importFile() {
+    return new Promise((resolve, reject) => {
+      const input = document.getElementById("iHaveNoIdeaHowToReact")
+      input.onchange = (e) => {
+        e.preventDefault();
+        const files = e.target.files;
+
+        const creators = []
+        for (let i = 0; i < files.length; i++) {
+          creators.push((async () => {
+            const content = await files[i].text()
+            createFile(files[i].name, content)
+          })())
+        }
+
+        resolve(Promise.all(creators))
+      }
+      input.click()
+    })
+  }
+
   function handleTermRef(uid, xterm) {
     setTerm(xterm);
   }
 
   return (
-    <div className="chang-window">
-      <Term
-        ref_={handleTermRef}
-        onData={(d) => thing(d)}
-        uid={id}
-        scrollback={false}
-        cursorBlink={true}
-        cursorColor={'white'}
-        backgroundColor="#454545"
-        foregroundColor="#c0c0c0"
-        fontFamily='Share Tech Mono'
-        fontSize='16'
-        fontWeight='200'
-        isTermActive={true}
-        style={{overflowY: 'null'}}/>
+    <div>
+      <div className="chang-window">
+        <Term
+          ref_={handleTermRef}
+          onData={(d) => thing(d)}
+          uid={id}
+          scrollback={false}
+          cursorBlink={true}
+          cursorColor={'white'}
+          backgroundColor="#454545"
+          foregroundColor="#c0c0c0"
+          fontFamily='Share Tech Mono'
+          fontSize='16'
+          fontWeight='200'
+          isTermActive={true}
+          style={{overflowY: 'null'}}/>
+      </div>
+      <div>
+        <input
+          type="file"
+          name="file"
+          multiple={true}
+          id="iHaveNoIdeaHowToReact"
+          onChange={() => {}}
+          style={{display: 'none'}}
+        />
+      </div>
     </div>
   );
 };

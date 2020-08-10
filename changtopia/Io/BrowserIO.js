@@ -1,10 +1,5 @@
-const {randomHash} = require('../util/hash.js')
-const {BaseIO, BaseFileHandle} = require('./BaseIO.js')
-const process = require('process')
-
-function makeReply(message, payload, secret) {
-  return {sender: message.recipient, recipient: message.sender, id: randomHash(), payload, requestId: message.id, secret}
-}
+const {h} = require('../util/hash.js')
+const {BaseIO, BaseFileHandle, makeReply} = require('./BaseIO.js')
 
 const STORE_KEY = 'chang'
 const MANIFEST = `${STORE_KEY}__manifest__`
@@ -67,7 +62,15 @@ class BrowserIO extends BaseIO {
     this.registeredInputListener = false
     this.inputListener = (d) => {console.log('penis:', d)}
     //process.stdin.addListener('data', (d) => { this.inputListener(d) })
+  }
 
+  async importFile() {
+    throw new Error('importFile must be implemented by the frontend')
+  }
+
+  async [h('import')](worker, message) {
+    await this.importFile()
+    worker.postMessage(makeReply(message, [h('ok')]))
   }
 
   async getTerminalSize() {
@@ -84,7 +87,7 @@ class BrowserIO extends BaseIO {
   }
 
   async doesFileExist(name) {
-    return !!localStorage[getFileKey(name)]
+    return typeof localStorage[getFileKey(name)] !== 'undefined'
   }
 
   shutDown() {
