@@ -10,9 +10,10 @@ const argv = require('yargs')
   .option('verbose', {alias: 'v', description: 'Print verbose errors', type: 'boolean', default: false})
   .option('no-optimize', {alias: 'k', description: 'Disable removal of redundant moves', type: 'boolean', default: false})
   .option('show-ambigous', {alias: 's', description: 'Show ambigous parsings', type: 'boolean', default: false})
+  .option('dry', {alias: 'd', description: 'Dont output anything but errors', type: 'boolean', default: false})
   .argv
 
-const inName = path.basename(argv.input, '.chang')
+const inName = path.basename(argv._[0], '.chang')
 let outPath
 if (!argv.output) {
   outPath = './tbn_modules/' + inName + '.tbn'
@@ -21,13 +22,22 @@ if (!argv.output) {
 }
 
 
-const rawInput = fs.readFileSync(path.dirname(argv.input) + '/' + inName + '.chang').toString()
+const rawInput = fs.readFileSync(path.dirname(argv._[0]) + '/' + inName + '.chang').toString()
 
-const _module = changpile(rawInput, {
-  showAST: argv.a,
-  showIntermediate: argv.n,
-  prettyPrint: argv.p,
-  showAmbigous: argv.s,
-})
-
-fs.writeFileSync(outPath, JSON.stringify(_module, undefined, 2))
+try {
+  const _module = changpile(rawInput, {
+    showAST: argv.a,
+    showIntermediate: argv.n,
+    prettyPrint: argv.p,
+    showAmbigous: argv.s,
+  })
+  if (!argv.dry) {
+    fs.writeFileSync(outPath, JSON.stringify(_module, undefined, 2))
+  }
+} catch (err) {
+  if (!argv.v) {
+    console.error(err.message)
+  } else {
+    throw err
+  }
+}

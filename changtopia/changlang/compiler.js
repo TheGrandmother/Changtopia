@@ -13,9 +13,13 @@ function parse(string, showAmbigous) {
   try {
     result = parser.feed(string).results
   } catch (err) {
-    const newErr = new Error(`${err.token.line}:${err.token.col} Syntax Error: Unexpected token ${err.token.type}:${err.token.value}`)
-    newErr.token = err.token
-    throw newErr
+    if(err.token) {
+      const newErr = new Error(`Syntax Error: Unexpected token ${err.token.value.replace('\n', '\\n')} at line ${err.token.line} col ${err.token.col}`)
+      newErr.token = err.token
+      throw newErr
+    } else {
+      throw err
+    }
   }
 
   if (!result || result.length === 0) {

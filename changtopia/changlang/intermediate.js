@@ -272,7 +272,7 @@ function generateNode(state, node, res) {
   } catch (err) {
     if (!err.tagged) {
       if (node.pos) {
-        err.message = `L:${node.pos.line} C:${node.pos.col} : ${err.message}`
+        err.message = `${err.message} at line ${node.pos.line} col ${node.pos.col}`
       }
       err.position = node.pos
       err.nodeType = node.type
