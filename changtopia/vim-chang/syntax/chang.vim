@@ -1,15 +1,3 @@
-" Vim syntax file
-" Language: Encore
-" Maintainer: Henrik Sommerland <henrik.sommerland@gmail.com>
-"             Lucas Arnström <lucas@arnstrom.se>
-"
-" Based on a modified Dafny syntax script by Michael Lowell Roberts.
-"
-" In turn based on original Dafny syntax script by Kuat Yessenov.
-" Copyright (C) Microsoft Corporation.  All Rights Reserved.
-" Licensed under the Microsoft Public License (Ms-PL).
-" See https://dafny.codeplex.com/license for more details.
-
 if version < 600
   syntax clear
 elseif exists("b:current_syntax") && b:current_syntax != "chang"
@@ -80,35 +68,6 @@ highlight link changComment Comment
 " highlight link changModifier Typedef
 " highlight link changMaybe Boolean
 " highlight link changEmbed PreCondit
-
-
-syntax keyword a Normal
-syntax keyword b Comment
-syntax keyword c Constant
-syntax keyword d Identifier
-syntax keyword e Statement
-syntax keyword f PreProc
-syntax keyword g Type
-syntax keyword h Special
-syntax keyword i Underlined
-syntax keyword j Ignore
-syntax keyword k Error
-syntax keyword l Todo
-
-
-highlight link a Normal
-highlight link b Comment
-highlight link c Constant
-highlight link d Identifier
-highlight link e Statement
-highlight link f PreProc
-highlight link g Type
-highlight link h Special
-highlight link i Underlined
-highlight link j Ignore
-highlight link k Error
-highlight link l Todo
-
 
 syn region changFoldMatch
       \ start="def"
