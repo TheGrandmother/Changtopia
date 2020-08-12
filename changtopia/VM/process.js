@@ -2,7 +2,6 @@ const {randomHash, h} = require('../util/hash')
 const {fromJsString} = require('../util/strings.js')
 const {evaluateInstruction} = require('./instructions/ops.js')
 const {pretty, prettyInst} = require('./instructions/pretty.js')
-const {inspect} = require('util')
 const {
   LocationEmptyError,
   UnknownFunctionError,
@@ -250,9 +249,11 @@ class Process {
     const oldFrame = this.stack.frames.pop()
 
     if (!oldFrame) {
-      this.finished = true
-      if (currentFrame.deathHook) {
-        this.sendMessage(currentFrame.deathHook)
+      if (!this.waiting) {
+        this.finished = true
+        if (currentFrame.deathHook) {
+          this.sendMessage(currentFrame.deathHook)
+        }
       }
       return
     }
@@ -277,23 +278,24 @@ class Process {
         if (this.linkedProcesses.length > 0 || this.inbox.length > 0 || this.handlingRequest) {
           const msg = err.message.split('').map(c => c.charCodeAt(0))
           this.linkedProcesses.forEach(linkedPid => {
+            console.log(`passign error onto ${JSON.stringify(linkedPid)}`)
             this.sendMessage({
               recipient: linkedPid,
-              payload: [h('error'), err.errorAtom, msg, fromJsString(this.buildErrorMessage(err.message, instruction))]})
+              payload: [[h('error'), err.errorAtom, msg, fromJsString(this.buildErrorMessage(err.message, instruction))]]})
           })
           this.inbox.forEach(message => {
             if (message.requiresResponse) {
               this.sendMessage({
                 recipient: message.sender,
                 requestId: message.id,
-                payload: [h('error'), err.errorAtom, msg, fromJsString(this.buildErrorMessage(err.message, instruction))]})
+                payload: [[h('error'), err.errorAtom, msg, fromJsString(this.buildErrorMessage(err.message, instruction))]]})
             }
           })
           if (this.handlingRequest) {
             this.sendMessage({
               recipient: this.handlingRequest.sender,
               requestId: this.handlingRequest.id,
-              payload: [h('error'), err.errorAtom, msg, fromJsString(this.buildErrorMessage(err.message, instruction))]})
+              payload: [[h('error'), err.errorAtom, msg, fromJsString(this.buildErrorMessage(err.message, instruction))]]})
           }
           this.waiting = false
           this.finished = true
@@ -340,7 +342,6 @@ class Stack {
   getStackTrace(vm) {
     let trace = this.frames.slice(-5).map((frame) => {
       const line = frame.func.code[frame.line].sourcePos.line
-      console.log(vm.getModule(frame.func.moduleName))
       return `  ${frame.func.moduleName}:${frame.functionId}:${line}   ${vm.getModule(frame.func.moduleName).source[line - 1].trim()})`
     }).reverse().join('\n')
     if (this.frames.length > 5) {
