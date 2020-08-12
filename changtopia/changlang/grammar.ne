@@ -119,8 +119,8 @@ repack_list ->
 _repack_list ->
     expr
   | array_blob
-  | _repack_list _ "," %NL:? _ expr
-  | _repack_list _ "," %NL:? _ array_blob
+  | _repack_list _ "," _ %NL:? expr
+  | _repack_list _ "," _ %NL:? array_blob
 
 array_blob -> %BLOB                                          {% ast.makeBlob %}
 
