@@ -120,6 +120,10 @@ class BaseIO {
     }
   }
 
+  async [h('has_module')](worker, message){
+    return worker.postMessage({...message, secret: 'has_module'})
+  }
+
   async [h('list_files')](worker, message) {
     const filePaths = await this.listFiles()
     return worker.postMessage(makeReply(message, filePaths.map(fromJsString)))
@@ -145,6 +149,16 @@ class BaseIO {
       fileHandles[fileHandle.pid.id] = fileHandle
       return worker.postMessage(makeReply(message, [h('file_not_found')]))
     }
+  }
+
+  async [h('raw_debug')](worker, message) {
+    console.log(message.payload[0])
+  }
+
+  async [h('debug_dump')](worker, message) {
+    Object.values(worker.workers).forEach(worker => {
+      worker.postMessage(makeReply(message, h('dump_vm'), 'dump'))
+    })
   }
 
   async handleMessage(worker, message) {

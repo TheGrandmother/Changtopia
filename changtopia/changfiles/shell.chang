@@ -1,4 +1,4 @@
-module main
+module shell
 -- Lets try to write the basics for a shell like thing!
 
 def load_module(arg)
@@ -34,7 +34,6 @@ end
 def run_module(arg)
   match arg
     [name] ->
-      --return bif:run(name, '_entry')
       return spawn_module(name)
     end
     [] ->
@@ -50,7 +49,6 @@ def run_module(arg)
 end
 
 def help(_)
-  io:print_string('Welcome to the ridicously pointless "operating system"\n')
   io:print_string('This is what you can do, which ain\'t much\n')
   return _help(commands())
 end
@@ -70,7 +68,7 @@ def _help(commands)
 end
 
 def spawn_module(name)
-  pid = bif:spawn(['main', '_spawn_module'], name)
+  pid = bif:spawn(['shell', '_spawn_module'], name)
   bif:link(pid)
   response = bif:request(pid, $run)
   match response
@@ -94,7 +92,7 @@ def spawn_module(name)
 end
 
 def _spawn_module(name)
-  result = bif:listen(['main', '_spawn_listener'], name)
+  result = bif:listen(['shell', '_spawn_listener'], name)
   return result
 end
 
@@ -152,6 +150,12 @@ def run_command(input)
     end
     [_, arg_count, thing, __] ->
       [module_name, function] = thing
+      if bif:send(bif:io_pid(), $has_module, module_name) == false
+        match utils:load_module(module_name)
+          $fail -> io:print_strings(['Failed to load module "', module_name, '" needed to run ', name, '\n']) end
+        end
+      end
+      io:raw_debug([thing, arguments])
       return bif:run([module_name, function], arguments)
     end
   end
@@ -162,13 +166,14 @@ def commands()
   -- Commands ar an array on the form:
   -- name, noArgs, [module, function], help_text
   bob = [
-    ['q', 0, ['main', 'quit'], 'Quits the VM'],
-    ['run', 1, ['main', 'run_module'], 'Runs the specified module'],
-    ['load', 1, ['main', 'load_module'], 'Loads the specified module'],
-    ['ls', 0, ['main', 'ls'], 'Lists existing files'],
-    ['help', 0, ['main', 'help'], 'Prints this.. duh'],
-    ['dump', 1, ['main', 'dump'], 'Dumps the content of the file'],
-    ['import', 0, ['main', 'import'], 'Imports a file from the nightmare into changtopia'],
+    ['q', 0, ['shell', 'quit'], 'Quits the VM'],
+    ['run', 1, ['shell', 'run_module'], 'Runs the specified module'],
+    ['load', 1, ['shell', 'load_module'], 'Loads the specified module'],
+    ['ls', 0, ['shell', 'ls'], 'Lists existing files'],
+    ['help', 0, ['shell', 'help'], 'Prints this.. duh'],
+    ['dump', 1, ['shell', 'dump'], 'Dumps the content of the file'],
+    ['import', 0, ['shell', 'import'], 'Imports a file from the nightmare into changtopia'],
+    ['chat', 0, ['chat', '_entry'], 'Chat with other people on changtopia, I.e, nobody'],
   ]
   return bob
 end
@@ -213,44 +218,10 @@ def prompt()
   return $ok
 end
 
-def load_core_modules()
-  bif:send(bif:io_pid(), $print_string, 'Loading Core Modules...')
-  match bif:request(bif:io_pid(), $load_module, 'io')
-    $module_not_found ->
-      bif:send(bif:io_pid(), $print_string, 'Could not load io module\n')
-      quit([])
-    end
-  end
-  match bif:request(bif:io_pid(), $load_module, 'list')
-    $module_not_found ->
-      bif:send(bif:io_pid(), $print_string, 'Could not load list module\n')
-      quit([])
-    end
-  end
-  match bif:request(bif:io_pid(), $load_module, 'utils')
-    $module_not_found ->
-      bif:send(bif:io_pid(), $print_string, 'Could not load utils module\n')
-      quit([])
-    end
-  end
-  match bif:request(bif:io_pid(), $load_module, 'splash_screen')
-    $module_not_found ->
-      bif:send(bif:io_pid(), $print_string, 'Could not load splash_screen module\n')
-      quit([])
-    end
-  end
-  match bif:request(bif:io_pid(), $load_module, 'colors')
-    $module_not_found ->
-      bif:send(bif:io_pid(), $print_string, 'Could not load colors module\n')
-      quit([])
-    end
-  end
-  io:print_string(' Ok\n')
-end
-
-def _entry()
-  load_core_modules()
+def _entry(main_pid)
+  bif:link(main_pid)
+  io:print_string('Starting shell\n')
+  utils:load_module('splash_screen')
   splash_screen:splash()
   prompt()
-  return $ok
 end

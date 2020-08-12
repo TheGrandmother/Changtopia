@@ -6,7 +6,7 @@ const {NoSuchPidError} = require('../errors.js')
 const Pid = require('./pid.js')
 const {prettyInst} = require('./instructions/pretty.js')
 const {toJsString} = require('../util/strings.js')
-const {formatMessage} = require('../util/messages.js')
+const {formatMessage, makeReply} = require('../util/messages.js')
 const process = require('process')
 
 
@@ -79,6 +79,15 @@ class Vm {
         const {startInIdle} = message.payload
         this.start([], startInIdle)
         return
+      } else if (message.secret === 'has_module') {
+        const {moduleName} = message.payload
+        this.dispatchMessage(makeReply(message, !!this.modules[moduleName]), true)
+        return
+      } else if (message.secret === 'dump') {
+        if (Object.keys(this.processes).length !== 0) {
+          console.log(this)
+        }
+        return
       } else if (message.secret === 'spawn') {
         const [pid, module, entryPoint, ...args] = message.payload
         this.spawnProcess(Pid.toPid(pid), toJsString(module), toJsString(entryPoint), args)
@@ -90,13 +99,15 @@ class Vm {
     this.handleMessage(message)
   }
 
-  dispatchMessage(message) {
+  dispatchMessage(message, skipCount) {
     if (message.recipient && message.recipient.instance === this.instance) {
       this.handleMessage(message)
     } else {
       this.sendExternal(message)
     }
-    this.processes[Pid.toPid(message.sender)].messagesSent += 1
+    if (!skipCount) {
+      this.processes[Pid.toPid(message.sender)].messagesSent += 1
+    }
   }
 
   handleMessage(message) {

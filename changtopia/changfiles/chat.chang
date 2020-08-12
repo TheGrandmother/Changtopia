@@ -1,6 +1,6 @@
 module chat
 
-def _entry()
+def _entry(_)
   [pids, nicks] = fetch_dudes()
   nick = prompt_for_nick(nicks)
 

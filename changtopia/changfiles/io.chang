@@ -118,3 +118,8 @@ def debug(str)
   bif:send(bif:io_pid(), $debug, str)
   return $ok
 end
+
+def raw_debug(payload)
+  bif:send(bif:io_pid(), $raw_debug, payload)
+  return $ok
+end

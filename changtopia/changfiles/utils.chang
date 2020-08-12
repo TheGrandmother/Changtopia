@@ -5,3 +5,14 @@ def pid_compare(pid1, pid2)
   [host2, instance2, id2] = bif:destruct_pid(pid2)
   return host1 == host2 && instance1 == instance2 && id1 == id2
 end
+
+def load_module(module_name)
+  match bif:request(bif:io_pid(), $load_module, module_name)
+    $module_not_found ->
+      return $fail
+    end
+    $module_loaded ->
+      return $ok
+    end
+  end
+end

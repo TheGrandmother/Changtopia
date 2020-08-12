@@ -14,7 +14,7 @@ function parse(string, showAmbigous) {
     result = parser.feed(string).results
   } catch (err) {
     if(err.token) {
-      const newErr = new Error(`Syntax Error: Unexpected token ${err.token.value.replace('\n', '\\n')} at line ${err.token.line} col ${err.token.col}`)
+      const newErr = new Error(`Syntax Error: Unexpected token "${err.token.value.replace('\n', '\\n')}" at line ${err.token.line} col ${err.token.col}`)
       newErr.token = err.token
       throw newErr
     } else {

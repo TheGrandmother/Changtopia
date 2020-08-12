@@ -1,4 +1,5 @@
 const {toJsString} = require('./strings.js')
+const {randomHash} = require('./hash.js')
 const Pid = require('../VM/pid.js')
 const {inspect} = require('util')
 
@@ -15,4 +16,9 @@ function formatMessage (_message) {
   return inspect(message, false, null)
 }
 
-module.exports = {formatMessage}
+
+function makeReply(message, payload, secret) {
+  return {sender: message.recipient, recipient: message.sender, id: randomHash(), payload, requestId: message.id, secret}
+}
+
+module.exports = {formatMessage, makeReply}
