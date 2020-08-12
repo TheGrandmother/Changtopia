@@ -1,0 +1,68 @@
+module main
+
+def core_modules()
+  return [
+    'io',
+    'shell',
+    'list',
+    'utils',
+    'colors'
+  ]
+end
+
+def load_core_modules()
+  load_modules = def (modules)
+    match modules
+      [module_name, <rest>] ->
+        match bif:request(bif:io_pid(), $load_module, module_name)
+          $module_not_found ->
+            return [$module_not_found, module_name]
+          end
+          $module_loaded ->
+            return @load_modules(rest)
+          end
+        end
+      end
+      [] -> return $ok end
+    end
+  end
+  return @load_modules(core_modules())
+end
+
+def _entry()
+
+  bif:send(bif:io_pid(), $print_string, 'Loading Core Modules...')
+  match load_core_modules()
+    [$module_not_found, module_name] ->
+      bif:send(bif:io_pid(), $print_strings, ['FAILURE\n'])
+      bif:send(bif:io_pid(), $print_strings, ['Failed to load the core module: ', module_name, '\n'])
+      bif:send(bif:io_pid(), $print_strings, ['Unable to start changtopia.\n'])
+    end
+    $ok ->
+      bif:send(bif:io_pid(), $print_string, 'Ok\n')
+    end
+  end
+
+  shell_pid = bif:spawn(['shell', '_entry'], bif:my_pid())
+  bif:listen(['main', 'listener'])
+end
+
+def listener(sender, payload)
+  match payload
+    [$error, error_atom, msg, verbose] ->
+      io:print_strings([
+        'There was an unrecoverable error in the shell:\n',
+        verbose,
+        '\nPress any key to restart changtopia and hope for the best'
+      ])
+      bif:send(bif:io_pid(), $get_input_stream)
+      bif:listen(['main', 'quit_listener'])
+      return $error
+    end
+  end
+  bif:listen(['main', 'listener'])
+end
+
+def quit_listener(sender, payload)
+  bif:send(bif:io_pid(), $shut_down)
+end
