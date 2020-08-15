@@ -2,6 +2,8 @@ const {h, randomHash} = require('../util/hash.js')
 const {toJsString, fromJsString} = require('../util/strings.js')
 const Pid = require('../VM/pid.js')
 const fileHandles = {}
+const {changpile} = require('../changlang/compiler.js')
+const {CompilerError} = require('../errors.js')
 
 function makeReply(message, payload, secret) {
   return {sender: message.recipient, recipient: message.sender, id: randomHash(), payload, requestId: message.id, secret}
@@ -50,6 +52,48 @@ class BaseFileHandle {
 class BaseIO {
   constructor(FileHandleInterface) {
     this.FileHandleInterface = FileHandleInterface
+  }
+
+  async changpile(input, options) {
+    console.log(options)
+    console.log(options.includes(h('show_compiled')))
+    const _options = {
+      doTailOptimization: !options.includes(h('no_tail_opt')),
+      doMoveOptimization: false, //Diss dude be broken
+      showAST: !!options.includes(h('show_ast')),
+      showIntermediate: !!options.includes(h('show_intermediate')),
+      prettyPrint: !!options.includes(h('show_compiled')),
+      showAmbigous: false,
+    }
+    const result = changpile(input, _options)
+    if (result.completed) {
+      await this.saveModule(result)
+      return [h('ok'), fromJsString(result.moduleName)]
+    }
+    if (result.ast) {
+      return [h('ast'), fromJsString(result.ast)]
+    }
+    if (result.intermediate) {
+      return [h('intermediate'), fromJsString(result.intermediate)]
+    }
+    if (result.pretty) {
+      return [h('pretty'), fromJsString(result.pretty)]
+    }
+  }
+
+  async [h('changpile')](worker, message) {
+    const [input, options] = message.payload
+    try {
+      const result = await this.changpile(toJsString(input), options)
+      worker.postMessage(makeReply(message, result))
+    } catch (err) {
+      console.log(JSON.stringify(err))
+      if (err instanceof CompilerError) {
+        worker.postMessage(makeReply(message, [h('error'), fromJsString(`${err.message}\n${err.preview ? err.preview + '\n' : ''}`)]))
+      } else {
+        throw err
+      }
+    }
   }
 
   async [h('chillax')](worker, message) {

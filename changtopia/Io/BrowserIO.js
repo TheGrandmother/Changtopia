@@ -82,6 +82,10 @@ class BrowserIO extends BaseIO {
     return localStorage[`_module_${moduleName}`] && JSON.parse(localStorage[`_module_${moduleName}`])
   }
 
+  async saveModule(module) {
+    localStorage[`_module_${module.moduleName}`] = JSON.stringify(module)
+  }
+
   async listFiles() {
     return Object.keys(JSON.parse(localStorage[MANIFEST]))
   }

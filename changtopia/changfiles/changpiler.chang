@@ -1,0 +1,67 @@
+module changpiler
+
+def changpile(input, options)
+  return bif:send(bif:io_pid(), $changpile, input, list:map(options, ['bif', 'to_atom']))
+end
+
+def print_help()
+  io:print_string(list:join_with([
+  'This is the changpiler for the programminglanguage changlang.',
+  'It takes the name of the file to be compiled as its first and mandatory argument.',
+  'If the file compiles the module name specified in the file will be avaliable for loading.',
+  '',
+  'There are a some underwhelming arguments avaliable:',
+      '  no_tail_opt: Disables tail call optimization. Usefull if you want to run out of ram',
+      '  show_ast:    Shows the AST generated, quite useless. Does not generate any compiled module',
+      '  show_intermediate: Shows the intermediate code, imennsly useless. Does not generate any compiled module',
+      '  show_compiled: Shows the prettified compiled code, essentially useless but can be fun. Does not generate any compilerd output',
+  ], '\n'))
+end
+
+def _entry(args)
+  match args
+    [] ->
+      io:print_string('The changpiler takes at least one argument.\n')
+      return $ok
+    end
+    [x] ->
+      match x
+        'help' ->
+          print_help()
+          return $ok
+        end
+      end
+    end
+  end
+  [file_name, <options>] = args
+  match bif:request(bif:io_pid(), $open_file, file_name)
+    [_, filePid] ->
+      content = bif:request(filePid, $read_all)
+      result = changpile(content, options)
+      match result
+        [$ok, module_name] ->
+          io:print_strings(['Succesfully compiled ', file_name, ' as module ', module_name,'\n'])
+          return $ok
+        end
+        [$pretty, pretty] ->
+          io:print_string(pretty)
+          return $ok
+        end
+        [$ast, ast] ->
+          io:print_string(ast)
+          return $ok
+        end
+        [$intermediate, intermediate] ->
+          io:print_string(intermediate)
+          return $ok
+        end
+        [$error, msg] ->
+          io:print_strings(['Error compiling ', file_name, ':\n', msg])
+          return $ok
+        end
+      end
+    end
+    [$file_not_found] -> io:print_string('File not found\n') end
+  end
+  return $ok
+end

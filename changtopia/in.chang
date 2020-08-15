@@ -1,10 +1,7 @@
-module main
+module test
 -- Lets try to write the basics for a shell like thing!
 
-def bob(p)
-  match p
-    0 ->
-      return 0
-    end
-  end
+def _entry()
+  io:print_string('hello :D\n')
+  return $ok
 end
