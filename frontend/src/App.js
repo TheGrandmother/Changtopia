@@ -88,7 +88,7 @@ const MyComponent = () => {
           })())
         }
 
-        resolve(Promise.all(creators))
+        resolve(Promise.all(creators).then(() => input.value = ''))
       }
       input.click()
     })
