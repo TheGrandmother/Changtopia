@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Term } from '@dash4/react-xterm';
-import '@dash4/react-xterm/lib/ReactXterm.css';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react'
+import { Term } from '@dash4/react-xterm'
+import '@dash4/react-xterm/lib/ReactXterm.css'
+import axios from 'axios'
 
 import config from '../../config.json'
 import {changpile} from 'changtopia/changlang/compiler.js'
@@ -11,20 +11,26 @@ import {createFile} from 'changtopia/Io/BrowserIO.js'
 function App() {
   return (
     <div className="App">
-        {MyComponent('456')}
+      {MyComponent('456')}
     </div>
-  );
+  )
 }
 
 const known_modules ={}
 
 let thing = () => console.log('Not loaded')
-let fileDude = () => {}
 
-const MyComponent = ({id}) => {
+const MyComponent = () => {
 
-  const [term, setTerm] = useState(undefined);
-  const [loaded, setLoaded] = useState(false);
+  const [term, setTerm] = useState(undefined)
+  const [loaded, setLoaded] = useState(false)
+
+  function inputTraps(d, listener) {
+    if (d === '[15~') {
+      window.reload()
+    }
+    listener(d)
+  }
 
   useEffect(() => {
     async function loadStuff() {
@@ -49,9 +55,9 @@ const MyComponent = ({id}) => {
           }
         })
         term.write(' Ok\n\r')
-        term.write('Starting changtopia!\n\r');
+        term.write('Starting changtopia!\n\r')
 
-        let mediatorUrl;
+        let mediatorUrl
         if (config.use_location_as_m_host) {
           mediatorUrl = `ws://${window.location.host}:${config.mediator_port}`
         } else {
@@ -60,19 +66,19 @@ const MyComponent = ({id}) => {
         const ioDude = crazyCoolStarter(JSON.parse(localStorage._module_main), term, mediatorUrl)
         ioDude.getTerminalSize = async () => [term.term.cols, term.term.rows]
         ioDude.importFile = async () => await importFile()
-        thing = (d) => ioDude.inputListener(d)
+        thing = (d) => inputTraps(d, ioDude.inputListener)
         setLoaded(true)
       }
     }
     loadStuff()
-  });
+  })
 
   function importFile() {
-    return new Promise((resolve, reject) => {
-      const input = document.getElementById("iHaveNoIdeaHowToReact")
+    return new Promise((resolve) => {
+      const input = document.getElementById('iHaveNoIdeaHowToReact')
       input.onchange = (e) => {
-        e.preventDefault();
-        const files = e.target.files;
+        e.preventDefault()
+        const files = e.target.files
 
         const creators = []
         for (let i = 0; i < files.length; i++) {
@@ -89,7 +95,7 @@ const MyComponent = ({id}) => {
   }
 
   function handleTermRef(uid, xterm) {
-    setTerm(xterm);
+    setTerm(xterm)
   }
 
   return (
@@ -98,7 +104,6 @@ const MyComponent = ({id}) => {
         <Term
           ref_={handleTermRef}
           onData={(d) => thing(d)}
-          uid={id}
           scrollback={false}
           cursorBlink={true}
           cursorColor={'white'}
@@ -121,7 +126,7 @@ const MyComponent = ({id}) => {
         />
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default App;
+export default App
