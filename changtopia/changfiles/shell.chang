@@ -60,7 +60,7 @@ def _help(commands)
     end
     [entry, <rest>] ->
       [name, arg_count, _, help_text] = entry
-      io:print_strings(['\t', name, ': ', help_text, '\n'])
+      io:print_strings(['  ', name, ': ', help_text, '\n'])
       return _help(rest)
     end
   end

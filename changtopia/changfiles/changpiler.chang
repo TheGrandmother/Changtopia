@@ -11,11 +11,13 @@ def print_help()
   'If the file compiles the module name specified in the file will be available for loading.',
   '',
   'There are a some underwhelming arguments available:',
-      '  no_tail_opt: Disables tail call optimization. Useful if you want to run out of ram',
-      '  show_ast:    Shows the AST generated, quite useless. Does not generate any compiled module',
-      '  show_intermediate: Shows the intermediate code, immensely useless. Does not generate any compiled module',
-      '  show_compiled: Shows the prettified compiled code, essentially useless but can be fun. Does not generate any compiled output',
-      '  run: Loads the module and runs the _entry function',
+  '  no_tail_opt:       Disables tail call optimization. Useful if you want to run out of ram',
+  '  show_ast:          Shows the AST generated, quite useless.*',
+  '  show_intermediate: Shows the intermediate code, immensely useless.*',
+  '  show_compiled:     Shows the prettified compiled code, essentially useless but can be fun.*',
+  '  run:               Loads the module and runs the _entry function, without any arguments supplied',
+  '',
+  '* These options do not generate any compiled output'
   ], '\n'))
 end
 
