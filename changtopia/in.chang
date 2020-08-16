@@ -1,7 +1,18 @@
 module test
 -- Lets try to write the basics for a shell like thing!
 
+def falsy()
+  io:print_string('false\n')
+  return false
+end
+
+def truthy()
+  io:print_string('true\n')
+  return false
+end
+
 def _entry()
   io:print_string('hello 😵\n')
+  if falsy() && truthy() io:print_string('aron\n') end
   return $ok
 end

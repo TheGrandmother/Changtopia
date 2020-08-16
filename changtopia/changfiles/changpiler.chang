@@ -6,15 +6,16 @@ end
 
 def print_help()
   io:print_string(list:join_with([
-  'This is the changpiler for the programminglanguage changlang.',
+  'This is the changpiler for the programming language changlang.',
   'It takes the name of the file to be compiled as its first and mandatory argument.',
-  'If the file compiles the module name specified in the file will be avaliable for loading.',
+  'If the file compiles the module name specified in the file will be available for loading.',
   '',
-  'There are a some underwhelming arguments avaliable:',
-      '  no_tail_opt: Disables tail call optimization. Usefull if you want to run out of ram',
+  'There are a some underwhelming arguments available:',
+      '  no_tail_opt: Disables tail call optimization. Useful if you want to run out of ram',
       '  show_ast:    Shows the AST generated, quite useless. Does not generate any compiled module',
-      '  show_intermediate: Shows the intermediate code, imennsly useless. Does not generate any compiled module',
-      '  show_compiled: Shows the prettified compiled code, essentially useless but can be fun. Does not generate any compilerd output',
+      '  show_intermediate: Shows the intermediate code, immensely useless. Does not generate any compiled module',
+      '  show_compiled: Shows the prettified compiled code, essentially useless but can be fun. Does not generate any compiled output',
+      '  run: Loads the module and runs the _entry function',
   ], '\n'))
 end
 
@@ -40,7 +41,11 @@ def _entry(args)
       result = changpile(content, options)
       match result
         [$ok, module_name] ->
-          io:print_strings(['Succesfully compiled ', file_name, ' as module ', module_name,'\n'])
+          if list:contains(options, 'run')
+            _ = utils:load_module(module_name)
+            return bif:run([module_name, '_entry'])
+          end
+          io:print_strings(['Successfully compiled ', file_name, ' as module ', module_name,'\n'])
           return $ok
         end
         [$pretty, pretty] ->

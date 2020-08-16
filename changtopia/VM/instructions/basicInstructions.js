@@ -1,3 +1,5 @@
+const equal = require('fast-deep-equal')
+
 const basicInstructions = {
   'move' : {
     name: 'move',
@@ -27,8 +29,16 @@ const basicInstructions = {
   },
 }
 
+
+
 const binops = {
-  '==': (a ,b) => a == b,
+  '==': (a ,b) => {
+    if (Array.isArray(a) && Array.isArray(b)) {
+      return equal(a, b)
+    } else {
+      return a == b
+    }
+  },
   '>': (a ,b) => a > b,
   '>=': (a ,b) => a >= b,
   '<=': (a ,b) => a <= b,

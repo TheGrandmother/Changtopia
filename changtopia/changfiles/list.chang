@@ -16,6 +16,18 @@ def pad_right(list, pad, length)
   return [<list>, <head>]
 end
 
+def contains(list, element)
+  match list
+    [] -> return false end
+    [x, <rest>] ->
+      if x == element
+        return true
+      end
+        return contains(rest, element)
+    end
+  end
+end
+
 def repeat(x, length)
   _ = def (n, acc)
     if n == length

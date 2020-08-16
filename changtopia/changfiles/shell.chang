@@ -155,7 +155,6 @@ def run_command(input)
           $fail -> io:print_strings(['Failed to load module "', module_name, '" needed to run ', name, '\n']) end
         end
       end
-      io:raw_debug([thing, arguments])
       return bif:run([module_name, function], arguments)
     end
   end
