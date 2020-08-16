@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react'
 import { Term } from '@dash4/react-xterm'
 import '@dash4/react-xterm/lib/ReactXterm.css'
 import axios from 'axios'
+import saveAs from 'file-saver'
 
 import config from '../../config.json'
 import {changpile} from 'changtopia/changlang/compiler.js'
 import {crazyCoolStarter} from 'changtopia/main.js'
-import {createFile} from 'changtopia/Io/BrowserIO.js'
+import {createFile, getFile} from 'changtopia/Io/BrowserIO.js'
 
 function App() {
   return (
@@ -66,12 +67,18 @@ const MyComponent = () => {
         const ioDude = crazyCoolStarter(JSON.parse(localStorage._module_main), term, mediatorUrl)
         ioDude.getTerminalSize = async () => [term.term.cols, term.term.rows]
         ioDude.importFile = async () => await importFile()
+        ioDude.saveFile = async (name) => await saveFile(name)
         thing = (d) => inputTraps(d, ioDude.inputListener)
         setLoaded(true)
       }
     }
     loadStuff()
   })
+
+  async function saveFile(name) {
+    const blob = new Blob([getFile(name)], {type: 'text/plain;charset=utf-8'})
+    saveAs(blob, name)
+  }
 
   function importFile() {
     return new Promise((resolve) => {

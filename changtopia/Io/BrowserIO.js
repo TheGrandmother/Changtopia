@@ -1,4 +1,5 @@
 const {h} = require('../util/hash.js')
+const {toJsString} = require('../util/strings.js')
 const {BaseIO, BaseFileHandle, makeReply} = require('./BaseIO.js')
 
 const STORE_KEY = 'chang'
@@ -6,6 +7,10 @@ const MANIFEST = `${STORE_KEY}__manifest__`
 
 function getFileKey(name) {
   return `${STORE_KEY}__file__${name}`
+}
+
+function getFile(name) {
+  return localStorage[getFileKey(name)]
 }
 
 function createFile(name, content='') {
@@ -73,6 +78,16 @@ class BrowserIO extends BaseIO {
     worker.postMessage(makeReply(message, [h('ok')]))
   }
 
+  async [h('export')](worker, message) {
+    const name = toJsString(message.payload[0])
+    if (await this.doesFileExist(name)) {
+      await this.saveFile(name)
+      worker.postMessage(makeReply(message, [h('ok')]))
+    } else {
+      worker.postMessage(makeReply(message, [h('file_not_found')]))
+    }
+  }
+
   async getTerminalSize() {
     console.log([parseInt(this.term.term.cols), parseInt(this.term.terms.rows)])
     return [parseInt(this.term.term.cols), parseInt(this.term.term.rows)]
@@ -109,3 +124,4 @@ class BrowserIO extends BaseIO {
 
 module.exports.BrowserIO = BrowserIO
 module.exports.createFile = createFile
+module.exports.getFile = getFile

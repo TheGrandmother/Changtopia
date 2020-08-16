@@ -172,10 +172,31 @@ def commands()
     ['help', 0, ['shell', 'help'], 'Prints this.. duh'],
     ['dump', 1, ['shell', 'dump'], 'Dumps the content of the file'],
     ['import', 0, ['shell', 'import'], 'Imports a file from the nightmare into changtopia'],
+    ['export', 0, ['shell', 'export'], 'Drag a file, kicking and screaming, out of changtopia'],
     ['chat', 0, ['chat', '_entry'], 'Chat with other people on changtopia, I.e, nobody'],
     ['changpile', 0, ['changpiler', '_entry'], 'Changpile some code. run "changpile help" for additional info'],
   ]
   return bob
+end
+
+def export(args)
+  match args
+    [] ->
+      io:print_string('No filename provided\n')
+      return $ok
+     end
+    [name] ->
+      match bif:send(bif:io_pid(), $export, name)
+        $ok -> return $ok end
+        $file_not_found ->
+          io:print_strings(['No file named ', name, ' exists\n'])
+          return $ok
+        end
+      end
+    end
+  end
+  _ = bif:send(bif:io_pid(), $import)
+  return $ok
 end
 
 def import(_)

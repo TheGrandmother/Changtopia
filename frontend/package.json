@@ -17,6 +17,7 @@
     "eslint-plugin-react": "^7.20.6",
     "extra-watch-webpack-plugin": "^1.0.3",
     "file-loader": "^6.0.0",
+    "file-saver": "^2.0.2",
     "html-loader": "^1.1.0",
     "html-webpack-plugin": "^4.3.0",
     "react": "^16.13.1",
