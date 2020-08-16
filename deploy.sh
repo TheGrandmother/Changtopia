@@ -10,8 +10,10 @@ echo "Building and pushing ${CONTAINER}"
 docker build . -t ${CONTAINER}
 docker push ${CONTAINER}
 
-echo "Deploying ${CONTAINER}"
+echo "Purging old images"
+gcloud compute ssh instance-2 --zone=us-central1-a --command="docker image prune --all -f"
 
+echo "Deploying ${CONTAINER}"
 gcloud compute instances update-container instance-2 \
   --container-image $CONTAINER
 
