@@ -8,8 +8,11 @@ class CompilerError extends Error {
 }
 
 class CodegenError extends CompilerError {
-  constructor(msg) {
+  constructor(msg, position) {
     super(msg)
+    if (position) {
+      this.position = position
+    }
   }
 }
 

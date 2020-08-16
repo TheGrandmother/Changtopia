@@ -37,39 +37,6 @@ const arrayInstructions = {
     }
   },
 
-  'arrayIndexAssign' : {
-    name: 'arrayIndexAssign',
-    evaluate: (process, location, indexLocation, valueLocation) => {
-      const array = process.frame.read(location)
-      const index = process.frame.read(indexLocation)
-      const value = process.frame.read(valueLocation)
-      if (!Array.isArray(array)) {
-        throw new Errors.ArrayTypeError(`Data at location ${location} is not an array, it is ${array} of type ${typeof array}`)
-      }
-      if (index > array.length) {
-        throw  new Errors.ArrayIndexError(`Array index ${index} is out of bounds, Array is only ${array.length} long`)
-      }
-      array[index] = value
-      process.incrementLine()
-    }
-  },
-
-  'arrayIndexGet' : {
-    name: 'arrayIndexGet',
-    evaluate: (process, location, indexLocation, res) => {
-      const array = process.frame.read(location)
-      const index = process.frame.read(indexLocation)
-      if (!Array.isArray(array)) {
-        throw new Errors.ArrayTypeError(`Data at location ${location} is not an array, it is ${array} of type ${typeof array}`)
-      }
-      if (index > array.length) {
-        throw  new Errors.ArrayIndexError(`Array index ${index} is out of bounds, Array is only ${array.length} long`)
-      }
-      process.frame.write(res, array[index])
-      process.incrementLine()
-    }
-  },
-
   'arrayUnpack' : {
     name: 'arrayUnpack',
     evaluate: (process, location, hasBody, leadingCount, trailingCount, ...args ) => {
@@ -79,6 +46,9 @@ const arrayInstructions = {
       }
       if (leadingCount + trailingCount > array.length) {
         throw new Errors.ArrayIndexError(`To many values to unpack. Trying to unpack ${leadingCount + trailingCount} but array contains ${array.length} elements`)
+      }
+      if (!hasBody && leadingCount + trailingCount !== array.length) {
+        throw new Errors.ArrayIndexError(`To few values to unpack. Trying to unpack ${leadingCount + trailingCount} elements but array contains ${array.length} elements`)
       }
 
       const leadingLocations = args.slice(0, leadingCount)

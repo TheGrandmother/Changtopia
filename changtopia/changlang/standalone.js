@@ -31,6 +31,12 @@ try {
     prettyPrint: argv.p,
     showAmbigous: argv.s,
   })
+  if (_module.ast) {
+    console.log(_module.ast)
+  }
+  if (_module.pretty) {
+    console.log(_module.pretty)
+  }
   if (!argv.dry) {
     fs.writeFileSync(outPath, JSON.stringify(_module, undefined, 2))
   }

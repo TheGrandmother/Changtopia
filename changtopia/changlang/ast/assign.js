@@ -1,4 +1,5 @@
 const helpers = require('./helpers')
+const control = require('./control')
 
 function makeBasicAssignmentNode(name, rhs, pos) {
   if (rhs.type === 'closure') {
@@ -15,11 +16,19 @@ function makeBasicAssignmentNode(name, rhs, pos) {
 }
 
 function makeUnpackingAssignmentNode(unpack, rhs, pos) {
-  return {
+  const node = {
     type: 'unpackingAssignment',
     unpack,
     rhs,
     pos
+  }
+  if (unpack.subPatterns && unpack.subPatterns.length > 0) {
+    const blockOfHorror = [node, ...unpack.subPatterns]
+    delete unpack.subPatterns
+    return control.chainStatements(blockOfHorror)
+  } else {
+    delete unpack.subPatterns
+    return node
   }
 }
 

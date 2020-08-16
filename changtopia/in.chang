@@ -1,32 +1,11 @@
 module test
 -- Lets try to write the basics for a shell like thing!
 
-def falsy()
-  io:print_string('false\n')
-  return false
-end
-
-def truthy()
-  io:print_string('true\n')
-  return true
-end
 
 def _entry()
-  io:print_string('hello 😵\n')
+  bob = [[1, 5], [1, 1], 7]
+  [[X], [Y], <Z>] = bob
 
-  io:print_string('Testing short circuiting and\n')
-  if falsy() && truthy() io:print_string('this should not print\n') end
-
-  io:print_string('Testing true short circuiting and\n')
-  if truthy() && truthy() io:print_string('this should print\n') end
-
-  io:print_string('Testing short circuiting or\n')
-  if truthy() ||  falsy() io:print_string('this should not print\n') end
-
-  io:print_string('Testing true short circuiting or\n')
-  if falsy() || truthy() io:print_string('this should print\n') end
-
-  io:print_string('Testing nested\n')
-  if (falsy() && truthy()) || truthy() io:print_string('This should print\n') end
+  io:raw_debug([X, Y, Z])
 
 end

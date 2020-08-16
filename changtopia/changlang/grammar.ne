@@ -82,7 +82,7 @@ constant ->
 function_call -> explicit_call | refference_call
 
 explicit_call -> (identifier ":"):? identifier expr_tuple                     {% ast.makeFunctionCall %}
-refference_call -> %REF_CALL identifier expr_tuple                                  {% ast.makeRefferenceCall %}
+refference_call -> %REF_CALL identifier expr_tuple                            {% ast.makeRefferenceCall %}
 
 name_tuple ->
     "(" _ ident_list _ ")"                                                    {% ast.makeTuple %}
@@ -122,16 +122,24 @@ _repack_list ->
   | _repack_list _ "," _ %NL:? expr
   | _repack_list _ "," _ %NL:? array_blob
 
-array_blob -> %BLOB                                          {% ast.makeBlob %}
+array_blob -> %BLOB                                                           {% ast.makeBlob %}
 
 unpack ->
-     "[" %NL:? _ _unpack _ %NL:? "]"                                                      {% ast.makeUnpack %}
+     "[" %NL:? _ _unpack _ %NL:? "]"                                          {% ast.makeUnpack %}
 
 _unpack ->
-    ident_list                                                                {% ast.strip %}
-  | (_ident_list _ "," %NL:?):? _
-    array_blob
-    _ ("," %NL:? _ident_list {% ast.strip %}):?
+    identifier
+  | unpack
+  | array_blob
+  | _unpack _ "," _ %NL:? array_blob
+  | _unpack _ "," _ %NL:? identifier
+  | _unpack _ "," _ %NL:? unpack
+
+
+#_unpack ->
+#    ident_list                                                                {% ast.strip %}
+#  | unpack _ "," (%NL | %WS):? _unpack
+#  | (_ident_list _ "," %NL:?):? _ array_blob _ ("," %NL:? _ident_list {% ast.strip %}):?
 
 identifier ->
   %IDENTIFIER                                                                 {% ast.makeIdentifier %}
