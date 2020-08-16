@@ -9,7 +9,7 @@ const controlInstructions = {
   'jump_if_true' : {
     name: 'jump_if_true',
     evaluate: (process, a1, line) => {
-      if (process.frame.read.read(a1)) {
+      if (process.frame.read(a1)) {
         process.setLine(line)
       } else {
         process.incrementLine()

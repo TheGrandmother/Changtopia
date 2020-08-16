@@ -116,11 +116,42 @@ const _generators = {
   },
 
   'binop': (state, node, res) => {
+    const {operand, rhs, lhs, pos} = node
     const resLhs = makeInterRef(node)
     const resRhs = makeInterRef(node)
-    const lhsCode = generateNode(state, node.lhs, resLhs)
-    const rhsCode = generateNode(state, node.rhs, resRhs)
-    const myCode = [makeInstruction('op', [{constant: node.operand}, res, resLhs, resRhs], node.pos)]
+    const lhsCode = generateNode(state, lhs, resLhs)
+    const rhsCode = generateNode(state, rhs, resRhs)
+    if (operand === '&&') {
+      // Short circuit on false
+      const skipLabel = makeUniqueLineLabel('shortCircuitSkip')
+      const trueLabel = makeUniqueLineLabel('shortCircuitTrue')
+      return [
+        ...lhsCode,
+        makeInstruction('jump_if_true', [resLhs, trueLabel], pos),
+        makeInstruction('imove', [{constant: false}, res], pos),
+        makeInstruction('jump', [skipLabel], pos),
+        trueLabel,
+        ...rhsCode,
+        makeInstruction('move', [resRhs, res], pos),
+        skipLabel
+      ]
+    }
+    if (operand === '||') {
+      //short circuit on true
+      const skipLabel = makeUniqueLineLabel('shortCircuitSkip')
+      const falseLabel = makeUniqueLineLabel('shortCircuitTrue')
+      return [
+        ...lhsCode,
+        makeInstruction('jump_if_false', [resLhs, falseLabel], pos),
+        makeInstruction('imove', [{constant: true}, res], pos),
+        makeInstruction('jump', [skipLabel], pos),
+        falseLabel,
+        ...rhsCode,
+        makeInstruction('move', [resRhs, res], pos),
+        skipLabel
+      ]
+    }
+    const myCode = [makeInstruction('op', [{constant: operand}, res, resLhs, resRhs], pos)]
     return lhsCode.concat(rhsCode).concat(myCode)
     // op res_lhs res_rhs res
   },
