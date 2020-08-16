@@ -85,7 +85,7 @@ function changpile(_input, options = {}) {
     }
 
     if (showAST) {
-      return {ast: inspect(inspect(functions, false, null, true))}
+      return {ast: inspect(functions, false, null, true)}
     }
 
     const intermediateCode = generateIntermediateCode(functions)

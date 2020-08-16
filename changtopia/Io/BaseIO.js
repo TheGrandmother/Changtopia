@@ -55,8 +55,6 @@ class BaseIO {
   }
 
   async changpile(input, options) {
-    console.log(options)
-    console.log(options.includes(h('show_compiled')))
     const _options = {
       doTailOptimization: !options.includes(h('no_tail_opt')),
       doMoveOptimization: false, //Diss dude be broken
@@ -87,7 +85,7 @@ class BaseIO {
       const result = await this.changpile(toJsString(input), options)
       worker.postMessage(makeReply(message, result))
     } catch (err) {
-      console.log(JSON.stringify(err))
+      console.log(err)
       if (err instanceof CompilerError) {
         worker.postMessage(makeReply(message, [h('error'), fromJsString(`${err.message}\n${err.preview ? err.preview + '\n' : ''}`)]))
       } else {

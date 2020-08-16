@@ -44,15 +44,15 @@ def _entry(args)
           return $ok
         end
         [$pretty, pretty] ->
-          io:print_string(pretty)
+          io:print_strings([pretty, '\n'])
           return $ok
         end
         [$ast, ast] ->
-          io:print_string(ast)
+          io:print_strings([ast, '\n'])
           return $ok
         end
         [$intermediate, intermediate] ->
-          io:print_string(intermediate)
+          io:print_strings([intermediate, '\n'])
           return $ok
         end
         [$error, msg] ->

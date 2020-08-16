@@ -2,6 +2,6 @@ module test
 -- Lets try to write the basics for a shell like thing!
 
 def _entry()
-  io:print_string('hello :D\n')
+  io:print_string('hello 😵\n')
   return $ok
 end
