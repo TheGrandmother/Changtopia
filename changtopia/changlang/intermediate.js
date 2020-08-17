@@ -180,6 +180,11 @@ const _generators = {
     return [makeInstruction('jump', [makeLineLabel(label)], node.pos)]
   },
 
+  'label': (state, node) => {
+    const {label} = node
+    return [makeLineLabel(label)]
+  },
+
   'arrayLitterallImmediate': (state, node, res) => {
     const {entries} = node
     const myCode = [makeInstruction('arrayCreateImmediate', [res, entries], node.pos)]

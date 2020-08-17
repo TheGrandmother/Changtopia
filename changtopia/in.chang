@@ -3,9 +3,11 @@ module test
 
 
 def _entry()
-  bob = [[1, 5], [1, 1], 7]
-  [[X], [Y], <Z>] = bob
-
-  io:raw_debug([X, Y, Z])
-
+  bob = [[1],4, [9,3,7,9]]
+  match bob
+    [[1], <rest>, [9, <moar_rest>]] ->
+      io:raw_debug(rest)
+      io:raw_debug(moar_rest)
+    end
+  end
 end

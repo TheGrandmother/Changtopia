@@ -25,7 +25,7 @@ function makeUnpackingAssignmentNode(unpack, rhs, pos) {
   if (unpack.subPatterns && unpack.subPatterns.length > 0) {
     const blockOfHorror = [node, ...unpack.subPatterns]
     delete unpack.subPatterns
-    return control.chainStatements(blockOfHorror)
+    return control.chainStatements(blockOfHorror, pos)
   } else {
     delete unpack.subPatterns
     return node

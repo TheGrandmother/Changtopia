@@ -46,7 +46,7 @@ function makeUnpack(d) {
   d.forEach(node => {
     if (node.type === 'unpack') {
       //suffer
-      const ident = basics.makeIdentifierNode(`sub_pattern_${randomHash()}`, true, node.pos)
+      const ident = basics.makeIdentifierNode(`sub_pattern_${randomHash()}`, false, node.pos)
       if (!body) {
         leading.push(ident)
       } else {
@@ -68,27 +68,6 @@ function makeUnpack(d) {
   return makeUnpackNode(leading, body, trailing, pos, subPatterns)
 }
 
-//function _makeUnpack(d) {
-//  const pos = helpers.findPositionOfToken(d, 'BRACKET')
-//  d = helpers.deepStrip(d.flat(Infinity))
-//  console.log('=======')
-//  helpers.log(d)
-//  if (Array.isArray(d)) {
-//    const blobIndex = d.findIndex(e => e.type === 'blob')
-//    if (blobIndex === -1) {
-//      return makeUnpackNode(d[0], undefined, [], pos)
-//    } else {
-//      return makeUnpackNode(
-//        helpers.wrapInArray(d.slice(0, blobIndex)[0]) || [],
-//        d[blobIndex].value,
-//        helpers.wrapInArray(d.slice(blobIndex + 1)[0] || []),
-//        pos)
-//    }
-//  } else {
-//    return makeUnpackNode(d, undefined, [], pos)
-//  }
-//}
-
 function makeString(d) {
   const pos = helpers.findPositionOfToken(d, 'STRING')
   d = helpers.strip(d)
@@ -99,7 +78,7 @@ function makeString(d) {
     .replace(/\\0/g,'\0')
   return {
     type: 'arrayLitterallImmediate',
-    entries: {array: s.split('').map(c => c.charCodeAt(0))}, 
+    entries: {array: s.split('').map(c => c.charCodeAt(0))},
     pos
   }
 }

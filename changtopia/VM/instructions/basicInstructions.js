@@ -29,8 +29,6 @@ const basicInstructions = {
   },
 }
 
-
-
 const binops = {
   '==': (a ,b) => {
     if (Array.isArray(a) && Array.isArray(b)) {

@@ -9,21 +9,22 @@ function makeBlockNode(lhs, rhs) {
   }
 }
 
-function makeJumpNode(label) {
+function makeJumpNode(label, pos) {
   return {
     type: 'jump',
-    label
+    label,
+    pos
   }
 }
 
-function chainStatements(statements) {
+function chainStatements(statements, pos) {
   if (statements.length < 2) {
     return statements[0]
   }
   const [first, second, ...rest] = statements
-  let block = makeBlockNode(first, second)
+  let block = makeBlockNode(first, second, pos)
   for (let statement of rest) {
-    block = makeBlockNode(block, statement)
+    block = makeBlockNode(block, statement, pos)
   }
   return block
 }
