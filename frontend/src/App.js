@@ -66,7 +66,7 @@ const MyComponent = () => {
         }
         const ioDude = crazyCoolStarter(JSON.parse(localStorage._module_main), term, mediatorUrl)
         ioDude.getTerminalSize = async () => [term.term.cols, term.term.rows]
-        ioDude.importFile = async () => await importFile()
+        ioDude.importFile = async () => importFile()
         ioDude.saveFile = async (name) => await saveFile(name)
         thing = (d) => inputTraps(d, ioDude.inputListener)
         setLoaded(true)

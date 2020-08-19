@@ -74,7 +74,7 @@ class BrowserIO extends BaseIO {
   }
 
   async [h('import')](worker, message) {
-    await this.importFile()
+    this.importFile() // We will just flat out ignore this dude. We can't handle cancel
     worker.postMessage(makeReply(message, [h('ok')]))
   }
 
