@@ -109,37 +109,11 @@ def _spawn_listener(name, sender, payload)
   return $ok
 end
 
-def dump(args)
-  match args
-    [name] ->
-      match bif:request(bif:io_pid(), $open_file, name)
-        [_, filePid] ->
-          content = bif:request(filePid, $read_all)
-          io:print_string(content)
-          return $ok
-        end
-        [$file_not_found] -> io:print_string('File not found\n') end
-      end
-    end
-    whatever ->
-      return $no_name
-    end
-  end
-  return $ok
-end
-
 def quit(_)
   io:print_string('Thanks for nothing... cya l8r\n')
   bif:send(bif:io_pid(), $shut_down)
   return $ok
 end
-
-def ls(_)
-  files = bif:request(bif:io_pid(), $list_files)
-  io:print_string(list:join_with(files, '\n'))
-  return $ok
-end
-
 
 def run_command(input)
   [name, <arguments>] = input
@@ -168,41 +142,14 @@ def commands()
     ['q', 0, ['shell', 'quit'], 'Quits the VM'],
     ['run', 1, ['shell', 'run_module'], 'Runs the specified module'],
     ['load', 1, ['shell', 'load_module'], 'Loads the specified module'],
-    ['ls', 0, ['shell', 'ls'], 'Lists existing files'],
     ['help', 0, ['shell', 'help'], 'Prints this.. duh'],
-    ['dump', 1, ['shell', 'dump'], 'Dumps the content of the file'],
-    ['import', 0, ['shell', 'import'], 'Imports a file from the nightmare into changtopia'],
-    ['export', 0, ['shell', 'export'], 'Drag a file, kicking and screaming, out of changtopia'],
     ['chat', 0, ['chat', '_entry'], 'Chat with other people on changtopia, I.e, nobody'],
     ['changpile', 0, ['changpiler', '_entry'], 'Changpile some code. run "changpile help" for additional info'],
+    ['fs', 0, ['fs', '_entry'], 'Do filey stuff. Type "fs help" to be more confused'],
   ]
   return bob
 end
 
-def export(args)
-  match args
-    [] ->
-      io:print_string('No filename provided\n')
-      return $ok
-     end
-    [name] ->
-      match bif:send(bif:io_pid(), $export, name)
-        $ok -> return $ok end
-        $file_not_found ->
-          io:print_strings(['No file named ', name, ' exists\n'])
-          return $ok
-        end
-      end
-    end
-  end
-  _ = bif:send(bif:io_pid(), $import)
-  return $ok
-end
-
-def import(_)
-  _ = bif:send(bif:io_pid(), $import)
-  return $ok
-end
 
 def find_command(name)
   bob = commands()

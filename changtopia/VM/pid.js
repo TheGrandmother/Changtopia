@@ -27,6 +27,10 @@ Pid.prototype.toString = function () { return `<${this.host.toString(16)}:${this
 Pid.ioPid = (host) => new Pid(0, 0, host)
 Pid.mediatorPid = () => new Pid(0, 0, 0)
 
+Pid.isPid = (obj) => {
+  return !(obj.instance === undefined || obj.id === undefined || obj.host === undefined)
+}
+
 Pid.toPid = (obj) => {
   if (obj instanceof Pid) {
     return obj

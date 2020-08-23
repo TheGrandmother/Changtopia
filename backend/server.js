@@ -1,4 +1,4 @@
-const mediator = require('./mediator.js')
+const {startMediator} = require('./mediator.js')
 const express = require('express')
 const fs = require('fs').promises
 const cors = require('cors')
@@ -23,9 +23,12 @@ app.get('/get_dem_files', (req, res) => {
   }
   loadAndCompile()
     .then((modules) => {res.json(modules)})
-    .catch(err => {console.log(err); res.json(err); res.status(500).send()})
+    .catch(err => { console.log(err); res.json(err); res.status(500).send()})
 })
 
 app.get('/health', (req, res) => res.json('ok'))
 
-app.listen(port, () => console.log(`Server up and listening on ${port}`))
+app.listen(port, () => {
+  startMediator()
+  console.log(`Server up and listening on ${port}`)
+})

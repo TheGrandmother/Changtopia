@@ -1,0 +1,152 @@
+module fs
+
+-- This module contains all of the fs related stuff
+
+def print_help()
+  io:print_string(list:join_with([
+  'Here is where you do file related stuff.',
+  'The filesystem is incoherent, incomplete and most likely broken.',
+  'Remote paths are a comma sepparated list of names, with no spaces!',
+  '',
+  'There are a some underwhelming arguments available:',
+  '  import:              Takes a file from the great nightmare and imports it to changtopia',
+  '  export <name>:       Drags a file kicking and screaming, out of changtopia',
+  '  ls:                  Lists all the) locally stored file',
+  '  dump <name>:         Dumps the content of a local file',
+  '  fetch <path> <dest>: Fetches the remote file at path and stores it at dest',
+  '  commit <source> <path> <?protected>:',
+  '   Stores the file specified by <source> at the remote path <path>, if the protected argument is provided',
+  '   the file will be write protected and only modifiable by you.',
+  '',
+  ], '\n'))
+end
+
+def commit(source, path, options)
+  match bif:request(bif:io_pid(), $open_file, source)
+    [_, file_pid] ->
+      content = bif:request(file_pid, $read_all)
+      split_path = list:split_by(path, ',')
+      user = '' -- handling the user needs to be fixed
+      match bif:send(bif:mediator_pid(), $commit_a_file, split_path, user, content, options)
+        [$error, message] ->
+          print_strings([message, '\n'])
+        end
+      end
+      return $ok
+    end
+    [$file_not_found] -> io:print_string('File not found\n') end
+  end
+  return $ok
+end
+
+def fetch(path, destination)
+  split_path = list:split_by(path, ',')
+  match bif:send(bif:mediator_pid(), $fetch_a_file, split_path)
+    [$error, message] ->
+      io:print_strings([message, '\n'])
+    end
+    [content] ->
+      match bif:send(bif:io_pid(), $open_file, destination)
+        [_, file_pid] ->
+          _ = bif:send(file_pid, $write, content)
+        end
+        $file_not_found ->
+          [file_pid] = bif:send(bif:io_pid(), $create_file, destination)
+          io:debug(content)
+          _ = bif:send(file_pid, $write, content)
+        end
+      end
+    end
+  end
+end
+
+def export(arg)
+  match arg
+    [] ->
+      io:print_string('No filename provided\n')
+      return $ok
+     end
+    [name] ->
+      match bif:send(bif:io_pid(), $export, name)
+        $ok -> return $ok end
+        $file_not_found ->
+          io:print_strings(['No file named ', name, ' exists\n'])
+          return $ok
+        end
+      end
+    end
+  end
+  _ = bif:send(bif:io_pid(), $import)
+  return $ok
+end
+
+def import()
+  _ = bif:send(bif:io_pid(), $import)
+  return $ok
+end
+
+def ls()
+  files = bif:request(bif:io_pid(), $list_files)
+  io:print_string(list:join_with(files, '\n'))
+  return $ok
+end
+
+def dump(args)
+  match args
+    [name] ->
+      match bif:request(bif:io_pid(), $open_file, name)
+        [_, filePid] ->
+          content = bif:request(filePid, $read_all)
+          io:print_string(content)
+          return $ok
+        end
+        [$file_not_found] -> io:print_string('File not found\n') end
+      end
+    end
+    whatever ->
+      io:print_string('No file name provided\n')
+      return $ok
+    end
+  end
+  return $ok
+end
+
+def _entry(args)
+  match args
+    [] ->
+      io:print_string('The fs command needs atleast one little argument\n')
+      return $ok
+    end
+    ['help'] ->
+      print_help()
+      return $ok
+    end
+    ['import'] ->
+      import()
+      return $ok
+    end
+    ['export', <arg>] ->
+      export(arg)
+      return $ok
+    end
+    ['dump', <arg>] ->
+      dump(arg)
+      return $ok
+    end
+    ['ls'] ->
+      ls()
+      return $ok
+    end
+    ['commit', source, path, <options>] ->
+      commit(source, path, options)
+      return $ok
+    end
+    ['fetch', path, destination] ->
+      fetch(path, destination)
+      return $ok
+    end
+    whatever ->
+      io:print_string('That is not a chill fs command\n')
+    end
+  end
+end

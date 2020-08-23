@@ -1,12 +1,13 @@
 const {h} = require('../../util/hash.js')
 const {toJsString} = require('../../util/strings.js')
-//const Pid = require('../pid.js')
+const Pid = require('../pid.js')
 
 const processControlFunctions = [
   {
     functionId: 'send',
     bif: true,
     exec: (process, returnLocation, recipient, ...payload) => {
+      recipient = Pid.toPid(recipient)
       if (returnLocation === '__dump__') {
         process.sendMessage({recipient, payload})
       } else {
@@ -24,8 +25,12 @@ const processControlFunctions = [
   {
     functionId: 'request',
     bif: true,
-    exec: (process, responseLocation, recipient, ...payload) => {
-      process.sendMessage({recipient, payload}, responseLocation)
+    exec: (process, returnLocation, recipient, ...payload) => {
+      if (returnLocation === '__dump__') {
+        process.sendMessage({recipient, payload})
+      } else {
+        process.sendMessage({recipient, payload}, returnLocation)
+      }
     }
   },
   {

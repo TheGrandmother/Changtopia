@@ -38,7 +38,7 @@ class BaseFileHandle {
 
   async [h('write')](worker, message) {
     const [content] = message.payload
-    await this.writeComplete(this.fileName, toJsString(content))
+    await this.write(toJsString(content))
     worker.postMessage(makeReply(message, h('ok')))
   }
 
@@ -189,7 +189,7 @@ class BaseIO {
     } else {
       const fileHandle = new this.FileHandleInterface(message.sender, fileName)
       fileHandles[fileHandle.pid.id] = fileHandle
-      return worker.postMessage(makeReply(message, [h('file_not_found')]))
+      return worker.postMessage(makeReply(message, [fileHandle.pid]))
     }
   }
 

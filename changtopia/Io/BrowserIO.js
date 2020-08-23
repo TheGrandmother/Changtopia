@@ -39,6 +39,9 @@ class BrowserFileHandle extends BaseFileHandle {
   constructor(owner, fileName) {
     super(owner, fileName)
     this.key = getFileKey(fileName)
+    if (!localStorage[this.key]) {
+      createFile(this.key, '')
+    }
   }
 
   getFullContent() {
@@ -47,7 +50,7 @@ class BrowserFileHandle extends BaseFileHandle {
 
   write(content) {
     if (localStorage[this.key]) {
-      localStorage[getFileKey(name)] = content
+      localStorage[getFileKey(this.fileName)] = content
       updateFile(this.fileName, content)
     } else {
       createFile(this.key, content)
