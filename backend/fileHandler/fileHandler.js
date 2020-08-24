@@ -11,7 +11,11 @@ if (config.gds_stuff) {
   FileHandler = require('./localHandler.js')
 }
 
-function checkAndTrimPath(path) {
+function checkAndTrimPath(path, allowEmpty = false) {
+  console.log('dsafsdfasdfasdfasd', path)
+  if ((path.length === 0 || (path.length === 1 && path[0] === '')) && allowEmpty) {
+    return []
+  }
   if (path.some(p => typeof p !== 'string')) {
     throw new BadPathError('Some elements of the path is not a string')
   }
@@ -43,7 +47,7 @@ async function storeFile(path, user, content, options = {}, override = false) {
 }
 
 async function getFile(path) {
-  path = checkAndTrimPath(path)
+  path = checkAndTrimPath(path, true)
   const fileExists = await FileHandler.fileExists(path)
   if (fileExists) {
     const [_, ...content] =  (await FileHandler.getFile(path)).split('\n')
@@ -54,8 +58,10 @@ async function getFile(path) {
 }
 
 async function listFiles(path) {
-  path = checkAndTrimPath(path)
-  return await FileHandler.listFiles(path)
+  path = checkAndTrimPath(path, true)
+  const result =  await FileHandler.listFiles(path)
+  console.log(result)
+  return result
 }
 
 module.exports = {

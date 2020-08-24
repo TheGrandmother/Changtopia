@@ -11,7 +11,7 @@ def print_help()
   'There are a some underwhelming arguments available:',
   '  import:              Takes a file from the great nightmare and imports it to changtopia',
   '  export <name>:       Drags a file kicking and screaming, out of changtopia',
-  '  ls:                  Lists all the) locally stored file',
+  '  ls <?remote> <path>: Lists the locally stored file or the remote files given a partial path',
   '  dump <name>:         Dumps the content of a local file',
   '  fetch <path> <dest>: Fetches the remote file at path and stores it at dest',
   '  commit <source> <path> <?protected>:',
@@ -85,10 +85,27 @@ def import()
   return $ok
 end
 
-def ls()
-  files = bif:request(bif:io_pid(), $list_files)
-  io:print_string(list:join_with(files, '\n'))
-  return $ok
+def ls(args)
+  match args
+    [] ->
+      files = bif:request(bif:io_pid(), $list_files)
+      io:print_string(list:join_with(files, '\n'))
+      return $ok
+    end
+    ['remote', <path>] ->
+      split_path = list:split_by(path, ',')
+      match bif:send(bif:mediator_pid(), $find_a_file, split_path)
+        [$error, message] ->
+          io:print_strings([message, '\n'])
+        end
+        [<result>] ->
+        io:raw_debug(result)
+          io:print_string(list:join_with(result, '\n'))
+          return $ok
+        end
+      end
+    end
+  end
 end
 
 def dump(args)
@@ -133,8 +150,8 @@ def _entry(args)
       dump(arg)
       return $ok
     end
-    ['ls'] ->
-      ls()
+    ['ls', <arg>] ->
+      ls(arg)
       return $ok
     end
     ['commit', source, path, <options>] ->

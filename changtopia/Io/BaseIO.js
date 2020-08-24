@@ -17,7 +17,8 @@ class BaseFileHandle {
   }
 
   async handleMessage(worker, message) {
-    const [kind] = message.payload
+    const [kind, ...payload] = message.payload
+    message.payload = payload
     await this[kind](worker, message)
   }
 

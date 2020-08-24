@@ -40,7 +40,7 @@ class BrowserFileHandle extends BaseFileHandle {
     super(owner, fileName)
     this.key = getFileKey(fileName)
     if (!localStorage[this.key]) {
-      createFile(this.key, '')
+      createFile(this.fileName, '')
     }
   }
 
@@ -53,8 +53,8 @@ class BrowserFileHandle extends BaseFileHandle {
       localStorage[getFileKey(this.fileName)] = content
       updateFile(this.fileName, content)
     } else {
-      createFile(this.key, content)
-      localStorage[getFileKey(name)] = content
+      createFile(this.fileName, content)
+      localStorage[getFileKey(this.fileName)] = content
     }
 
   }

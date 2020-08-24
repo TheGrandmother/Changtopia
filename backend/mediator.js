@@ -77,7 +77,8 @@ class MessageHandler {
   async [h('find_a_file')](ws, host, message) {
     const [_path] = message.payload
     const path = _path.map(p => Array.isArray(p) ? toJsString(p) : p)
-    const result = (await FileHandler.findFiles(path)).map(p => toJsString(p))
+    const result = (await FileHandler.listFiles(path)).map(p => fromJsString(p))
+    console.log('fuck tits', result)
     ws.send(makeReply(message, result))
     return
   }
@@ -90,7 +91,6 @@ class MessageHandler {
       message.payload = payload // be horrible and alter the message
       if (this[kind]) {
         this[kind](ws, host, message).catch(err => {
-          console.log('FUUUUCKALLLLLLLLL', err.message)
           ws.send(makeReply(message, [h('error'), fromJsString(err.message)]))
         })
       } else {
