@@ -35,6 +35,22 @@ function updateFile(name, newContent) {
   localStorage[MANIFEST] = JSON.stringify(manifest)
 }
 
+function deleteFile(name) {
+  const manifest = JSON.parse(localStorage[MANIFEST] || '{}')
+  delete manifest[name]
+  delete localStorage[getFileKey(name)]
+  localStorage[MANIFEST] = JSON.stringify(manifest)
+}
+
+function renameFile(oldName, newName) {
+  const manifest = JSON.parse(localStorage[MANIFEST] || '{}')
+  manifest[newName] = {...manifest[oldName], name: newName}
+  delete manifest[oldName]
+  localStorage[getFileKey(newName)] = localStorage[getFileKey(oldName)]
+  delete localStorage[getFileKey(oldName)]
+  localStorage[MANIFEST] = JSON.stringify(manifest)
+}
+
 class BrowserFileHandle extends BaseFileHandle {
   constructor(owner, fileName) {
     super(owner, fileName)
@@ -46,6 +62,16 @@ class BrowserFileHandle extends BaseFileHandle {
 
   getFullContent() {
     return localStorage[this.key]
+  }
+
+  rename(newName) {
+    renameFile(this.fileName, newName)
+    this.fileName = newName
+  }
+
+  delete() {
+    this.delted = true
+    deleteFile(this.fileName)
   }
 
   write(content) {

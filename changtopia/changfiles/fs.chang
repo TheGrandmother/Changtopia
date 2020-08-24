@@ -13,6 +13,9 @@ def print_help()
   '  export <name>:       Drags a file kicking and screaming, out of changtopia',
   '  ls <?remote> <path>: Lists the locally stored file or the remote files given a partial path',
   '  dump <name>:         Dumps the content of a local file',
+  '  delete <name>:       Deletes the file',
+  '  rename <old> <new>:  Renames a file.',
+  '  copy <source> <new>: Copies a file.',
   '  fetch <path> <dest>: Fetches the remote file at path and stores it at dest',
   '  commit <source> <path> <?protected>:',
   '   Stores the file specified by <source> at the remote path <path>, if the protected argument is provided',
@@ -108,6 +111,33 @@ def ls(args)
   end
 end
 
+def copy(args)
+  match args
+    [oldName, newName] ->
+      match bif:request(bif:io_pid(), $open_file, oldName)
+        [_, filePid] ->
+          content = bif:request(filePid, $read_all)
+          match bif:send(bif:io_pid(), $create_file, newName)
+            $file_exists ->
+              io:print_string('Destination file already exists\n')
+            end
+            [new_file] ->
+              _ = bif:send(new_file, $write, content)
+            end
+          end
+          return $ok
+        end
+        [$file_not_found] -> io:print_string('File not found\n') end
+      end
+    end
+    whatever ->
+      io:print_string('No file name provided\n')
+      return $ok
+    end
+  end
+  return $ok
+end
+
 def dump(args)
   match args
     [name] ->
@@ -115,6 +145,44 @@ def dump(args)
         [_, filePid] ->
           content = bif:request(filePid, $read_all)
           io:print_string(content)
+          return $ok
+        end
+        [$file_not_found] -> io:print_string('File not found\n') end
+      end
+    end
+    whatever ->
+      io:print_string('No file name provided\n')
+      return $ok
+    end
+  end
+  return $ok
+end
+
+def delete(args)
+  match args
+    [name] ->
+      match bif:request(bif:io_pid(), $open_file, name)
+        [_, filePid] ->
+          _ = bif:request(filePid, $delete)
+          return $ok
+        end
+        [$file_not_found] -> io:print_string('File not found\n') end
+      end
+    end
+    whatever ->
+      io:print_string('No file name provided\n')
+      return $ok
+    end
+  end
+  return $ok
+end
+
+def rename(args)
+  match args
+    [oldName, newName] ->
+      match bif:request(bif:io_pid(), $open_file, oldName)
+        [_, filePid] ->
+          _ = bif:request(filePid, $rename, newName)
           return $ok
         end
         [$file_not_found] -> io:print_string('File not found\n') end
@@ -152,6 +220,18 @@ def _entry(args)
     end
     ['ls', <arg>] ->
       ls(arg)
+      return $ok
+    end
+    ['delete', <arg>] ->
+      delete(arg)
+      return $ok
+    end
+    ['rename', <arg>] ->
+      rename(arg)
+      return $ok
+    end
+    ['copy', <arg>] ->
+      copy(arg)
       return $ok
     end
     ['commit', source, path, <options>] ->

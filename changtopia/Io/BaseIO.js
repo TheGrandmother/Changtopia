@@ -3,16 +3,20 @@ const {toJsString, fromJsString} = require('../util/strings.js')
 const Pid = require('../VM/pid.js')
 const fileHandles = {}
 const {changpile} = require('../changlang/compiler.js')
-const {CompilerError} = require('../errors.js')
+const {CompilerError, RuntimeError} = require('../errors.js')
 
 function makeReply(message, payload, secret) {
   return {sender: message.recipient, recipient: message.sender, id: randomHash(), payload, requestId: message.id, secret}
 }
 
 class BaseFileHandle {
+  // There is a memory leak here
+  // The "process" started by a file is never removed.
+  // this is wierd and annoying and horrible
   constructor (owner, fileName) {
     this.fileName = fileName
     this.owner = owner
+    this.deleted = false
     this.pid = new Pid(0, undefined, owner.host)
   }
 
@@ -23,27 +27,52 @@ class BaseFileHandle {
   }
 
   async [h('read_all')](worker, message) {
+    if (this.deleted) {
+      throw new RuntimeError('File has been delted', h('File has been deleted'))
+    }
     const content = await this.getFullContent()
     worker.postMessage(makeReply(message, fromJsString(content)))
   }
 
   async [h('stat')](worker, message) {
+    if (this.deleted) {
+      throw new RuntimeError('File has been delted', h('File has been deleted'))
+    }
     const stat = await this.stat()
     worker.postMessage(makeReply(message, stat))
   }
 
   async [h('delete')](worker, message) {
-    const content = await this.delete()
-    worker.postMessage(makeReply(message, fromJsString(content)))
+    if (this.deleted) {
+      throw new RuntimeError('File has been delted', h('File has been deleted'))
+    }
+    await this.delete()
+    this.deleted = true
+    worker.postMessage(makeReply(message, h('ok')))
+  }
+
+  async [h('rename')](worker, message) {
+    if (this.deleted) {
+      throw new RuntimeError('File has been delted', h('File has been deleted'))
+    }
+    const [newName] = message.payload
+    await this.rename(toJsString(newName))
+    worker.postMessage(makeReply(message, h('ok')))
   }
 
   async [h('write')](worker, message) {
+    if (this.deleted) {
+      throw new RuntimeError('File has been delted', h('File has been deleted'))
+    }
     const [content] = message.payload
     await this.write(toJsString(content))
     worker.postMessage(makeReply(message, h('ok')))
   }
 
   async [h('append')](worker, message) {
+    if (this.deleted) {
+      throw new RuntimeError('File has been delted', h('File has been deleted'))
+    }
     const [content] = message.payload
     await this.writeAppend(toJsString(content))
     worker.postMessage(makeReply(message, h('ok')))
