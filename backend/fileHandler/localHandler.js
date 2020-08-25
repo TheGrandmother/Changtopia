@@ -31,10 +31,7 @@ async function fileExists(path) {
 
 async function listFiles(path) {
   const regex = new RegExp(path.join(',') + '.*$', 'g')
-  console.log('regex', regex)
   const files = await fs.readdir(BASE_PATH)
-  console.log(files)
-  console.log(files.filter(f => !!f.match(regex)))
   return files.filter(f => !!f.match(regex))
 }
 

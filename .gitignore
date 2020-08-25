@@ -71,3 +71,4 @@ changlang/compiled_grammar.js
 .monitor
 .tbn_runtime/
 frontend/dist
+backend/service-account.json

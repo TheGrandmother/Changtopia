@@ -5,14 +5,13 @@ class FileNotFoundError extends Error {}
 class BadPathError extends Error {}
 
 let FileHandler
-if (config.gds_stuff) {
-  throw new Error('This ain\'t a thing yet')
+if (config.gcs_bucket) {
+  FileHandler = require('./gcsHandler.js')
 } else {
   FileHandler = require('./localHandler.js')
 }
 
 function checkAndTrimPath(path, allowEmpty = false) {
-  console.log('dsafsdfasdfasdfasd', path)
   if ((path.length === 0 || (path.length === 1 && path[0] === '')) && allowEmpty) {
     return []
   }
@@ -60,7 +59,6 @@ async function getFile(path) {
 async function listFiles(path) {
   path = checkAndTrimPath(path, true)
   const result =  await FileHandler.listFiles(path)
-  console.log(result)
   return result
 }
 

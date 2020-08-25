@@ -1,11 +1,11 @@
-FROM node:13.4.0
+FROM node:13.14.0
 
 WORKDIR /opt/
 COPY gcp-config.json config.json
 COPY changtopia/ changtopia/
 RUN cd changtopia && yarn link && cd ..
 COPY backend/ backend/
-RUN cd backend && yarn link changtopia && yarn install --production=true && cd ..
+RUN cd backend && yarn link changtopia && yarn install --production=true  && cd ..
 COPY frontend/ frontend/
 RUN cd frontend && yarn link changtopia && yarn install  --production=true && yarn build && cp -r dist/ ../backend/public && cd ..
 RUN rm -rf frontend/

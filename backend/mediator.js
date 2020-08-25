@@ -56,7 +56,6 @@ class MessageHandler {
     const [_path] = message.payload
     const path = _path.map(p => Array.isArray(p) ? toJsString(p) : p)
     const content = fromJsString(await FileHandler.getFile(path))
-    console.log('Saved file')
     ws.send(makeReply(message, [content]))
     return
   }
@@ -78,10 +77,10 @@ class MessageHandler {
     const [_path] = message.payload
     const path = _path.map(p => Array.isArray(p) ? toJsString(p) : p)
     const result = (await FileHandler.listFiles(path)).map(p => fromJsString(p))
-    console.log('fuck tits', result)
     ws.send(makeReply(message, result))
     return
   }
+
 
   handleMessage(ws, _message) {
     const message = JSON.parse(_message)
@@ -91,7 +90,8 @@ class MessageHandler {
       message.payload = payload // be horrible and alter the message
       if (this[kind]) {
         this[kind](ws, host, message).catch(err => {
-          ws.send(makeReply(message, [h('error'), fromJsString(err.message)]))
+          ws.send(makeReply(message, [h('error'), fromJsString('Mediator dissaster: ', err.message)]))
+          console.error(err)
         })
       } else {
         ws.send(JSON.stringify({recipient: message.sender, type: 'A strange and silly message', id: message.id}))
