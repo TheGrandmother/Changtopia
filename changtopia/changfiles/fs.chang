@@ -138,16 +138,24 @@ def copy(args)
   return $ok
 end
 
+def read(name)
+  match bif:request(bif:io_pid(), $open_file, name)
+    [_, filePid] ->
+      content = bif:request(filePid, $read_all)
+      return content
+    end
+    error -> return [$error, error] end
+  end
+end
+
 def dump(args)
   match args
     [name] ->
-      match bif:request(bif:io_pid(), $open_file, name)
-        [_, filePid] ->
-          content = bif:request(filePid, $read_all)
-          io:print_string(content)
-          return $ok
+      match read(name)
+        [$error, error] ->
+          io:print_string(error)
         end
-        [$file_not_found] -> io:print_string('File not found\n') end
+        content -> io:print_string(content) end
       end
     end
     whatever ->

@@ -1,19 +1,23 @@
 module list
 
+def length(list)
+  return bif:length(list)
+end
+
 def pad_left(list, pad, length)
   if bif:length(list) >= length
     return list
   end
-  head = repeat(pad, length - bif:length(list))
-  return [<head>, <list>]
+  padding = repeat(pad, length - bif:length(list))
+  return [<padding>, <list>]
 end
 
 def pad_right(list, pad, length)
   if bif:length(list) >= length
     return list
   end
-  head = repeat(pad, length - bif:length(list))
-  return [<list>, <head>]
+  padding = repeat(pad, length - bif:length(list))
+  return [<list>, <padding>]
 end
 
 def contains(list, element)
@@ -133,6 +137,26 @@ def _zip(l1, l2, res)
       return _zip(tail(l1), tail(l2), [<res>, [head(l1), head(l2)]])
     end
   end
+end
+
+def split_at(arr, index)
+  thing = def (n, tail, head)
+    match tail
+      [x , <rest>] ->
+        match n < index
+          true ->
+            return @thing(n + 1, rest, [<head>, x])
+          end
+          false ->
+            return [head, tail]
+          end
+        end
+      end
+    end
+    return [[],[]]
+  end
+
+  return @thing(0, arr, [])
 end
 
 def slice(from, to, arr)

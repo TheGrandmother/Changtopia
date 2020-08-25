@@ -1,0 +1,149 @@
+module view
+
+-- Module for faffing about with text
+
+
+def fit_cords(screen_dim, cord)
+  [screen_w, screen_h] = screen_dim
+  [x, y] = cord
+  if x >= screen_w || x == $full
+    x = screen_w
+  end
+  if y >= screen_h ||y == $full
+    y = screen_h
+  end
+  return [x, y]
+end
+
+def display(content, origin, bound)
+  screen_dim = bif:request(bif:io_pid(), $get_console_size)
+  [x0, y0] = fit_cords(screen_dim, origin)
+  [x1, y1] = fit_cords(screen_dim, bound)
+  if x0 > x1 || y0 > y1
+    return $bad_box
+  end
+  text_width = x1 - x0
+  text_height = y1 - y0
+  divided_content = list:split_by(content, '\n')
+
+  render = def (content, line_no)
+    match content
+      [line, <rest>] ->
+        if line_no > y1
+          return $ok
+        end
+        if list:length(line) > text_width
+          [head, tail] = list:split_at(line, text_width - 1)
+          line = head
+          rest = [tail, <rest>]
+        end
+        padded_line = list:pad_right(line, " ", text_width)
+        io:print_strings([bif:ansi_cursor_to(x0, line_no), padded_line])
+        return @render(rest, line_no + 1)
+      end
+      [] ->
+        -- We need to blank subsequent non printed lines
+        return $complete
+      end
+    end
+  end
+
+  return @render(divided_content, y0)
+end
+
+def display_lines(lines, origin, bound)
+  screen_dim = bif:request(bif:io_pid(), $get_console_size)
+  [x0, y0] = fit_cords(screen_dim, origin)
+  [x1, y1] = fit_cords(screen_dim, bound)
+  if x0 > x1 || y0 > y1
+    return $bad_box
+  end
+  text_width = x1 - x0
+  text_height = y1 - y0
+
+  render = def (content, line_no)
+    match content
+      [line, <rest>] ->
+        if line_no > y1
+          return $ok
+        end
+        padded_line = list:pad_right(line, " ", text_width)
+        io:print_strings([bif:ansi_cursor_to(x0, line_no), padded_line])
+        return @render(rest, line_no + 1)
+      end
+      [] ->
+        -- We need to blank subsequent non printed lines
+        return $complete
+      end
+    end
+  end
+
+  return @render(lines, y0)
+end
+
+def split_into_display_lines(content, line_width)
+  divided_content = list:split_by(content, '\n')
+  thing = def (content, acc)
+    match content
+      [line, <rest>] ->
+        if list:length(line) > line_width
+          [head, tail] = list:split_at(line, line_width - 1)
+          return @thing([tail, <rest>], [<acc>, head])
+        end
+        return @thing(rest, [<acc>, line])
+      end
+      [] -> return acc end
+    end
+  end
+  really = @thing(divided_content, [])
+  return really
+end
+
+def scrolling(content, origin, size)
+  [text_width, text_height] = size
+  [x0, y0] = origin
+  bounds = [x0 + text_width, y0 + text_height]
+  display_lines = split_into_display_lines(content, text_width)
+  line_count = list:length(display_lines)
+
+  scroll_listener = def (current_line, sender, payload)
+    quit = false
+    match payload
+      [$input_data, "k"] ->
+        if current_line > 0
+          current_line = current_line - 1
+        end
+      end
+      [$input_data, "j"] ->
+        if current_line < line_count
+          current_line = current_line + 1
+        end
+      end
+      [$input_data, "q"] ->
+        quit = true
+      end
+    end
+    if quit return $ok end
+
+    [_, lines] = list:split_at(display_lines, current_line)
+    display_lines(lines, origin, bounds)
+
+    bif:listen(scroll_listener, current_line)
+  end
+
+  display_lines(display_lines, origin, bounds)
+  bif:send(bif:io_pid(), $get_input_stream)
+  bif:listen(scroll_listener, 0)
+  bif:send(bif:io_pid(), $release_input_stream)
+  return $ok
+end
+
+
+def _entry()
+  io:print_string(bif:ansi_clear_screen())
+  io:print_string(bif:ansi_cursor_hide())
+  content = fs:read('epigrams.txt')
+  scrolling(content, [20, 10], [20, 10])
+  io:print_string(bif:ansi_cursor_show())
+  io:print_string('\n')
+end

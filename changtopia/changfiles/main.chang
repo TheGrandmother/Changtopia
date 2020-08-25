@@ -6,7 +6,8 @@ def core_modules()
     'shell',
     'list',
     'utils',
-    'colors'
+    'colors',
+    'fs'
   ]
 end
 

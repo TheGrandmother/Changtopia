@@ -1,13 +1,5 @@
 module test
--- Lets try to write the basics for a shell like thing!
-
-
 def _entry()
-  bob = [[1],4, [9,3,7,9]]
-  match bob
-    [[1], <rest>, [9, <moar_rest>]] ->
-      io:raw_debug(rest)
-      io:raw_debug(moar_rest)
-    end
-  end
+  bob = def () return $ok end
+  @bob()
 end
