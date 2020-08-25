@@ -79,9 +79,9 @@ class Process {
 
   }
 
-  listen(module, functionId, returnLocation, additionalArgs) {
+  listen(module, functionId, returnLocation, additionalArgs, bindings) {
     const func = this.getFunction(module, functionId)
-    this.handler = {func, returnLocation, additionalArgs}
+    this.handler = {func, returnLocation, additionalArgs, bindings}
     this.waiting = true
     this.awaitingResponse = null
   }
@@ -167,11 +167,11 @@ class Process {
       this.handlingRequest = {sender, id}
     }
 
-    const {func, returnLocation, additionalArgs} = this.handler
+    const {func, returnLocation, additionalArgs, bindings} = this.handler
     const args = [...additionalArgs, sender, ...payload]
 
     // This will push the handler frame to the stack
-    this.bindNormalFunction(func, returnLocation, args)
+    this.bindNormalFunction(func, returnLocation, args, bindings)
 
     // It is the binding of the listener that constitutes the call
     // that when returned from, should increment the line counter.

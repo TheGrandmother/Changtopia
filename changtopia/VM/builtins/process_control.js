@@ -37,8 +37,8 @@ const processControlFunctions = [
     functionId: 'listen',
     bif: true,
     exec: (process, returnLocation, funcRef, ...args) => {
-      const [module, functionId] = funcRef
-      process.listen(toJsString(module), toJsString(functionId), returnLocation, args)
+      const [module, functionId, ...bindings] = funcRef
+      process.listen(toJsString(module), toJsString(functionId), returnLocation, args, bindings)
       return 0
     }
   },
