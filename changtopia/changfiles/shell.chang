@@ -79,9 +79,14 @@ def spawn_module(name)
     $ok ->
       return $ok
     end
-    [the_fuck, something, msg] ->
+    $no_return ->
       return $ok
     end
+    -- [the_fuck, something, msg] ->
+    --   -- Why the hell did I write this clause???
+    --   -- I have no memmory of doing
+    --   return $ok
+    -- end
     whatever ->
       io:print_strings([name, ' Sent us some strange shit...\n', response, '\n'])
       return $ok
