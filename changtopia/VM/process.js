@@ -275,6 +275,7 @@ class Process {
       evaluateInstruction(this, instruction)
     } catch (err) {
       if (err instanceof RuntimeError) {
+        console.error(this.buildErrorMessage(err.message, instruction))
         if (this.linkedProcesses.length > 0 || this.inbox.length > 0 || this.handlingRequest) {
           const msg = err.message.split('').map(c => c.charCodeAt(0))
           this.linkedProcesses.forEach(linkedPid => {
@@ -342,7 +343,8 @@ class Stack {
   getStackTrace(vm) {
     let trace = this.frames.slice(-5).map((frame) => {
       const line = frame.func.code[frame.line].sourcePos.line
-      return `  ${frame.func.moduleName}:${frame.functionId}:${line}   ${vm.getModule(frame.func.moduleName).source[line - 1].trim()}`
+      const source = vm ? vm.getModule(frame.func.moduleName).source[line - 1].trim() : 'Source not reachable'
+      return `  ${frame.func.moduleName}:${frame.functionId}:${line}   ${source}`
     }).reverse().join('\n')
     if (this.frames.length > 5) {
       trace = `${trace}\n  (${this.frames.length - 5} frames hidden)`

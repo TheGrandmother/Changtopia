@@ -95,6 +95,7 @@ const _generators = {
   'identifier': (state, node, res) => {
     const varReference = state.refs[node.name]
     if (!varReference) {
+      console.log(node)
       throw new CompilerError(`Name ${node.name} has not been defined`)
     } else {
       if (varReference.constant) {
