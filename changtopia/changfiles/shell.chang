@@ -149,12 +149,17 @@ def commands()
     ['load', 1, ['shell', 'load_module'], 'Loads the specified module'],
     ['help', 0, ['shell', 'help'], 'Prints this.. duh'],
     ['chat', 0, ['chat', '_entry'], 'Chat with other people on changtopia, I.e, nobody'],
+    ['clear', 0, ['shell', 'clear'], 'Clears the screen'],
     ['changpile', 0, ['changpiler', '_entry'], 'Changpile some code. run "changpile help" for additional info'],
     ['fs', 0, ['fs', '_entry'], 'Do filey stuff. Type "fs help" to be more confused'],
   ]
   return bob
 end
 
+def clear(_)
+  io:print_strings([bif:ansi_clear_terminal()])
+  return $ok
+end
 
 def find_command(name)
   bob = commands()

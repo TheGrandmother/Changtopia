@@ -51,16 +51,13 @@ def _entry(args)
           return $ok
         end
         [$pretty, pretty] ->
-          io:print_strings([pretty, '\n'])
-          return $ok
+          display_content = [pretty, '\n']
         end
         [$ast, ast] ->
-          io:print_strings([ast, '\n'])
-          return $ok
+          display_content = [ast, '\n']
         end
         [$intermediate, intermediate] ->
-          io:print_strings([intermediate, '\n'])
-          return $ok
+          display_content = [intermediate, '\n']
         end
         [$error, msg] ->
           io:print_strings(['Error compiling ', file_name, ':\n', msg])
@@ -70,5 +67,7 @@ def _entry(args)
     end
     [$file_not_found] -> io:print_string('File not found\n') end
   end
+  utils:load_module('view')
+  view:scroll_or_show(list:flatten(display_content))
   return $ok
 end

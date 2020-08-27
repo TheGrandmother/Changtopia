@@ -1,5 +1,6 @@
 module test
 def _entry()
-  bob = def () return $ok end
-  @bob()
+  p = 1 + 8
+  x = [1,2,3]
+  a = [1, p, 3, <x> ,4]
 end

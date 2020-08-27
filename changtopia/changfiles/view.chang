@@ -29,7 +29,7 @@ def display(content, origin, bound)
   render = def (content, line_no)
     match content
       [line, <rest>] ->
-        if line_no > y1
+        if line_no == y1 - 1
           return $ok
         end
         if list:length(line) > text_width
@@ -64,7 +64,7 @@ def display_lines(lines, origin, bound)
   render = def (content, line_no)
     match content
       [line, <rest>] ->
-        if line_no > y1
+        if line_no == y1
           return $ok
         end
         padded_line = list:pad_right(line, " ", text_width)
@@ -95,18 +95,57 @@ def split_into_display_lines(content, line_width)
       [] -> return acc end
     end
   end
-  really = @thing(divided_content, [])
-  return really
+  return @thing(divided_content, [])
+end
+
+def fits_on_screen(content, size)
+  match size
+    $full ->
+      [width, height] = bif:request(bif:io_pid(), $get_console_size)
+    end
+    x ->
+      [width, height] = size
+    end
+  end
+  divided_content = list:split_by(content, '\n')
+  thing = def (content, x)
+    if (x > height)
+      return false
+    end
+    match content
+      [line, <rest>] ->
+        if list:length(line) > width
+          [head, tail] = list:split_at(line, width - 1)
+          return @thing([tail, <rest>], x + 1)
+        end
+        return @thing(rest, x + 1)
+      end
+      [] -> return true end
+    end
+  end
+  return @thing(divided_content, 0)
 end
 
 def scrolling(content, origin, size)
   [text_width, text_height] = size
   [x0, y0] = origin
-  bounds = [x0 + text_width, y0 + text_height]
-  display_lines = split_into_display_lines(content, text_width)
-  line_count = list:length(display_lines)
+  bounds = [x0 + text_width - 1, y0 + text_height]
+  line_count = list:length(content)
+
+  draw_scroll_bar = def (current_line, n)
+    plupp_line = bif:cast((current_line/(line_count - text_height)) * (text_height - 1), 'integer')
+    if (n < text_height)
+      if (n == plupp_line)
+        io:print_strings([bif:ansi_cursor_to(x0 + text_width, y0 + n), '+'])
+        return @draw_scroll_bar(current_line, n + 1)
+      end
+      io:print_strings([bif:ansi_cursor_to(x0 + text_width, y0 + n), '|'])
+      return @draw_scroll_bar(current_line, n + 1)
+    end
+  end
 
   scroll_listener = def (current_line, sender, payload)
+    bif:send(bif:io_pid(), $release_input_stream)
     quit = false
     match payload
       [$input_data, "k"] ->
@@ -115,7 +154,7 @@ def scrolling(content, origin, size)
         end
       end
       [$input_data, "j"] ->
-        if current_line < line_count
+        if current_line < line_count - text_height
           current_line = current_line + 1
         end
       end
@@ -125,16 +164,31 @@ def scrolling(content, origin, size)
     end
     if quit return $ok end
 
-    [_, lines] = list:split_at(display_lines, current_line)
+    [_, lines] = list:split_at(content, current_line)
     display_lines(lines, origin, bounds)
+    @draw_scroll_bar(current_line, 0)
 
+    bif:send(bif:io_pid(), $get_input_stream)
     bif:listen(scroll_listener, current_line)
   end
 
-  display_lines(display_lines, origin, bounds)
+  display_lines(content, origin, bounds)
   bif:send(bif:io_pid(), $get_input_stream)
+  @draw_scroll_bar(0, 0)
   bif:listen(scroll_listener, 0)
-  bif:send(bif:io_pid(), $release_input_stream)
+  return $ok
+end
+
+def scroll_or_show(content)
+  io:print_string(bif:ansi_clear_screen())
+  [width, height] = bif:send(bif:io_pid(), $get_console_size)
+  display_lines = split_into_display_lines(content, width)
+  io:raw_debug(bif:length(display_lines))
+  if bif:length(display_lines) > height
+    scrolling(display_lines, [0,0], [width, height])
+    return $ok
+  end
+  display_lines(display_lines, [0,0], [width, height])
   return $ok
 end
 
@@ -143,7 +197,9 @@ def _entry()
   io:print_string(bif:ansi_clear_screen())
   io:print_string(bif:ansi_cursor_hide())
   content = fs:read('epigrams.txt')
-  scrolling(content, [20, 10], [20, 10])
+  size = bif:send(bif:io_pid(), $get_console_size)
+  scrolling(content, [0, 0], size)
   io:print_string(bif:ansi_cursor_show())
   io:print_string('\n')
+  return $ok
 end
