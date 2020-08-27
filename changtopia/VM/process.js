@@ -132,6 +132,7 @@ class Process {
           this.awaitingResponse = null
           this.waiting = false
           this.inbox.splice(i, i+1)
+          break
         }
       }
     } else {
