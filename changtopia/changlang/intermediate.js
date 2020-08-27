@@ -9,14 +9,9 @@ const DUMP = {constant: '__dump__'}
 
 let __currentIndex = 0
 
-function makeName() {
+function makeInterRef() {
   __currentIndex += 1
-  return `${__currentIndex}`
-}
-
-function makeInterRef(node) {
-  __currentIndex += 1
-  return {ref: `i${makeName(node)}`}
+  return {ref: `i${__currentIndex}`}
 }
 
 function makeAssignRef(name) {
@@ -71,14 +66,40 @@ function getRef(state, name) {
   }
 }
 
+function generateNodeAndRef(state, node) {
+  if (node.type === 'identifier') {
+    if (state.refs[node.name]) {
+      return [state.refs[node.name], []]
+    }
+    return [createAssignment(state, node.name), []]
+  }
+  const interRef = makeInterRef()
+  const code = generateNode(state, node, interRef)
+  if (code.length === 1 && code[0].instruction.id === 'move') {
+    return [code[0].instruction.args[0], []]
+  }
+  return [interRef, code]
+}
+
+function mapGenerateNodesAndRefs(state, nodes) {
+  const things = nodes.map(node => generateNodeAndRef(state, node))
+  const refs = []
+  const codes = []
+  things.forEach(([ref, code]) => {refs.push(ref); codes.push(code)})
+  return [refs, codes.flat()]
+}
+
 const _generators = {
   'assignment': (state, node) => {
     const {name, rhs} = node
-    const res_subtree = makeInterRef(node)
     const assignRef = createAssignment(state, name)
-    const subtreeCode = generateNode(state, rhs, res_subtree)
-    const myCode = [makeInstruction('move', [res_subtree, assignRef], node.pos)]
-    return subtreeCode.concat(myCode)
+    if (rhs.type !== 'identifier') {
+      return generateNode(state, rhs, assignRef)
+    } else {
+      const [rhsRef, rhsCode] = generateNodeAndRef(state, rhs)
+      const myCode = [makeInstruction('move', [rhsRef, assignRef], node.pos)]
+      return rhsCode.concat(myCode)
+    }
   },
 
   'constant': (state, node, res) => {
@@ -108,8 +129,7 @@ const _generators = {
 
   'call': (state, node, res) => {
     const {name, args, module} = node
-    const argRefs = args.map(() => makeInterRef())
-    const argCode = args.map((arg, i) => generateNode(state, arg, argRefs[i])).flat()
+    const [argRefs, argCode] = mapGenerateNodesAndRefs(state, args)
     if (!res) {
       res = DUMP
     }
@@ -118,10 +138,8 @@ const _generators = {
 
   'binop': (state, node, res) => {
     const {operand, rhs, lhs, pos} = node
-    const resLhs = makeInterRef(node)
-    const resRhs = makeInterRef(node)
-    const lhsCode = generateNode(state, lhs, resLhs)
-    const rhsCode = generateNode(state, rhs, resRhs)
+    const [resLhs, lhsCode] = generateNodeAndRef(state, lhs)
+    const [resRhs, rhsCode] = generateNodeAndRef(state, rhs)
     if (operand === '&&') {
       // Short circuit on false
       const skipLabel = makeUniqueLineLabel('shortCircuitSkip')
@@ -154,26 +172,15 @@ const _generators = {
     }
     const myCode = [makeInstruction('op', [{constant: operand}, res, resLhs, resRhs], pos)]
     return lhsCode.concat(rhsCode).concat(myCode)
-    // op res_lhs res_rhs res
   },
 
   'if': (state, node) => {
     const {lhs, rhs} = node
-    const conditionRes = makeInterRef(node)
-    const conditionCode = generateNode(state, lhs, conditionRes)
+    const [conditionRes, conditionCode] = generateNodeAndRef(state, lhs)
     const bodyCode = generateNode(state, rhs)
     const skipLabel = makeUniqueLineLabel('skip')
     const myCode = [makeInstruction('jump_if_false', [conditionRes, skipLabel], node.pos)]
     return conditionCode.concat(myCode).concat(bodyCode).concat(skipLabel)
-    // op res_lhs res_rhs res
-  },
-
-  '__arrayLitterall': (state, node, res) => {
-    const {entries} = node
-    const resultLocations = entries.map(() => makeInterRef())
-    const valueCodes = entries.map((entry, i) => generateNode(state, entry, resultLocations[i]))
-    const myCode = [makeInstruction('arrayCreate', [res, ...resultLocations], node.pos)]
-    return valueCodes.flat().concat(myCode)
   },
 
   'jump': (state, node) => {
@@ -206,44 +213,24 @@ const _generators = {
   'arrayLitteral': (state, node, res) => {
     const entries = node.entries
 
-    const blobs = entries.map((e, i) => {
-      if (e.type === 'blob') {
-        return {ref: {ref: getRef(state, e.value.name)}, index: i}
-      }
-    }).filter(e => e)
+    const [entryRefs, entryCode] = mapGenerateNodesAndRefs(state, entries)
 
-    const normalEntries = entries.map((e, i) => {
-      if (e.type !== 'blob') {
-        return {node: e, index: i, ref: makeInterRef()}
-      }
-    }).filter(e => e)
-    const entryCode = normalEntries.reduce((acc, e) => acc.concat(generateNode(state, e.node, e.ref)),[])
-    const entryRefs = []
-    blobs.forEach(blob => entryRefs[blob.index] = blob.ref)
-    normalEntries.forEach(entry => entryRefs[entry.index] = entry.ref)
-    const blobCount = {constant: blobs.length}
-    const blobIndexes = blobs.map(blob => ({constant: blob.index}))
+    const blobIndexes = entries.map((e, i) => e.type === 'blob' ? {constant: i} : false).filter(e => e !== false)
+    const blobCount = {constant: blobIndexes.length}
+
     return entryCode.concat([makeInstruction('arrayCreate', [res, blobCount, ...blobIndexes, ...entryRefs], node.pos)])
   },
 
-  'indexingAssign': (state, node) => {
-    const {arrayName, index, rhs} = node
-    const rhsRes = makeInterRef()
-    const rhsCode = generateNode(state, rhs, rhsRes)
-    const arrayRef = state.refs[arrayName.name]
-    if (!arrayRef) {
-      throw new CompilerError(`Name ${node.name} has not been defined`)
-    }
-    const indexRef = makeInterRef()
-    const indexCode = generateNode(state, index, indexRef)
-    return indexCode.concat(rhsCode).concat([makeInstruction('arrayIndexAssign', [arrayRef, indexRef, rhsRes], node.pos)])
+  'blob': (state, node, res) => {
+    const {value, pos} = node
+    const [valueRes, valueCode] = generateNodeAndRef(state, value)
+    return [...valueCode, makeInstruction('move', [valueRes, res], pos)]
   },
 
   'unpackingAssignment': (state, node) => {
     const {rhs, unpack} = node
     const {leading, body, trailing} = unpack
-    const rhsRes = makeInterRef()
-    const rhsCode = generateNode(state, rhs, rhsRes)
+    const [rhsRes, rhsCode] = generateNodeAndRef(state, rhs)
     const leadingRefs = leading.map(({name}) => createAssignment(state, name))
     const trailingRefs = trailing.map(({name}) => createAssignment(state, name))
     const bodyRef = body && createAssignment(state, body.name || body.value.name)

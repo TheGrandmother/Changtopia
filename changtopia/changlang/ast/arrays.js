@@ -19,7 +19,7 @@ function makeBlob(d) {
   d = helpers.strip(d)
   return {
     type: 'blob',
-    value: basics.makeIdentifierNode(d.value, pos),
+    value: basics.makeIdentifierNode(d.value, false, pos),
     pos
   }
 }
