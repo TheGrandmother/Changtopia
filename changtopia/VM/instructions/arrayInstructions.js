@@ -6,21 +6,17 @@ const arrayInstructions = {
     evaluate: (process, location, blobCount, ...things) => {
       const blobLocations = things.slice(0, blobCount)
       const entries = things.slice(blobCount)
-      const array = []
+      let array = []
       entries.forEach((entry, i) => {
         if (blobLocations.includes(i)) {
           const arr = process.frame.read(entry)
           if (!Array.isArray(arr)) {
             throw new Errors.ArrayTypeError(`Data at location ${entry} is not an array, it is ${arr} of type ${typeof arr}`)
           }
-          array.push(...arr)
+          array = array.concat(arr)
         } else {
           const stuff = process.frame.read(entry)
-          if (Array.isArray(stuff)) {
-            array.push(stuff)
-          }else {
-            array.push(stuff)
-          }
+          array.push(stuff)
         }
       })
       process.frame.write(location, array)
