@@ -19,11 +19,11 @@ function makeArrayLitteral(d) {
 }
 
 function makeBlob(d) {
-  const pos = helpers.findPositionOfToken(d, 'BLOB')
+  const pos = helpers.findPositionOfToken(d, 'OPEN_BLOB')
   d = helpers.strip(d)
   return {
     type: 'blob',
-    value: basics.makeIdentifierNode(d.value, false, pos),
+    value: d[1],
     pos
   }
 }
@@ -62,7 +62,10 @@ function makeUnpack(d) {
       if (body) {
         throw new CompilerError(`Multiple blobs in unpacking pattern at line ${pos.line} col ${pos.col}`, pos)
       }
-      body = node.value
+      if (node.value.type !== 'identifier') {
+        throw new CompilerError(`Can't unpack expression blobs ${pos.line} col ${pos.col}`, pos)
+      }
+      body = node
     } else if (!body) {
       leading.push(node)
     } else {

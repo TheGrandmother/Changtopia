@@ -58,7 +58,7 @@ def _help(commands)
     [] ->
       return $ok
     end
-    [entry, <rest>] ->
+    [entry, <<rest>>] ->
       [name, arg_count, _, help_text] = entry
       io:print_strings(['  ', name, ': ', help_text, '\n'])
       return _help(rest)
@@ -121,7 +121,7 @@ def quit(_)
 end
 
 def run_command(input)
-  [name, <arguments>] = input
+  [name, <<arguments>>] = input
   match find_command(name)
     $not_found ->
       io:print_strings(['What is even "', name, '"?\n'])
@@ -171,8 +171,8 @@ def _find_command(name, commands)
     [] ->
       return $not_found
     end
-    [command, <rest>] ->
-      [command_name, <_>] = command
+    [command, <<rest>>] ->
+      [command_name, <<_>>] = command
       if bif:array_compare(name, command_name)
         return command
       end

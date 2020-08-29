@@ -30,11 +30,11 @@ def process_onscreen_lines(starting_line, line_count, content)
     match rest
       [line] ->
         processed_line = list:flatten([@line_number(line_no), line])
-        return [<acc>, processed_line]
+        return [<<acc>>, processed_line]
       end
-      [line, <rest>] ->
+      [line, <<rest>>] ->
         processed_line = list:flatten([@line_number(line_no), line, '\n'])
-        return @process_lines(line_no + 1, rest, [<acc>, processed_line])
+        return @process_lines(line_no + 1, rest, [<<acc>>, processed_line])
       end
     end
   end
@@ -51,7 +51,7 @@ def draw_screen(content, starting_line, height)
   clear_and_draw = def (lines)
     match lines
       [] -> return $ok end
-      [l, <rest>] ->
+      [l, <<rest>>] ->
         io:print_strings([bif:ansi_erase_line(), l])
         return clear_and_draw(rest)
       end

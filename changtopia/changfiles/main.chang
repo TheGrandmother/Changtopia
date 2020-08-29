@@ -14,7 +14,7 @@ end
 def load_core_modules()
   load_modules = def (modules)
     match modules
-      [module_name, <rest>] ->
+      [module_name, <<rest>>] ->
         match bif:request(bif:io_pid(), $load_module, module_name)
           $module_not_found ->
             return [$module_not_found, module_name]

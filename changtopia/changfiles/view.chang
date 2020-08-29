@@ -28,14 +28,14 @@ def display(content, origin, bound)
 
   render = def (content, line_no)
     match content
-      [line, <rest>] ->
+      [line, <<rest>>] ->
         if line_no == y1 - 1
           return $ok
         end
         if list:length(line) > text_width
           [head, tail] = list:split_at(line, text_width - 1)
           line = head
-          rest = [tail, <rest>]
+          rest = [tail, <<rest>>]
         end
         padded_line = list:pad_right(line, " ", text_width)
         io:print_strings([bif:ansi_cursor_to(x0, line_no), padded_line])
@@ -63,7 +63,7 @@ def display_lines(lines, origin, bound)
 
   render = def (content, line_no)
     match content
-      [line, <rest>] ->
+      [line, <<rest>>] ->
         if line_no == y1
           return $ok
         end
@@ -85,12 +85,12 @@ def split_into_display_lines(content, line_width)
   divided_content = list:split_by(content, '\n')
   thing = def (content, acc)
     match content
-      [line, <rest>] ->
+      [line, <<rest>>] ->
         if list:length(line) > line_width
           [head, tail] = list:split_at(line, line_width - 1)
-          return @thing([tail, <rest>], [<acc>, head])
+          return @thing([tail, <<rest>>], [<<acc>>, head])
         end
-        return @thing(rest, [<acc>, line])
+        return @thing(rest, [<<acc>>, line])
       end
       [] -> return acc end
     end
@@ -113,10 +113,10 @@ def fits_on_screen(content, size)
       return false
     end
     match content
-      [line, <rest>] ->
+      [line, <<rest>>] ->
         if list:length(line) > width
           [head, tail] = list:split_at(line, width - 1)
-          return @thing([tail, <rest>], x + 1)
+          return @thing([tail, <<rest>>], x + 1)
         end
         return @thing(rest, x + 1)
       end

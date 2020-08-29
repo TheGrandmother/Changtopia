@@ -129,11 +129,12 @@ repack_list ->
 
 _repack_list ->
     expr
-  | array_blob
+  | expr_blob
   | _repack_list _ "," _ %NL:? expr
-  | _repack_list _ "," _ %NL:? array_blob
+  | _repack_list _ "," _ %NL:? expr_blob
 
-array_blob -> %BLOB                                                           {% ast.makeBlob %}
+expr_blob -> %OPEN_BLOB _ expr _ %CLOSE_BLOB                            {% ast.makeBlob %}
+name_blob -> %OPEN_BLOB _ identifier _ %CLOSE_BLOB                            {% ast.makeBlob %}
 
 unpack ->
      "[" %NL:? _ _unpack _ %NL:? "]"                                          {% ast.makeUnpack %}
@@ -141,8 +142,8 @@ unpack ->
 _unpack ->
     identifier
   | unpack
-  | array_blob
-  | _unpack _ "," _ %NL:? array_blob
+  | name_blob
+  | _unpack _ "," _ %NL:? name_blob
   | _unpack _ "," _ %NL:? identifier
   | _unpack _ "," _ %NL:? unpack
 

@@ -9,7 +9,7 @@ def pad_left(list, pad, length)
     return list
   end
   padding = repeat(pad, length - bif:length(list))
-  return [<padding>, <list>]
+  return [<<padding>>, <<list>>]
 end
 
 def pad_right(list, pad, length)
@@ -17,13 +17,13 @@ def pad_right(list, pad, length)
     return list
   end
   padding = repeat(pad, length - bif:length(list))
-  return [<list>, <padding>]
+  return [<<list>>, <<padding>>]
 end
 
 def contains(list, element)
   match list
     [] -> return false end
-    [x, <rest>] ->
+    [x, <<rest>>] ->
       if x == element
         return true
       end
@@ -37,7 +37,7 @@ def repeat(x, length)
     if n == length
       return acc
     end
-    return @_(n + 1, [<acc>, x])
+    return @_(n + 1, [<<acc>>, x])
   end
   return @_(0, [])
 end
@@ -52,10 +52,10 @@ def _flatten(lists, acc)
       return acc
     end
     [x] ->
-      return [<acc>, <x>]
+      return [<<acc>>, <<x>>]
     end
-    [head, <tail>] ->
-      return _flatten(tail, [<acc>, <head>])
+    [head, <<tail>>] ->
+      return _flatten(tail, [<<acc>>, <<head>>])
     end
   end
   return acc
@@ -67,11 +67,11 @@ end
 
 def _join_with(list, delim, acc)
   match list
-    [x, <rest>] ->
-      return _join_with(rest, delim, [<acc>, <x>, <delim>])
+    [x, <<rest>>] ->
+      return _join_with(rest, delim, [<<acc>>, <<x>>, <<delim>>])
     end
     [x] ->
-      return [<acc>, <x>]
+      return [<<acc>>, <<x>>]
     end
     [] ->
       return acc
@@ -86,13 +86,13 @@ end
 def _split_by(list, delimiter, current_word, res)
   match list
     [] ->
-      return [<res>, current_word]
+      return [<<res>>, current_word]
     end
-    [thing, <tail>] ->
+    [thing, <<tail>>] ->
       if thing == delimiter
-        return _split_by(tail, delimiter,  [], [<res>, current_word])
+        return _split_by(tail, delimiter,  [], [<<res>>, current_word])
       end
-      return _split_by(tail, delimiter, [<current_word>, thing], res)
+      return _split_by(tail, delimiter, [<<current_word>>, thing], res)
     end
   end
   return $ok
@@ -103,7 +103,7 @@ def all(list)
     [x] ->
       return x
     end
-    [x ,<rest>] ->
+    [x ,<<rest>>] ->
       return x && all(rest)
     end
   end
@@ -118,8 +118,8 @@ def _map(list, fn, res)
     [] ->
       return res
     end
-    [x, <rest>] ->
-      return _map(rest, fn, [<res>, bif:run(fn, x)])
+    [x, <<rest>>] ->
+      return _map(rest, fn, [<<res>>, bif:run(fn, x)])
     end
   end
 end
@@ -134,7 +134,7 @@ def _zip(l1, l2, res)
       return res
     end
     whatever ->
-      return _zip(tail(l1), tail(l2), [<res>, [head(l1), head(l2)]])
+      return _zip(tail(l1), tail(l2), [<<res>>, [head(l1), head(l2)]])
     end
   end
 end
@@ -142,10 +142,10 @@ end
 def split_at(arr, index)
   thing = def (n, tail, head)
     match tail
-      [x , <rest>] ->
+      [x , <<rest>>] ->
         match n < index
           true ->
-            return @thing(n + 1, rest, [<head>, x])
+            return @thing(n + 1, rest, [<<head>>, x])
           end
           false ->
             return [head, tail]
@@ -162,7 +162,7 @@ end
 def slice(from, to, arr)
   skip = def (n, acc)
     match acc
-      [_ , <rest>] ->
+      [_ , <<rest>>] ->
         match n < from
           true ->
             return @skip(n + 1, rest)
@@ -180,13 +180,13 @@ def slice(from, to, arr)
 
   grab = def (n, arr, res)
     match arr
-      [x, <rest>] ->
+      [x, <<rest>>] ->
         match n < to - from
           true ->
-            return @grab(n + 1, rest, [<res>, x])
+            return @grab(n + 1, rest, [<<res>>, x])
           end
           false ->
-            return [<res>, x]
+            return [<<res>>, x]
           end
         end
       end
@@ -200,11 +200,11 @@ def slice(from, to, arr)
 end
 
 def head(l)
-  [h, <_>] = l
+  [h, <<_>>] = l
   return h
 end
 
 def tail(l)
-  [_, <t>] = l
+  [_, <<t>>] = l
   return t
 end

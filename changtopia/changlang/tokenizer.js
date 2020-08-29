@@ -14,10 +14,6 @@ const lexer = moo.compile({
     match: /-?[0-9]+(?:\.?[0-9]+)?/u,
     value: (n) => parseFloat(n)
   },
-  BLOB:  {
-    match:/<[_a-zA-Z](?:[\p{L}\p{N}]|_)*>/u,
-    value: (s) => s.slice(1,-1)
-  },
   BOOL: {match: /(?:true)|(?:false)/u, value: (x) => x === 'true'},
   BRACKET: {
     match: [
@@ -44,6 +40,8 @@ const lexer = moo.compile({
     match: /\$\w+/u,
     value: s => s.slice(1)
   },
+  OPEN_BLOB: '<<',
+  CLOSE_BLOB: '>>',
   COMPARISON: ['=='  ,  '!=' ,  '>=' ,  '>' ,  '<' ,  '<='],
   STUFF: [':', ',', '<', '>', ';'],
   REF_CALL: '@',

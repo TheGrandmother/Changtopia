@@ -36,7 +36,7 @@ def _entry(args)
       end
     end
   end
-  [file_name, <options>] = args
+  [file_name, <<options>>] = args
   match bif:request(bif:io_pid(), $open_file, file_name)
     [_, filePid] ->
       content = bif:request(filePid, $read_all)

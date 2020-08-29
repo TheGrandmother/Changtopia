@@ -10,15 +10,15 @@ def print_help()
   '',
   'There are a some underwhelming arguments available:',
   '  import:              Takes a file from the great nightmare and imports it to changtopia',
-  '  export <name>:       Drags a file kicking and screaming, out of changtopia',
-  '  ls <?remote> <path>: Lists the locally stored file or the remote files given a partial path',
-  '  view <name>:         View the content of a local file',
-  '  delete <name>:       Deletes the file',
-  '  rename <old> <new>:  Renames a file.',
-  '  copy <source> <new>: Copies a file.',
-  '  fetch <path> <dest>: Fetches the remote file at path and stores it at dest',
-  '  commit <source> <path> <?protected>:',
-  '   Stores the file specified by <source> at the remote path <path>, if the protected argument is provided',
+  '  export <<name>>:       Drags a file kicking and screaming, out of changtopia',
+  '  ls <?remote> <<path>>: Lists the locally stored file or the remote files given a partial path',
+  '  view <<name>>:         View the content of a local file',
+  '  delete <<name>>:       Deletes the file',
+  '  rename <<old>> <<new>>:  Renames a file.',
+  '  copy <<source>> <<new>>: Copies a file.',
+  '  fetch <<path>> <<dest>>: Fetches the remote file at path and stores it at dest',
+  '  commit <<source>> <<path>> <?protected>:',
+  '   Stores the file specified by <<source>> at the remote path <<path>>, if the protected argument is provided',
   '   the file will be write protected and only modifiable by you.',
   '',
   ], '\n'))
@@ -94,13 +94,13 @@ def ls(args)
       io:print_string(list:join_with(files, '\n'))
       return $ok
     end
-    ['remote', <path>] ->
+    ['remote', <<path>>] ->
       split_path = list:split_by(path, ',')
       match bif:send(bif:mediator_pid(), $find_a_file, split_path)
         [$error, message] ->
           io:print_strings([message, '\n'])
         end
-        [<result>] ->
+        [<<result>>] ->
           io:print_string(list:join_with(result, '\n'))
           return $ok
         end
@@ -219,31 +219,31 @@ def _entry(args)
       import()
       return $ok
     end
-    ['export', <arg>] ->
+    ['export', <<arg>>] ->
       export(arg)
       return $ok
     end
-    ['view', <arg>] ->
+    ['view', <<arg>>] ->
       view(arg)
       return $ok
     end
-    ['ls', <arg>] ->
+    ['ls', <<arg>>] ->
       ls(arg)
       return $ok
     end
-    ['delete', <arg>] ->
+    ['delete', <<arg>>] ->
       delete(arg)
       return $ok
     end
-    ['rename', <arg>] ->
+    ['rename', <<arg>>] ->
       rename(arg)
       return $ok
     end
-    ['copy', <arg>] ->
+    ['copy', <<arg>>] ->
       copy(arg)
       return $ok
     end
-    ['commit', source, path, <options>] ->
+    ['commit', source, path, <<options>>] ->
       commit(source, path, options)
       return $ok
     end

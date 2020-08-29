@@ -38,14 +38,14 @@ def greeting()
 end
 
 def center(strings)
-  [width, <_>] = bif:request(bif:io_pid(), $get_console_size)
+  [width, <<_>>] = bif:request(bif:io_pid(), $get_console_size)
   _center = def (strings, acc)
     match strings
       [] -> return acc end
-      [head, <tail>] ->
+      [head, <<tail>>] ->
         pad_length = bif:cast((width - bif:length(head)) / 2, 'integer')
         padding = list:repeat(" ", pad_length)
-        return @_center(tail, [<acc>, [<padding>, <head>]])
+        return @_center(tail, [<<acc>>, [<<padding>>, <<head>>]])
       end
     end
   end
@@ -57,7 +57,7 @@ end
 def splash()
   logo = logo()
   greeting = greeting()
-  justified = center([<logo>, <greeting>])
+  justified = center([<<logo>>, <<greeting>>])
   io:print_string(list:join_with(justified, '\n'))
   return $ok
 end

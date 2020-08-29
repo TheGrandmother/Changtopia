@@ -14,9 +14,9 @@ def build_input(input_string, input)
     end
     127 ->
       match input_string
-        [s, <head>, _] ->
+        [s, <<head>>, _] ->
           erase()
-          return [s, <head>]
+          return [s, <<head>>]
         end
         [s, _] ->
           erase()
@@ -33,7 +33,7 @@ def build_input(input_string, input)
     end
     whatever ->
       bif:send(bif:io_pid(), $print_string, [input])
-      return [<input_string>, input]
+      return [<<input_string>>, input]
     end
   end
   return $whatever
@@ -88,7 +88,7 @@ def _print_list(list)
     [] ->
       return $ok
     end
-    [thing, <rest>] ->
+    [thing, <<rest>>] ->
       bif:send(bif:io_pid(), $print_string, '  ')
       bif:send(bif:io_pid(), $print_string, thing)
       bif:send(bif:io_pid(), $print_string, ',\n')
