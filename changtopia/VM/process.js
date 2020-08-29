@@ -189,13 +189,17 @@ class Process {
   }
 
   bindNormalFunction(func, returnLocation, args, bindings) {
-    if (func.argLocations.length !== args.length) {
-      throw new ArgumentCountError(`Argument length mismatch calling ${func.functionId}. You gave me [${args}] but i need stuff to fill [${func.argLocations}]`)
-
-    }
     const argData = {}
 
-    func.argLocations.forEach((loc, i) => argData[loc] = args[i])
+    if (func.matchyBoi) {
+      const [loc] = func.argLocations
+      argData[loc] = args
+    } else {
+      if (func.argLocations.length !== args.length) {
+        throw new ArgumentCountError(`Argument length mismatch calling ${func.functionId}. You gave me [${args}] but i need stuff to fill [${func.argLocations}]`)
+      }
+      func.argLocations.forEach((loc, i) => argData[loc] = args[i])
+    }
 
     if (this.stack.frames.length > 10000) {
       throw new StackOverflow()

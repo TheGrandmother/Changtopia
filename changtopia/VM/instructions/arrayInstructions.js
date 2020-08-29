@@ -27,8 +27,7 @@ const arrayInstructions = {
   'arrayCreateImmediate' : {
     name: 'arrayCreateImmediate',
     evaluate: (process, location, entries) => {
-      const array = entries
-      process.frame.write(location, array)
+      process.frame.write(location, entries)
       process.incrementLine()
     }
   },

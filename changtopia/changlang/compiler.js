@@ -1,7 +1,8 @@
 const grammar = require('./compiled_grammar.js')
 const {generateIntermediateCode} = require('./intermediate.js')
 const {generateCode} = require('./codegen.js')
-const {tailOptimize, dropRedundantMoves} = require('./optimize.js')
+const {tailOptimize} = require('./optimize.js')
+const {combine} = require('./collateFunctions.js')
 const nearley = require('nearley')
 const {inspect} = require('util')
 const {CompilerError} = require('../errors.js')
@@ -67,9 +68,24 @@ function pretty(functions) {
   return functions.reduce((acc, func) => {
     const {name, code} = func
     return `${acc}${name}:\n` + code.reduce((acc2, line, i) => {
-      return(`${acc2}\t${i}:\t${line.id}\t${line.args.join(',\t')}\n`)
-    }, '')
+      return(`${acc2}  ${i}:  ${line.id}  ${line.args.join(',  ')}\n`)
+    }, '') + '\n'
   }, '')
+}
+
+function collateFunctions(parseResult) {
+  const [moduleDeclaration, ...parsedFunctions] = parseResult
+  const functions = {}
+  parsedFunctions.forEach(f => {
+    if (functions[f.name]) {
+      functions[f.name].push(f)
+    } else {
+      functions[f.name] = [f]
+    }
+  })
+  const collatedFunctions = Object.values(functions).map(f => combine(f))
+  return [moduleDeclaration, ...collatedFunctions]
+
 }
 
 function changpile(_input, options = {}) {
@@ -84,7 +100,7 @@ function changpile(_input, options = {}) {
   const input = _input.replace(/--.*$/mg,'')
 
   try {
-    const functions = parse(input, showAmbigous)
+    const functions = collateFunctions(parse(input, showAmbigous))
 
     if (doTailOptimization) {
       functions.forEach(func => tailOptimize(func))

@@ -124,80 +124,6 @@ function makeArrayClause(clause, resultName, doneLabel) {
 
 }
 
-//function makeArrayClause(clause, resultName, doneLabel) {
-//  const clauseIdentifier = randomHash()
-//  const pattern = clause.pattern
-//  const pos = clause.pos
-//  const hasBlob = !!pattern.entries.find(e => e.type === 'blob')
-//  const targetLength = pattern.entries.length - (hasBlob ? 1 : 0)
-//
-//  const skipLabel = basic.makeLabel(`skip_clause_${clauseIdentifier}`)
-//
-//  const isArrayCall = makeFunctionCallNode('is_array', [resultName], 'bif')
-//  const lengthCall = makeFunctionCallNode('length', [resultName], 'bif')
-//  const compareLength = makeExprNode(hasBlob ? '>=' : '==', lengthCall, {type: 'constant', value: targetLength})
-//
-//  // Faff around untill your eyes bleed
-//  const destructorEntries = pattern.entries.map((entry, i) => {
-//    if (entry.type === 'arrayLitteral') {
-//      //Okay...
-//    } else if (entry.type !== 'identifier' && entry.type !== 'blob') {
-//      const conditionalIdent = basic.makeIdentifierNode(`cond_entry_${i}_${clauseIdentifier}`, false, pos)
-//      conditionalIdent.checkAgainst = i
-//      conditionalIdent.checkMe = true
-//      return conditionalIdent
-//    } else {
-//      return entry
-//    }
-//  })
-//
-//  const blobIndex = destructorEntries.findIndex(e => e.type === 'blob')
-//  let leading, trailing, blob
-//  if (blobIndex === -1) {
-//    leading = destructorEntries
-//    trailing = []
-//  } else {
-//    blob = destructorEntries[blobIndex].value
-//    leading = destructorEntries.slice(0, blobIndex)
-//    trailing = destructorEntries.slice(blobIndex + 1)
-//  }
-//  const unpackNode = makeUnpackNode(leading, blob, trailing, pos)
-//  const unpackAssignmentNode = makeUnpackingAssignmentNode(unpackNode, resultName, pos)
-//
-//  const checks = destructorEntries.filter(e => e.checkMe).map(e => {
-//    return makeExprNode('==', e, pattern.entries[e.checkAgainst])
-//  })
-//
-//  const allChecksIdent = basic.makeIdentifierNode(`all_checks_${clauseIdentifier}`, false, pos)
-//  const setAllCheckedToTrue = makeBasicAssignmentNode(allChecksIdent.name, basic.makeConstantNode(true, 'bool'), pos)
-//
-//  let deathNode
-//  if (checks.length > 0) {
-//    deathNode = makeExprNode('&&', allChecksIdent, checks[0], pos)
-//    checks.slice(1).forEach(node => {
-//      deathNode = makeExprNode('&&', deathNode, node, pos)
-//    })
-//  } else {
-//    deathNode = allChecksIdent
-//  }
-//
-//  const theBigSad =
-//    makeIfNode(isArrayCall,
-//      makeIfNode(compareLength,
-//        makeBlockNode(chainStatements([unpackAssignmentNode, setAllCheckedToTrue]),
-//          makeIfNode(deathNode,
-//            makeBlockNode(clause.body,
-//              makeJumpNode(doneLabel)
-//              ,pos)
-//            ,pos)
-//          ,pos)
-//        ,pos)
-//      ,pos)
-//
-//  return theBigSad
-//
-//}
-
 function makeIdentClause(clause, resultName, doneLabel) {
   return makeBlockNode(
     makeBasicAssignmentNode(clause.pattern.name, resultName),
@@ -228,32 +154,44 @@ function makeClauses(clauses, resultName, doneLabel) {
   })
 }
 
+function makeMatcherNode(clauses, expr, pos) {
+  const matchIdentifier = randomHash()
+  const exprResult = basic.makeIdentifierNode(`match_expr_${matchIdentifier}`, false, pos)
+  const doneLabel = `match_done_${matchIdentifier}`
+  const assignment = makeBasicAssignmentNode(exprResult.name, expr, pos)
+  const node = makeBlockNode(assignment, chainStatements(makeClauses(clauses, exprResult, doneLabel)), pos)
+  node.subType = 'matcher'
+  node.doneLabel = doneLabel
+  return node
+
+}
+
 function makeMatcher(d) {
   const matchPos = helpers.findPositionOfToken(d, 'MATCH')
   d = helpers.strip(d)
   const clauses = helpers.deepStrip(helpers.wrapInArray(helpers.strip(helpers.wrapInArray(d[1].flat())))).flat(Infinity)
   const expr = d[0]
-  const matchIdentifier = randomHash()
-  const exprResult = basic.makeIdentifierNode(`match_expr_${matchIdentifier}`, false, matchPos)
-  const doneLabel = `match_done_${matchIdentifier}`
-  const assignment = makeBasicAssignmentNode(exprResult.name, expr, matchPos)
-  const node = makeBlockNode(assignment, chainStatements(makeClauses(clauses, exprResult, doneLabel)), matchPos)
-  node.subType = 'matcher'
-  node.doneLabel = doneLabel
-  return node
+  return makeMatcherNode(clauses, expr, matchPos)
+}
+
+function makeClauseNode(pattern, body, pos) {
+  return {
+    type: 'clause',
+    pattern,
+    body,
+    pos
+  }
 }
 
 function makeClause(d) {
   d = helpers.deepStrip(d.flat())
-  return {
-    type: 'clause',
-    pattern: helpers.strip(d[0]),
-    body: d[1]
-  }
-
+  const pos = helpers.findPositionOfToken(d, 'CLAUSE')
+  return makeClauseNode(helpers.strip(d[0]), d[1], pos)
 }
 
 module.exports = {
   makeMatcher,
-  makeClause
+  makeClause,
+  makeMatcherNode,
+  makeClauseNode
 }

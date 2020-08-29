@@ -4,14 +4,18 @@ const assign = require('./assign.js')
 const {randomHash} = require('../../util/hash.js')
 const {CompilerError} = require('../../errors.js')
 
+function makeArrayLitteralNode(entries, pos) {
+  return {
+    type: 'arrayLitteral',
+    entries,
+    pos
+  }
+}
+
 function makeArrayLitteral(d) {
   const pos = helpers.findPositionOfToken(d, 'BRACKET')
   d = helpers.flattenAndStrip(d)
-  return {
-    type: 'arrayLitteral',
-    entries: helpers.wrapInArray(d),
-    pos
-  }
+  return makeArrayLitteralNode(helpers.wrapInArray(d), pos)
 }
 
 function makeBlob(d) {
@@ -76,6 +80,10 @@ function makeString(d) {
     .replace(/\\t/g,'\t')
     .replace(/\\r/g,'\r')
     .replace(/\\0/g,'\0')
+  return makeStringNode(s, pos)
+}
+
+function makeStringNode(s, pos) {
   return {
     type: 'arrayLitterallImmediate',
     entries: {array: s.split('').map(c => c.charCodeAt(0))},
@@ -85,8 +93,10 @@ function makeString(d) {
 
 module.exports = {
   makeArrayLitteral,
+  makeArrayLitteralNode,
   makeBlob,
   makeUnpack,
   makeUnpackNode,
-  makeString
+  makeString,
+  makeStringNode
 }

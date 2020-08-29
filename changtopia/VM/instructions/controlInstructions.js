@@ -1,3 +1,6 @@
+const {RuntimeError} = require('../../errors.js')
+const {toJsString} = require('../../util/strings.js')
+
 const controlInstructions = {
   'jump' : {
     name: 'jump',
@@ -25,6 +28,13 @@ const controlInstructions = {
       } else {
         process.incrementLine()
       }
+    }
+  },
+
+  'throw' : {
+    name: 'throw',
+    evaluate: (process, atom, message) => {
+      throw new RuntimeError(toJsString(process.frame.read(message)), process.frame.read(atom))
     }
   },
 

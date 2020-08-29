@@ -269,6 +269,13 @@ const _generators = {
       makeInstruction('arrayCreate', [res, {constant: 0}, moduleRef, nameRef, ...bindingRefs], node.pos)
     ]
   },
+
+  'throw': (state, node) => {
+    const {atom, message} = node
+    const [atomRes, atomCode] = generateNodeAndRef(state, atom)
+    const [messageRes, messageCode] = generateNodeAndRef(state, message)
+    return [...atomCode, ...messageCode, makeInstruction('throw', [atomRes, messageRes], node.pos)]
+  },
 }
 
 function wrapGenerators() {
@@ -303,7 +310,7 @@ function generateNode(state, node, res) {
 }
 
 function generateFunction(state, func) {
-  const {name, body, args, unbound} = func
+  const {name, body, args, unbound, matchyBoi} = func
   state.currentFunction = name
 
   if (state.functions[name]) {
@@ -332,7 +339,7 @@ function generateFunction(state, func) {
 
   const argLocations = Object.values(state.refs).filter(({arg}) => arg).map(({ref}) => ref)
 
-  state.functions[name] = {name, body: bodyCode, refs: state.refs, argLocations, unbound: unbound && unbound.map(({ref}) => ref)}
+  state.functions[name] = {name, matchyBoi, body: bodyCode, refs: state.refs, argLocations, unbound: unbound && unbound.map(({ref}) => ref)}
 }
 
 function generateIntermediateCode(ast) {

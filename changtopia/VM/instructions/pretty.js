@@ -1,8 +1,8 @@
 function pretty(pid, functionId, line, inst) {
   if (inst) {
-    console.log(`${pid}/${functionId}/${line}:\t${inst.id}\t${inst.args.join(',\t')}`)
+    console.log(`${pid}/${functionId}/${line}:  ${inst.id}  ${inst.args.join(',  ')}`)
   } else {
-    console.log(`${pid}/${functionId}/${line}:\t instruction not known`)
+    console.log(`${pid}/${functionId}/${line}:   instruction not known`)
   }
 }
 

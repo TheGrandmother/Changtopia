@@ -11,7 +11,7 @@ main -> module (function_def):+ {% ast.flattenAndStrip%}
 module -> %MODULE _ identifier %NL                                        {% ast.makeModule %}
 
 function_def ->
-  %DEF _ identifier _ name_tuple %NL block %NL %END %NL        {% ast.makeFunction %}
+  %DEF _ identifier _ thing_tuple %NL block %NL %END %NL                  {% ast.makeFunction %}
 
 closure -> %DEF _ name_tuple (%WS | %NL) block (%WS | %NL) %END                  {% ast.makeClosure %}
 
@@ -78,7 +78,6 @@ constant ->
   | %ATOM                                                                     {% ast.makeAtom %}
   | %BOOL                                                                     {% ast.makeBool %}
 
-
 function_call -> explicit_call | refference_call
 
 explicit_call -> (identifier ":"):? identifier expr_tuple                     {% ast.makeFunctionCall %}
@@ -87,6 +86,18 @@ refference_call -> %REF_CALL identifier expr_tuple                            {%
 name_tuple ->
     "(" _ ident_list _ ")"                                                    {% ast.makeTuple %}
   | "(" _ ")"                                                                 {% ast.makeTuple %}
+
+thing_tuple ->
+    "(" _ thing_list _ ")"                                                    {% ast.makeTuple %}
+  | "(" _ ")"                                                                 {% ast.makeTuple %}
+
+thing_list ->
+    _thing_list                                                               {% ast.makeIdentList %}
+  | _thing_list _ "," _ %NL:?                                                 {% ast.makeIdentList %}
+
+_thing_list ->
+    thing                                                                     {% ast.flattenAndStrip %}
+  | _thing_list _ "," (%NL | %WS):? thing                                     {% ast.flattenAndStrip %}
 
 ident_list ->
     _ident_list                                                               {% ast.makeIdentList %}
@@ -134,12 +145,6 @@ _unpack ->
   | _unpack _ "," _ %NL:? array_blob
   | _unpack _ "," _ %NL:? identifier
   | _unpack _ "," _ %NL:? unpack
-
-
-#_unpack ->
-#    ident_list                                                                {% ast.strip %}
-#  | unpack _ "," (%NL | %WS):? _unpack
-#  | (_ident_list _ "," %NL:?):? _ array_blob _ ("," %NL:? _ident_list {% ast.strip %}):?
 
 identifier ->
   %IDENTIFIER                                                                 {% ast.makeIdentifier %}
