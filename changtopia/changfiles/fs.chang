@@ -12,7 +12,7 @@ def print_help()
   '  import:              Takes a file from the great nightmare and imports it to changtopia',
   '  export <name>:       Drags a file kicking and screaming, out of changtopia',
   '  ls <?remote> <path>: Lists the locally stored file or the remote files given a partial path',
-  '  dump <name>:         Dumps the content of a local file',
+  '  view <name>:         View the content of a local file',
   '  delete <name>:       Deletes the file',
   '  rename <old> <new>:  Renames a file.',
   '  copy <source> <new>: Copies a file.',
@@ -55,7 +55,6 @@ def fetch(path, destination)
         end
         $file_not_found ->
           [file_pid] = bif:send(bif:io_pid(), $create_file, destination)
-          io:debug(content)
           _ = bif:send(file_pid, $write, content)
         end
       end
@@ -102,7 +101,6 @@ def ls(args)
           io:print_strings([message, '\n'])
         end
         [<result>] ->
-        io:raw_debug(result)
           io:print_string(list:join_with(result, '\n'))
           return $ok
         end
@@ -148,14 +146,17 @@ def read(name)
   end
 end
 
-def dump(args)
+def view(args)
   match args
     [name] ->
       match read(name)
         [$error, error] ->
           io:print_string(error)
         end
-        content -> io:print_string(content) end
+        content ->
+          utils:load_module('view')
+          view:scroll_or_show(content)
+        end
       end
     end
     whatever ->
@@ -222,8 +223,8 @@ def _entry(args)
       export(arg)
       return $ok
     end
-    ['dump', <arg>] ->
-      dump(arg)
+    ['view', <arg>] ->
+      view(arg)
       return $ok
     end
     ['ls', <arg>] ->

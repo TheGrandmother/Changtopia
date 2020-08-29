@@ -127,6 +127,7 @@ def fits_on_screen(content, size)
 end
 
 def scrolling(content, origin, size)
+  io:print_string(bif:ansi_clear_screen())
   [text_width, text_height] = size
   [x0, y0] = origin
   bounds = [x0 + text_width - 1, y0 + text_height]
@@ -180,10 +181,9 @@ def scrolling(content, origin, size)
 end
 
 def scroll_or_show(content)
-  io:print_string(bif:ansi_clear_screen())
+  io:print_string('Loading...\n')
   [width, height] = bif:send(bif:io_pid(), $get_console_size)
   display_lines = split_into_display_lines(content, width)
-  io:raw_debug(bif:length(display_lines))
   if bif:length(display_lines) > height
     scrolling(display_lines, [0,0], [width, height])
     return $ok

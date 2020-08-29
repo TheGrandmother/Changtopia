@@ -57,8 +57,6 @@ if (process.browser) {
   ws = require('ws')
 }
 
-
-
 class Coordinator {
   constructor(instanceCount, modules, ioHandler, mediatorHost) {
     this.host = randomHash()
@@ -143,7 +141,6 @@ class Coordinator {
   }
 
   handleRemoteMessage(_message) {
-    console.log(_message)
     const message = JSON.parse(_message)
     if (message.recipient.host !== this.host) {
       throw new Error(`Ehm.... I got a message that should go to ${message.recipient.host.toString(16)} but I fucking am ${this.host}`)

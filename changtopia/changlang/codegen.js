@@ -24,7 +24,7 @@ function resolveArgument(arg, labels) {
     }
   }
 
-  throw new CodegenError(`${inspect(arg)} is a wierd fucking argument`)
+  throw new CodegenError(`${inspect(arg)} is a wierd instruction argument`)
 
 }
 
