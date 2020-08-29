@@ -67,12 +67,9 @@ function getRef(state, name) {
 }
 
 function generateNodeAndRef(state, node) {
-  if (node.type === 'identifier') {
-    if (state.refs[node.name]) {
-      return [state.refs[node.name], []]
-    }
-    return [createAssignment(state, node.name), []]
-  }
+  //if (node.type === 'identifier') {
+  //  return [getRef(state, node.name), []]
+  //}
   const interRef = makeInterRef()
   const code = generateNode(state, node, interRef)
   if (code.length === 1 && code[0].instruction.id === 'move') {
@@ -116,7 +113,6 @@ const _generators = {
   'identifier': (state, node, res) => {
     const varReference = state.refs[node.name]
     if (!varReference) {
-      console.log(node)
       throw new CompilerError(`Name ${node.name} has not been defined`)
     } else {
       if (varReference.constant) {
