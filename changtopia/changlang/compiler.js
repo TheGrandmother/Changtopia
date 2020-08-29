@@ -75,7 +75,6 @@ function pretty(functions) {
 function changpile(_input, options = {}) {
   const {
     doTailOptimization = true,
-    doMoveOptimization = false, //Diss dude be broken
     showAST = false,
     showIntermediate = false,
     prettyPrint = false,
@@ -102,10 +101,6 @@ function changpile(_input, options = {}) {
       return {intermediate: inspect(intermediateCode, false, null, true)}
     }
     const compiledFunctions = {}
-
-    if (doMoveOptimization) {
-      Object.keys(intermediateCode.functions).forEach(name => intermediateCode.functions[name].body = dropRedundantMoves(intermediateCode.functions[name].body))
-    }
 
     Object.keys(intermediateCode.functions).forEach(name => compiledFunctions[name] = generateCode(intermediateCode.functions[name], intermediateCode.moduleName))
 
