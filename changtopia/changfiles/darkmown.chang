@@ -1,0 +1,205 @@
+module darkmown
+
+-- This is the thing that does the text formating and faffing.
+-- Syntax as follows
+
+--[[X]] defines a directive
+--[[]] closes the influence of the nearest preceeding directive
+--[[title]] the title text
+--[[p]] defines a paragraph
+--[[nl]] defines a new line
+--[[color <x>]] selects a color given the color name
+--[[bgcolor <x>]] selects a background color given the color name
+--[[section <num> <heading>]] creates a section header with a reference
+--[[bullet]] creates a bullet point
+--[[bold]] creates a bullet point
+--[[link <target>]] creates a link. if the link is a path it will be an external link
+--                  if it is a number it will go to that section
+
+def split(content)
+  split = def (content, current_word, res)
+    match content
+      [" ", <<rest>>] -> return @split(rest, [], [<<res>>, current_word]) end
+      ["\n", <<rest>>] -> return @split(rest, [], [<<res>>, current_word]) end
+      ["[", "[", <<rest>>] -> return @split(rest, [], [<<res>>, current_word, '[[']) end
+      ["]", "]", <<rest>>] -> return @split(rest, [], [<<res>>, current_word, ']]']) end
+      [x, <<rest>>] -> return @split(rest, [<<current_word>>, x], res) end
+      [] -> return res end
+    end
+  end
+  derp = @split(content, [], [])
+  return list:drop_empty(derp)
+end
+
+def parse(content, $text, current_token, output)
+  match content
+    ['[[', ']]', <<rest>>] -> return parse(rest, $text, [], [<<output>>, [$text, current_token], [$close]]) end
+    ['[[', <<rest>>] -> return parse(rest, $directive, [], [<<output>>, [$text, current_token]]) end
+    [x, <<rest>>] -> return parse(rest, $text, [<<current_token>>, x], output) end
+    [] -> return [<<output>>, current_token] end
+  end
+end
+
+def parse(content, $directive, current_token, output)
+  match content
+    ['[[', <<_>>] -> return [$error, $unexpected_open, 'Unexpected brackets', current_token] end
+    [']]', <<rest>>] -> return parse(rest, $text, [], [<<output>>, [$directive, current_token]]) end
+    [x, <<rest>>] -> return parse(rest, $directive, [<<current_token>>, x], output) end
+    [] -> return [$error, $missing_close, 'Missing closing bracekts', current_token] end
+  end
+end
+
+def parse(content)
+  return parse(split(content), $text, [], [])
+end
+
+def resolve_directives([[$directive, body], <<rest>>], res)
+  match body
+    ['title'] -> return resolve_directives(rest, [<<res>>, [$title]]) end
+    ['p'] -> return resolve_directives(rest, [<<res>>, [$p]]) end
+    ['nl'] -> return resolve_directives(rest, [<<res>>, [$nl]]) end
+    ['color', x] -> return resolve_directives(rest, [<<res>>, [$color, x]]) end
+    ['bgcolor', x] -> return resolve_directives(rest, [<<res>>, [$bgcolor, x]]) end
+    ['bullet', x] -> return resolve_directives(rest, [<<res>>, [$bullet]]) end
+    ['bold', x] -> return resolve_directives(rest, [<<res>>, [$bullet]]) end
+    ['section', num, <<heading>>] ->
+      num = bif:cast(num, 'integer')
+      if num == $nan
+        return [$error, $bad_directive, 'section does not define a propper number', body]
+      end
+      return resolve_directives(rest, [<<res>>, [$section, num, heading]])
+    end
+    ['link', path] -> return resolve_directives(rest, [<<res>>, [$link, path]]) end
+    [x] -> return [$error, $bad_directive, 'What kind of directive is this?', x] end
+    [] -> return [$error, $bad_directive, 'Empty directive', body] end
+  end
+end
+
+def resolve_directives([x, <<rest>>], res)
+  return resolve_directives(rest, [<<res>>, x])
+end
+
+def resolve_directives([], res)
+  return res
+end
+
+def resolve_directives(content)
+  return resolve_directives(content, [])
+end
+
+def justify_text([word, <<rest>>], current_line, lines, width)
+  word_length = bif:length(word)
+  line_length = bif:length(current_line)
+  if line_length + word_length + 1 < width
+    return justify_text(rest, [<<current_line>>, <<' '>>, <<word>>], lines, width)
+  end
+  return justify_text(rest, word, [<<lines>>, current_line], width)
+end
+
+def justify_text([], [], lines, width)
+  return lines
+end
+
+def justify_text([], current_line, lines, width)
+  return [<<lines>>, [$incomplete, current_line]]
+end
+
+
+def render(content, width)
+  return render(content, [], width, [], [], [])
+end
+
+def render([[$text, content], <<rest>>], states, width, current_line, lines, links)
+  io:debug('text')
+  justified = justify_text(content, current_line, [], width)
+  match justified
+    [<<text>>, [$incomplete, line]] ->
+      return render(rest, states, width, line, [<<lines>>, <<text>>], links)
+    end
+    text ->
+      return render(rest, states, width, [], [<<lines>>, <<text>>], links)
+    end
+  end
+end
+
+def render([[$title], <<rest>>], states, width, current_line, lines, links)
+  io:debug('title')
+  return render(rest, [<<states>>, $title], width, bif:ansi_bold(), [<<lines>>, current_line], links)
+end
+
+def render([[$color, color], <<rest>>], states, width, current_line, lines, links)
+  io:debug('color')
+  return render(rest, [<<states>>, $color], width, [<<current_line>>, <<colors:get_color(color)>>], lines, links)
+end
+
+def render([[$bgcolor, color], <<rest>>], states, width, current_line, lines, links)
+  io:debug('bg color')
+  return render(rest, [<<states>>, $bgcolor], width, [<<current_line>>, <<colors:get_bg_color(color)>>], lines, links)
+end
+
+def render([[$nl], <<rest>>], states, width, current_line, lines, links)
+  io:debug('nl')
+  return render(rest, states, width, [], [<<lines>>, current_line], links)
+end
+
+def render([[$p], <<rest>>], states, width, current_line, lines, links)
+  io:debug('p')
+  return render(rest, states, width, [], [<<lines>>, current_line, '', ''], links)
+end
+
+def render([[$bold], <<rest>>], states, width, current_line, lines, links)
+  io:debug('bold')
+  return render(rest, states, width, [<<current_line>>, <<bif:ansi_bold()>>], lines, links)
+end
+
+def render([[$close], <<rest>>], [<<states>>, state], width, current_line, lines, links)
+  match state
+    $title ->
+      io:debug('closing title')
+      return render(rest, states, width, [], [<<lines>>, [<<current_line>>, <<bif:ansi_bold_close()>>], [], []], links)
+    end
+    $color ->
+      io:debug('closing color')
+      return render(rest, states, width, [], [<<lines>>, [<<current_line>>, <<colors:close_color()>>]], links)
+    end
+    $bgcolor ->
+      io:debug('closing bgcolor')
+      return render(rest, states, width, [], [<<lines>>, [<<current_line>>, <<colors:close_bg_color()>>]], links)
+    end
+  end
+end
+
+def render([x, <<rest>>], states, width, current_line, lines, links)
+  io:debug('something')
+  return render(rest, states, width, current_line, lines, links)
+end
+
+def render([], states, width, current_line, lines, links)
+  io:debug('done')
+  return [<<lines>>, current_line]
+end
+
+def _entry()
+  content = fs:read('test.dm')
+  parsed = parse(content)
+  match parsed
+    [$error, atom, message, token] ->
+      io:print_strings(['Error: ', message, ' in token: \n', list:flatten(token),'\n'])
+    end
+  end
+  io:raw_debug(parsed)
+  parsed = resolve_directives(parsed)
+  io:raw_debug(parsed)
+  match parsed
+    [$error, atom, message, token] ->
+      io:print_strings(['Error: ', message, ' in token: \n', list:flatten(token),'\n'])
+    end
+  end
+  rendered = render(parsed, 80)
+  io:raw_debug(rendered)
+  [width, height] = bif:send(bif:io_pid(), $get_console_size)
+  utils:load_module('view')
+  view:scrolling(rendered, [0,0], [width, height])
+  io:debug(list:join_with(rendered, '\n'))
+  return $ok
+end
