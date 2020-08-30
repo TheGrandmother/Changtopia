@@ -61,6 +61,17 @@ def _flatten(lists, acc)
   return acc
 end
 
+def drop_empty(list)
+  drop = def (list, acc)
+    match list
+      [] -> return acc end
+      [[], <<rest>>] -> return @drop(rest, acc) end
+      [x, <<rest>>] -> return @drop(rest, [<<acc>>, x]) end
+    end
+  end
+  return @drop(list, [])
+end
+
 def join_with(list, delim)
   return _join_with(list, delim, [])
 end

@@ -65,7 +65,10 @@ def _entry(args)
         end
       end
     end
-    [$file_not_found] -> io:print_string('File not found\n') end
+    [$file_not_found] ->
+      io:print_string('File not found\n')
+      return $ok
+    end
   end
   utils:load_module('view')
   view:scroll_or_show(list:flatten(display_content))

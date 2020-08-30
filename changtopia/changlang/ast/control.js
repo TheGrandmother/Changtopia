@@ -4,8 +4,7 @@ function makeBlockNode(lhs, rhs) {
   return {
     type: 'block',
     lhs: lhs,
-    rhs: rhs,
-    pos: lhs.pos
+    rhs: rhs
   }
 }
 
@@ -17,14 +16,23 @@ function makeJumpNode(label, pos) {
   }
 }
 
-function chainStatements(statements, pos) {
+function makeJumpIfFalseNode(val, label, pos) {
+  return {
+    type: 'jump_if_false',
+    val,
+    label,
+    pos
+  }
+}
+
+function chainStatements(statements) {
   if (statements.length < 2) {
     return statements[0]
   }
   const [first, second, ...rest] = statements
-  let block = makeBlockNode(first, second, pos)
+  let block = makeBlockNode(first, second)
   for (let statement of rest) {
-    block = makeBlockNode(block, statement, pos)
+    block = makeBlockNode(block, statement)
   }
   return block
 }
@@ -59,5 +67,6 @@ module.exports = {
   chainStatements,
   makeJumpNode,
   makeIfStatement,
-  makeIfNode
+  makeIfNode,
+  makeJumpIfFalseNode
 }

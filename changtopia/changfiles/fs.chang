@@ -206,6 +206,7 @@ def rename(args)
 end
 
 def _entry(args)
+  io:raw_debug(args)
   match args
     [] ->
       io:print_string('The fs command needs atleast one little argument\n')

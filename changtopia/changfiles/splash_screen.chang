@@ -3,7 +3,7 @@ module splash_screen
 def logo()
   return [
         bif:ansi_bold(),
-        colors:_getColor(false, 6),
+        colors:get_color(6),
         '                                                                                                 ',
         '     _/_/_/  _/                                        _/                          _/            ',
         '  _/        _/_/_/      _/_/_/  _/_/_/      _/_/_/  _/_/_/_/    _/_/    _/_/_/          _/_/_/   ',

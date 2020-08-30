@@ -1,4 +1,7 @@
 module test
+
 def _entry()
-  return $ok
+  otto = 'aron'
+  bob = 'asdf'
+  io:raw_debug([<<otto>>, <<bob>>])
 end

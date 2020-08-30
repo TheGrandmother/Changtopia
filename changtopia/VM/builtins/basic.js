@@ -8,7 +8,10 @@ const basics = [
     exec: (process, _, value, type) => {
       const casters = {
         'string': (v) => fromJsString(v.toString()),
-        'integer': (v) => parseInt(Array.isArray(v) ? toJsString(v) : v)
+        'integer': (v) => {
+          const res = parseInt(Array.isArray(v) ? toJsString(v) : v)
+          return isNaN(res) ? h('nan') : res
+        }
       }
       return casters[toJsString(type)](value)
     }

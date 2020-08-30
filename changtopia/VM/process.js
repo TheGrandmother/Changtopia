@@ -280,28 +280,39 @@ class Process {
       evaluateInstruction(this, instruction)
     } catch (err) {
       if (err instanceof RuntimeError) {
-        console.error(this.buildErrorMessage(err.message, instruction))
+        let errorMessage
+        try {
+          errorMessage = this.buildErrorMessage(err.message, instruction)
+        } catch (annoyingError){
+          //An error during the building of the error message will hide the true error
+          console.error('Error in error builder')
+          console.error(annoyingError)
+          console.error('original message')
+          console.error(err)
+          throw annoyingError
+        }
+        console.error(errorMessage)
         if (this.linkedProcesses.length > 0 || this.inbox.length > 0 || this.handlingRequest) {
           const msg = err.message.split('').map(c => c.charCodeAt(0))
           this.linkedProcesses.forEach(linkedPid => {
             console.log(`passign error onto ${JSON.stringify(linkedPid)}`)
             this.sendMessage({
               recipient: linkedPid,
-              payload: [[h('error'), err.errorAtom, msg, fromJsString(this.buildErrorMessage(err.message, instruction))]]})
+              payload: [[h('error'), err.errorAtom, msg, fromJsString(errorMessage)]]})
           })
           this.inbox.forEach(message => {
             if (message.requiresResponse) {
               this.sendMessage({
                 recipient: message.sender,
                 requestId: message.id,
-                payload: [[h('error'), err.errorAtom, msg, fromJsString(this.buildErrorMessage(err.message, instruction))]]})
+                payload: [[h('error'), err.errorAtom, msg, fromJsString(errorMessage)]]})
             }
           })
           if (this.handlingRequest) {
             this.sendMessage({
               recipient: this.handlingRequest.sender,
               requestId: this.handlingRequest.id,
-              payload: [[h('error'), err.errorAtom, msg, fromJsString(this.buildErrorMessage(err.message, instruction))]]})
+              payload: [[h('error'), err.errorAtom, msg, fromJsString(errorMessage)]]})
           }
           this.waiting = false
           this.finished = true
@@ -309,8 +320,6 @@ class Process {
             this.sendMessage(this.stack.frames[0].deathHook)
           }
         } else {
-          console.error(this.buildErrorMessage(err.message, instruction))
-          //console.error('Frame:\n',this.frame.data, '\ninstruction:\n', instruction)
           throw err
         }
       } else {
@@ -370,7 +379,7 @@ class Frame {
 
   write (location, value) {
     if (value === undefined && location !== '__dump__') {
-      throw new UndefinedWrite(`Tried to write 'undefined' into ${location}`)
+      throw new UndefinedWrite(`Tried to write an undefined value into ${location}`)
     }
     this.data[location] = value
     return location

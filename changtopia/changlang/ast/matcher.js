@@ -3,7 +3,7 @@ const {randomHash} = require('../../util/hash.js')
 const {CompilerError} = require('../../errors.js')
 const {makeBasicAssignmentNode, makeUnpackingAssignmentNode} = require('./assign')
 const {makeUnpackNode} = require('./arrays')
-const {makeBlockNode, makeIfNode, chainStatements, makeJumpNode} = require('./control')
+const {makeBlockNode, makeIfNode, chainStatements, makeJumpNode, makeJumpIfFalseNode} = require('./control')
 const {makeExprNode} = require('./expr')
 const {makeFunctionCallNode} = require('./functions')
 const basic = require('./basics')
@@ -85,14 +85,14 @@ function generateChecks(clauseIdentifier, pattern, patternIdent, skipLabel) {
   const unpackAssign = makeUnpacking(unpack, patternIdent, pos)
 
   const checkerBlock = chainStatements([
-    jumpIfFalse(isArrayCall, skipLabel, pos),
-    jumpIfFalse(compareLength, skipLabel, pos),
+    makeJumpIfFalseNode(isArrayCall, skipLabel.label, pos),
+    makeJumpIfFalseNode(compareLength, skipLabel.label, pos),
     unpackAssign,
     ...conditionals.map(e => {
       const {ident, node} = e
       const {pos} = node
       const expr = makeExprNode('==', ident, node, pos)
-      return jumpIfFalse(expr, skipLabel, pos)
+      return makeJumpIfFalseNode(expr, skipLabel.label, pos)
     }),
     ...subPatterns.map(pattern => {
       const {ident, node} = pattern

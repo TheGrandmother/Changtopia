@@ -28,27 +28,79 @@ module colors
 -- *.color7:       #808080
 -- *.color15:      #C0C0C0
 
-def _getColor(isBg, number)
-  colorFn = ['bif', 'ansi_color_hex']
+def _get_color_by_number(isBg, number)
+  color_fn = ['bif', 'ansi_color_hex']
   if isBg
-    colorFn = ['bif', 'ansi_bg_color_hex']
+    color_fn = ['bif', 'ansi_bg_color_hex']
   end
   match number
-    0  -> return @colorFn('#101010') end
-    1  -> return @colorFn('#EFA6A2') end
-    2  -> return @colorFn('#80C990') end
-    3  -> return @colorFn('#A69460') end
-    4  -> return @colorFn('#A3B8EF') end
-    5  -> return @colorFn('#E6A3DC') end
-    6  -> return @colorFn('#50CACD') end
-    7  -> return @colorFn('#808080') end
-    8  -> return @colorFn('#454545') end
-    9  -> return @colorFn('#E0AF85') end
-    10 -> return @colorFn('#5ACCAF') end
-    11 -> return @colorFn('#C8C874') end
-    12 -> return @colorFn('#CCACED') end
-    13 -> return @colorFn('#F2A1C2') end
-    14 -> return @colorFn('#74C3E4') end
-    15 -> return @colorFn('#C0C0C0') end
+    0  -> return @color_fn('#101010') end
+    1  -> return @color_fn('#EFA6A2') end
+    2  -> return @color_fn('#80C990') end
+    3  -> return @color_fn('#A69460') end
+    4  -> return @color_fn('#A3B8EF') end
+    5  -> return @color_fn('#E6A3DC') end
+    6  -> return @color_fn('#50CACD') end
+    7  -> return @color_fn('#808080') end
+    8  -> return @color_fn('#454545') end
+    9  -> return @color_fn('#E0AF85') end
+    10 -> return @color_fn('#5ACCAF') end
+    11 -> return @color_fn('#C8C874') end
+    12 -> return @color_fn('#CCACED') end
+    13 -> return @color_fn('#F2A1C2') end
+    14 -> return @color_fn('#74C3E4') end
+    15 -> return @color_fn('#C0C0C0') end
   end
+end
+
+def _get_color_by_name(isBg, name)
+  match name
+    'black'     -> return _get_color_by_number(isBg, 0) end
+    'red'       -> return _get_color_by_number(isBg, 1) end
+    'green'     -> return _get_color_by_number(isBg, 2) end
+    'amber'     -> return _get_color_by_number(isBg, 3) end
+    'blue'      -> return _get_color_by_number(isBg, 4) end
+    'magenta'   -> return _get_color_by_number(isBg, 5) end
+    'cyan'      -> return _get_color_by_number(isBg, 6) end
+    'gray'      -> return _get_color_by_number(isBg, 7) end
+    'dark-grey' -> return _get_color_by_number(isBg, 8) end
+    'orange'    -> return _get_color_by_number(isBg, 9) end
+    'turquoise' -> return _get_color_by_number(isBg, 10) end
+    'yellow'    -> return _get_color_by_number(isBg, 11) end
+    'violet'    -> return _get_color_by_number(isBg, 12) end
+    'rose'      -> return _get_color_by_number(isBg, 13) end
+    'azure'     -> return _get_color_by_number(isBg, 14) end
+    'white'     -> return _get_color_by_number(isBg, 15) end
+    x           -> return _get_color_by_number(isBg, 15) end
+  end
+end
+
+def get_color(thing)
+  match bif:cast(thing, 'integer')
+    $nan ->
+      return _get_color_by_name(false, thing)
+    end
+    x ->
+      return _get_color_by_number(false, thing)
+    end
+  end
+end
+
+def getBgColor(thing)
+  match bif:cast(thing, 'integer')
+    $nan ->
+      return _get_color_by_name(true, thing)
+    end
+    x ->
+      return _get_color_by_number(true, thing)
+    end
+  end
+end
+
+def close_color()
+  return bif:ansi_color_reset()
+end
+
+def close_bg_color()
+  return bif:ansi_bg_color_reset()
 end

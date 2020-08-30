@@ -276,6 +276,12 @@ const _generators = {
     const [messageRes, messageCode] = generateNodeAndRef(state, message)
     return [...atomCode, ...messageCode, makeInstruction('throw', [atomRes, messageRes], node.pos)]
   },
+
+  'jump_if_false': (state, node) => {
+    const {val, label} = node
+    const [valRes, valCode] = generateNodeAndRef(state, val)
+    return [...valCode, makeInstruction('jump_if_false', [valRes, makeLineLabel(label)], node.pos)]
+  },
 }
 
 function wrapGenerators() {
@@ -298,6 +304,9 @@ function generateNode(state, node, res) {
     return generators[node.type](state, node, res)
   } catch (err) {
     if (!err.tagged) {
+      if (!node) {
+        throw err
+      }
       if (node.pos) {
         err.message = `${err.message} at line ${node.pos.line} col ${node.pos.col}`
       }
