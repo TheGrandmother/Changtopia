@@ -87,21 +87,58 @@ def resolve_directives(content)
   return resolve_directives(content, [])
 end
 
-def justify_text([word, <<rest>>], current_line, lines, width)
-  word_length = bif:length(word)
-  line_length = bif:length(current_line)
-  if line_length + word_length + 1 < width
-    return justify_text(rest, [<<current_line>>, <<' '>>, <<word>>], lines, width)
+def get_prinatble_length(content)
+  faff = def (content, length)
+    match content
+      [[$ansi, _], <<rest>>] ->
+        return @faff(rest, length)
+      end
+      [char, <<rest>>] ->
+        return @faff(rest, length + 1)
+      end
+      [] ->
+        return length
+      end
+    end
   end
-  return justify_text(rest, word, [<<lines>>, current_line], width)
+  return @faff(content, 0)
 end
 
-def justify_text([], [], lines, width)
-  return lines
+def get_printable(content)
+  faff = def (content, acc)
+    match content
+      [[$ansi, word], <<rest>>] ->
+        return @faff(rest, [<<acc>>, <<word>>])
+      end
+      [char, <<rest>>] ->
+        return @faff(rest, [<<acc>>, char])
+      end
+      [] ->
+        return acc
+      end
+    end
+  end
+  return @faff(content, [])
+end
+
+def justify_text([word, <<rest>>], current_line, lines, width)
+  word_length = get_prinatble_length(word)
+  line_length = get_prinatble_length(current_line)
+  if line_length + word_length + 1 < width
+    match current_line
+      [] ->
+        return justify_text(rest, get_printable(word), lines, width)
+      end
+      whatever ->
+        return justify_text(rest, [<<get_printable(current_line)>>, <<' '>>, <<get_printable(word)>>], lines, width)
+      end
+    end
+  end
+  return justify_text(rest, get_printable(word), [<<lines>>, get_printable(current_line)], width)
 end
 
 def justify_text([], current_line, lines, width)
-  return [<<lines>>, [$incomplete, current_line]]
+  return [lines, current_line]
 end
 
 
@@ -111,30 +148,23 @@ end
 
 def render([[$text, content], <<rest>>], states, width, current_line, lines, links)
   io:debug('text')
-  justified = justify_text(content, current_line, [], width)
-  match justified
-    [<<text>>, [$incomplete, line]] ->
-      return render(rest, states, width, line, [<<lines>>, <<text>>], links)
-    end
-    text ->
-      return render(rest, states, width, [], [<<lines>>, <<text>>], links)
-    end
-  end
+  [new_lines, left_over] = justify_text(content, current_line, [], width)
+  return render(rest, states, width, left_over, [<<lines>>, <<new_lines>>], links)
 end
 
 def render([[$title], <<rest>>], states, width, current_line, lines, links)
   io:debug('title')
-  return render(rest, [<<states>>, $title], width, bif:ansi_bold(), [<<lines>>, current_line], links)
+  return render(rest, [<<states>>, $title], width, [[$ansi, bif:ansi_bold()]], [<<lines>>, current_line], links)
 end
 
 def render([[$color, color], <<rest>>], states, width, current_line, lines, links)
   io:debug('color')
-  return render(rest, [<<states>>, $color], width, [<<current_line>>, <<colors:get_color(color)>>], lines, links)
+  return render(rest, [<<states>>, $color], width, [<<current_line>>, [$ansi, colors:get_color(color)]], lines, links)
 end
 
 def render([[$bgcolor, color], <<rest>>], states, width, current_line, lines, links)
   io:debug('bg color')
-  return render(rest, [<<states>>, $bgcolor], width, [<<current_line>>, <<colors:get_bg_color(color)>>], lines, links)
+  return render(rest, [<<states>>, $bgcolor], width, [<<current_line>>, [$ansi, colors:get_bg_color(color)]], lines, links)
 end
 
 def render([[$nl], <<rest>>], states, width, current_line, lines, links)
@@ -149,22 +179,24 @@ end
 
 def render([[$bold], <<rest>>], states, width, current_line, lines, links)
   io:debug('bold')
-  return render(rest, states, width, [<<current_line>>, <<bif:ansi_bold()>>], lines, links)
+  return render(rest, states, width, [<<current_line>>, [$ansi, bif:ansi_bold()]], lines, links)
 end
 
 def render([[$close], <<rest>>], [<<states>>, state], width, current_line, lines, links)
   match state
     $title ->
       io:debug('closing title')
-      return render(rest, states, width, [], [<<lines>>, [<<current_line>>, <<bif:ansi_bold_close()>>], [], []], links)
+      [new_lines, left_over] = justify_text([[$ansi, bif:ansi_bold_close()]], current_line, [], width)
+      return render(rest, states, width, left_over, [<<lines>>, <<new_lines>>, [], []], links)
     end
     $color ->
       io:debug('closing color')
-      return render(rest, states, width, [], [<<lines>>, [<<current_line>>, <<colors:close_color()>>]], links)
+      [new_lines, left_over] = justify_text([[$ansi, colors:close_color()]], current_line, [], width)
+      return render(rest, states, width, left_over, [<<lines>>, <<new_lines>>], links)
     end
     $bgcolor ->
-      io:debug('closing bgcolor')
-      return render(rest, states, width, [], [<<lines>>, [<<current_line>>, <<colors:close_bg_color()>>]], links)
+      [new_lines, left_over] = justify_text([[$ansi, colors:close_bg_color()]], current_line, [], width)
+      return render(rest, states, width, left_over, [<<lines>>, <<new_lines>>], links)
     end
   end
 end

@@ -167,6 +167,7 @@ def scrolling(content, origin, size)
 
     [_, lines] = list:split_at(content, current_line)
     display_lines(lines, origin, bounds)
+    io:print_strings([bif:ansi_color_reset(), bif:ansi_bg_color_reset(), bif:ansi_bold_close()])
     @draw_scroll_bar(current_line, 0)
 
     bif:send(bif:io_pid(), $get_input_stream)
