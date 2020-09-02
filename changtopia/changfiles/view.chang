@@ -189,6 +189,7 @@ def scroll_or_show(content)
     scrolling(display_lines, [0,0], [width, height])
     return $ok
   end
+  io:print_string(bif:ansi_clear_screen())
   display_lines(display_lines, [0,0], [width, height])
   return $ok
 end

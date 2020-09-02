@@ -50,28 +50,29 @@ def _get_color_by_number(isBg, number)
     13 -> return @color_fn('#F2A1C2') end
     14 -> return @color_fn('#74C3E4') end
     15 -> return @color_fn('#C0C0C0') end
+    x  -> return @color_fn('#FFFFFF') end
   end
 end
 
 def _get_color_by_name(isBg, name)
   match name
-    'black'     -> return _get_color_by_number(isBg, 0) end
-    'red'       -> return _get_color_by_number(isBg, 1) end
-    'green'     -> return _get_color_by_number(isBg, 2) end
-    'amber'     -> return _get_color_by_number(isBg, 3) end
-    'blue'      -> return _get_color_by_number(isBg, 4) end
-    'magenta'   -> return _get_color_by_number(isBg, 5) end
-    'cyan'      -> return _get_color_by_number(isBg, 6) end
-    'gray'      -> return _get_color_by_number(isBg, 7) end
-    'dark-grey' -> return _get_color_by_number(isBg, 8) end
-    'orange'    -> return _get_color_by_number(isBg, 9) end
-    'turquoise' -> return _get_color_by_number(isBg, 10) end
-    'yellow'    -> return _get_color_by_number(isBg, 11) end
-    'violet'    -> return _get_color_by_number(isBg, 12) end
-    'rose'      -> return _get_color_by_number(isBg, 13) end
-    'azure'     -> return _get_color_by_number(isBg, 14) end
-    'white'     -> return _get_color_by_number(isBg, 15) end
-    x           -> return _get_color_by_number(isBg, 15) end
+    'black'      -> return _get_color_by_number(isBg, 0) end
+    'red'        -> return _get_color_by_number(isBg, 1) end
+    'green'      -> return _get_color_by_number(isBg, 2) end
+    'amber'      -> return _get_color_by_number(isBg, 3) end
+    'blue'       -> return _get_color_by_number(isBg, 4) end
+    'magenta'    -> return _get_color_by_number(isBg, 5) end
+    'cyan'       -> return _get_color_by_number(isBg, 6) end
+    'gray'       -> return _get_color_by_number(isBg, 7) end
+    'dark-grey'  -> return _get_color_by_number(isBg, 8) end
+    'orange'     -> return _get_color_by_number(isBg, 9) end
+    'aquamarine' -> return _get_color_by_number(isBg, 10) end
+    'yellow'     -> return _get_color_by_number(isBg, 11) end
+    'violet'     -> return _get_color_by_number(isBg, 12) end
+    'rose'       -> return _get_color_by_number(isBg, 13) end
+    'azure'      -> return _get_color_by_number(isBg, 14) end
+    'white'      -> return _get_color_by_number(isBg, 15) end
+    x            -> return _get_color_by_number(isBg, 16) end
   end
 end
 
@@ -86,7 +87,7 @@ def get_color(thing)
   end
 end
 
-def getBgColor(thing)
+def get_bg_color(thing)
   match bif:cast(thing, 'integer')
     $nan ->
       return _get_color_by_name(true, thing)

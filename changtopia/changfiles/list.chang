@@ -52,10 +52,16 @@ def _flatten(lists, acc)
       return acc
     end
     [x] ->
-      return [<<acc>>, <<x>>]
+      if bif:is_array(x)
+        return [<<acc>>, <<x>>]
+      end
+      return lists
     end
     [head, <<tail>>] ->
-      return _flatten(tail, [<<acc>>, <<head>>])
+      if bif:is_array(head)
+        return _flatten(tail, [<<acc>>, <<head>>])
+      end
+      return lists
     end
   end
   return acc
