@@ -249,6 +249,20 @@ def rendered_length([])
   return 0
 end
 
+def render(content)
+  tokens = lex(content)
+  match tokens
+    [$error, <<rest>>] ->
+      return [$error, <<rest>>]
+    end
+  end
+  [tree, _] = parse(tokens, [])
+  words = render_words(tree)
+  [text, sections, links] = render_text(words, 80)
+  return [text, sections, links]
+
+end
+
 def _entry()
   content = fs:read('test.dm')
   tokens = lex(content)
@@ -267,9 +281,12 @@ def _entry()
   --io:raw_debug(words)
   [text, sections, links] = render_text(words, 80)
   --io:debug('der text und der yodel')
-  io:raw_debug(sections)
-  io:raw_debug(links)
-  --io:debug(list:join_with(text, '\n'))
+  --io:raw_debug(sections)
+  --io:raw_debug(links)
+  ----io:debug(list:join_with(text, '\n'))
+  --cool_stuff = fuzzy_search('', links)
+  --io:debug('the cool')
+  --io:raw_debug(cool_stuff)
   utils:load_module('view')
   view:scrolling(text, [0,0], bif:send(bif:io_pid(), $get_console_size))
   return $ok

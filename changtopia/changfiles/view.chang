@@ -67,8 +67,7 @@ def display_lines(lines, origin, bound)
         if line_no == y1
           return $ok
         end
-        padded_line = list:pad_right(line, " ", text_width)
-        io:print_strings([bif:ansi_cursor_to(x0, line_no), padded_line])
+        io:print_strings([bif:ansi_cursor_to(x0, line_no), bif:ansi_erase_line(), line])
         return @render(rest, line_no + 1)
       end
       [] ->

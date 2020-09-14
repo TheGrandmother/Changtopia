@@ -1,0 +1,165 @@
+module bowsette
+
+def shares_prefix([head1, <<rest1>>], [head2, <<rest2>>])
+  if head1 == head2
+    return shares_prefix(rest1, rest2)
+  end
+    return false
+end
+
+def shares_prefix([], [])
+  return true
+end
+
+def shares_prefix([], _)
+  return true
+end
+
+def shares_prefix(_, [])
+  return false
+end
+
+def fuzzy_search(key, [candidate, <<rest>>], acc)
+  [_, _, text] = candidate
+  if shares_prefix(key, text)
+    return fuzzy_search(key, rest, [<<acc>>, candidate])
+  end
+    return fuzzy_search(key, rest, acc)
+end
+
+def fuzzy_search(_, [], acc)
+  return acc
+end
+
+def fuzzy_search(key, candidates)
+  return fuzzy_search(key, candidates, [])
+end
+
+def link_search(links, input, selected)
+  [width, height] = bif:send(bif:io_pid(), $get_console_size)
+  candidates = fuzzy_search(input, links)
+  if selected > bif:length(candidates)
+    selected = bif:length(candidates)
+  end
+
+  header = [<<'goto: '>>, <<input>>, <<' | '>>]
+
+  get_link_text = def (candidates, n, acc)
+    match candidates
+      [link, <<rest>>] ->
+        [_, _, text] = link
+        if n == selected
+          if bif:length(acc) + bif:length(text) + 4 > width - 6 - bif:length(header)
+            return [<<acc>>, <<' (...)'>>]
+          end
+          return @get_link_text(rest, n + 1, [<<acc>>, <<', ['>>, <<text>>, <<']'>>])
+        end
+        if bif:length(acc) + bif:length(text) + 2 > width - 6 - bif:length(header)
+          return [<<acc>>, <<' (...)'>>]
+        end
+        return @get_link_text(rest, n + 1, [<<acc>>, <<', '>>, <<text>>])
+      end
+      [] -> return acc end
+    end
+  end
+
+  link_text = @get_link_text(candidates, 0, [])
+  io:print_strings([bif:ansi_cursor_to(0, height - 1), bif:ansi_erase_line(), header, link_text])
+  match io:get_char()
+    127 ->
+      match input
+        [<<meh>>, _] ->
+          link_search(links, meh, selected)
+        end
+        [] ->
+          link_search(links, [], selected)
+        end
+      end
+    end
+    9 ->
+      link_search(links, input, (selected + 1) % bif:length(candidates))
+    end
+    x ->
+      io:raw_debug(x)
+      link_search(links, [<<input>>, x], selected)
+    end
+  end
+end
+
+def display(content, sections, links, origin)
+  io:print_string(bif:ansi_clear_screen())
+  [width, height] = bif:send(bif:io_pid(), $get_console_size)
+  width = width
+  text_height = height - 2 -- Leave some spave for the bar dude
+  text_width = width
+  [x0, y0] = origin
+  bounds = [x0 + text_width - 1, y0 + text_height]
+  line_count = list:length(content)
+
+  draw_scroll_bar = def (current_line, n)
+    plupp_line = bif:cast((current_line/(line_count - text_height)) * (text_height - 1), 'integer')
+    if (n < text_height)
+      if (n == plupp_line)
+        io:print_strings([bif:ansi_cursor_to(x0 + text_width, y0 + n), '+'])
+        return @draw_scroll_bar(current_line, n + 1)
+      end
+      io:print_strings([bif:ansi_cursor_to(x0 + text_width, y0 + n), '|'])
+      return @draw_scroll_bar(current_line, n + 1)
+    end
+  end
+
+  make_sepparator = def ()
+    snek = list:repeat('=', width)
+    io:print_strings([bif:ansi_cursor_to(0, height - 2), bif:ansi_bold(),snek, bif:ansi_bold_close()])
+  end
+
+  scroller = def (current_line)
+    bif:send(bif:io_pid(), $release_input_stream)
+    quit = false
+    match io:get_char()
+      "k" ->
+        if current_line > 0
+          current_line = current_line - 1
+        end
+      end
+      "j" ->
+        if current_line < line_count - text_height
+          current_line = current_line + 1
+        end
+      end
+      "/" ->
+        link_search(links, '', 0)
+      end
+      "q" ->
+        quit = true
+      end
+    end
+    if quit return $ok end
+
+    [_, lines] = list:split_at(content, current_line)
+    view:display_lines(lines, origin, bounds)
+    @make_sepparator()
+    io:print_strings([bif:ansi_color_reset(), bif:ansi_bg_color_reset(), bif:ansi_bold_close()])
+    @draw_scroll_bar(current_line, 0)
+
+    bif:send(bif:io_pid(), $get_input_stream)
+    @scroller(current_line)
+  end
+
+  view:display_lines(content, origin, bounds)
+  bif:send(bif:io_pid(), $get_input_stream)
+  @draw_scroll_bar(0, 0)
+  @make_sepparator()
+  @scroller(0)
+  return $ok
+end
+
+def _entry()
+  utils:load_module('darkmown')
+  utils:load_module('view')
+  content = fs:read('test.dm')
+  [text, sections, links] = darkmown:render(content)
+  io:raw_debug(links)
+  display(text, sections, links, [0,0])
+  return $ok
+end

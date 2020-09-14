@@ -76,6 +76,18 @@ def get_line()
   return input
 end
 
+def get_char()
+  _get_char = def (sender, payload)
+    match payload
+      [$input_data, d] -> return d end
+    end
+  end
+  bif:send(bif:io_pid(), $get_input_stream)
+  input = bif:listen(_get_char)
+  bif:send(bif:io_pid(), $release_input_stream)
+  return input
+end
+
 def print_tabs(n)
   if n > 0
     bif:send(bif:io_pid(), $print_string, '  ')
