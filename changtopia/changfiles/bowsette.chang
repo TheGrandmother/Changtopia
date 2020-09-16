@@ -65,23 +65,49 @@ def link_search(links, input, selected)
 
   link_text = @get_link_text(candidates, 0, [])
   io:print_strings([bif:ansi_cursor_to(0, height - 1), bif:ansi_erase_line(), header, link_text])
+
+  get_selected = def (candidates, n)
+    match  candidates
+      [link, <<rest>>] ->
+        if n == selected
+          io:debug('Returning a fucking link....')
+          return link
+        end
+        return @get_selected(rest, n + 1)
+      end
+      [] ->
+        return $nothing
+      end
+      x ->
+        return $cockpaddle
+      end
+    end
+  end
+
   match io:get_char()
     127 ->
       match input
         [<<meh>>, _] ->
-          link_search(links, meh, selected)
+          return link_search(links, meh, selected)
         end
         [] ->
-          link_search(links, [], selected)
+          return link_search(links, [], selected)
         end
       end
     end
     9 ->
-      link_search(links, input, (selected + 1) % bif:length(candidates))
+      return link_search(links, input, (selected + 1) % bif:length(candidates))
+    end
+    13 ->
+      plz = @get_selected(candidates, 0)
+      return plz
+    end
+    39 ->
+      return $nothing
     end
     x ->
       io:raw_debug(x)
-      link_search(links, [<<input>>, x], selected)
+      return link_search(links, [<<input>>, x], selected)
     end
   end
 end
@@ -90,7 +116,7 @@ def display(content, sections, links, origin)
   io:print_string(bif:ansi_clear_screen())
   [width, height] = bif:send(bif:io_pid(), $get_console_size)
   width = width
-  text_height = height - 2 -- Leave some spave for the bar dude
+  text_height = height - 2
   text_width = width
   [x0, y0] = origin
   bounds = [x0 + text_width - 1, y0 + text_height]
@@ -128,13 +154,18 @@ def display(content, sections, links, origin)
         end
       end
       "/" ->
-        link_search(links, '', 0)
+        selected_link = link_search(links, '', 0)
+        io:print_strings([bif:ansi_cursor_to(0, height - 1), bif:ansi_erase_line()])
+        if selected_link != $nothing
+          return [$go_to_page, selected_link]
+        end
       end
       "q" ->
         quit = true
       end
     end
-    if quit return $ok end
+
+    if quit return $quit end
 
     [_, lines] = list:split_at(content, current_line)
     view:display_lines(lines, origin, bounds)
@@ -143,23 +174,52 @@ def display(content, sections, links, origin)
     @draw_scroll_bar(current_line, 0)
 
     bif:send(bif:io_pid(), $get_input_stream)
-    @scroller(current_line)
+    return @scroller(current_line)
   end
 
   view:display_lines(content, origin, bounds)
   bif:send(bif:io_pid(), $get_input_stream)
   @draw_scroll_bar(0, 0)
   @make_sepparator()
-  @scroller(0)
-  return $ok
+  return @scroller(0)
+end
+
+def load_and_render(path)
+  [width, height] = bif:send(bif:io_pid(), $get_console_size)
+  io:print_strings([bif:ansi_cursor_to(0, height - 2), bif:ansi_bold(), <<list:repeat('=', width)>> , bif:ansi_bold_close()])
+  io:print_strings([bif:ansi_cursor_to(0, height - 1), bif:ansi_erase_line(), 'Fetching: ', path])
+  content = fs:read_remote(path)
+  match content
+    [$error, <<err>>] ->
+      io:raw_debug(err)
+    end
+  end
+  io:print_strings([bif:ansi_cursor_to(0, height - 1), bif:ansi_erase_line(), 'Rendering...'])
+  [text, sections, links] = darkmown:render(content)
+  io:print_strings([bif:ansi_cursor_to(0, height - 1), bif:ansi_erase_line()])
+  dude = display(text, sections, links, [0,0])
+  match dude
+    $quit ->
+      io:print_string(bif:ansi_clear_screen())
+      return $ok
+    end
+    [$go_to_page, [_, path, _]] ->
+      return load_and_render(path)
+    end
+  end
 end
 
 def _entry()
+  io:print_string(bif:ansi_clear_screen())
   utils:load_module('darkmown')
   utils:load_module('view')
-  content = fs:read('test.dm')
-  [text, sections, links] = darkmown:render(content)
-  io:raw_debug(links)
-  display(text, sections, links, [0,0])
+  load_and_render('test_stuff,test.dm')
+  --content = fs:read('test.dm')
+  --[text, sections, links] = darkmown:render(content)
+  ----io:raw_debug(links)
+  --dude = display(text, sections, links, [0,0])
+  --[_, stuff, thing] = dude
+  --io:debug(stuff)
+  --io:debug(thing)
   return $ok
 end

@@ -62,6 +62,18 @@ def fetch(path, destination)
   end
 end
 
+def read_remote(path)
+  split_path = list:split_by(path, ',')
+  match bif:send(bif:mediator_pid(), $fetch_a_file, split_path)
+    [$error, <<err>>] ->
+      return [$error, <<err>>]
+    end
+    [content] ->
+      return content
+    end
+  end
+end
+
 def export(arg)
   match arg
     [] ->
