@@ -90,7 +90,11 @@ class MessageHandler {
       message.payload = payload // be horrible and alter the message
       if (this[kind]) {
         this[kind](ws, host, message).catch(err => {
-          ws.send(makeReply(message, [h('error'), fromJsString('Mediator dissaster: ', err.message)]))
+          if (!err.atom) {
+            ws.send(makeReply(message, [h('error'), h('mediator_panic'), fromJsString('Mediator dissaster: ', err.message)]))
+          } else {
+            ws.send(makeReply(message, [h('error'), err.atom, fromJsString(err.message)]))
+          }
           console.error(err)
         })
       } else {

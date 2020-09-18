@@ -1,8 +1,26 @@
 const config = require('../../config.json')
+const {h} = require('changtopia/util/hash.js')
 
-class AccessError extends Error {}
-class FileNotFoundError extends Error {}
-class BadPathError extends Error {}
+class AccessError extends Error {
+  constructor(msg) {
+    super(msg)
+    this.atom = h('access_not_allowed')
+  }
+}
+
+class FileNotFoundError extends Error {
+  constructor(msg) {
+    super(msg)
+    this.atom = h('file_not_found')
+  }
+}
+
+class BadPathError extends Error {
+  constructor(msg) {
+    super(msg)
+    this.atom = h('bad_path')
+  }
+}
 
 let FileHandler
 if (config.gcs_bucket) {

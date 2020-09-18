@@ -112,9 +112,13 @@ def link_search(links, input, selected)
   end
 end
 
+def display([text, sections, links], origin)
+  return display(text, sections, links, origin)
+end
+
 def display(content, sections, links, origin)
-  io:print_string(bif:ansi_clear_screen())
   [width, height] = bif:send(bif:io_pid(), $get_console_size)
+  io:print_strings([bif:ansi_cursor_to(0, height - 2), bif:ansi_erase_lines(height - 2)])
   width = width
   text_height = height - 2
   text_width = width
@@ -153,19 +157,19 @@ def display(content, sections, links, origin)
           current_line = current_line + 1
         end
       end
-      "/" ->
+      "f" ->
         selected_link = link_search(links, '', 0)
         io:print_strings([bif:ansi_cursor_to(0, height - 1), bif:ansi_erase_line()])
         if selected_link != $nothing
           return [$go_to_page, selected_link]
         end
       end
-      "q" ->
-        quit = true
+      "?" ->
+        write_in_bottom('Usage: "j"/"k" scrolls, "f" follow link, "b" go back, "q" fuck this')
       end
+      "b" -> return $back end
+      "q" -> return $quit end
     end
-
-    if quit return $quit end
 
     [_, lines] = list:split_at(content, current_line)
     view:display_lines(lines, origin, bounds)
@@ -184,36 +188,79 @@ def display(content, sections, links, origin)
   return @scroller(0)
 end
 
-def load_and_render(path)
+def write_in_bottom(text)
   [width, height] = bif:send(bif:io_pid(), $get_console_size)
   io:print_strings([bif:ansi_cursor_to(0, height - 2), bif:ansi_bold(), <<list:repeat('=', width)>> , bif:ansi_bold_close()])
-  io:print_strings([bif:ansi_cursor_to(0, height - 1), bif:ansi_erase_line(), 'Fetching: ', path])
+  io:print_strings([bif:ansi_cursor_to(0, height - 1), bif:ansi_erase_line(), text])
+end
+
+def load_and_render(path)
+  write_in_bottom([<<'Fetching: '>>, <<path>>])
   content = fs:read_remote(path)
   match content
-    [$error, <<err>>] ->
-      io:raw_debug(err)
+    [$error, $file_not_found, <<_>>] ->
+      write_in_bottom([<<'Error: could not find page '>>, <<path>>])
+      _ = io:get_char() --just wait for any key
+      return $error
     end
   end
-  io:print_strings([bif:ansi_cursor_to(0, height - 1), bif:ansi_erase_line(), 'Rendering...'])
-  [text, sections, links] = darkmown:render(content)
-  io:print_strings([bif:ansi_cursor_to(0, height - 1), bif:ansi_erase_line()])
-  dude = display(text, sections, links, [0,0])
+  write_in_bottom('Rendering')
+  rendered = darkmown:render(content)
+  write_in_bottom('')
+  match rendered
+    [$error, atom, message, <<_>>] ->
+      write_in_bottom([<<'Render Error: '>>, <<message>>])
+      _ = io:get_char() --just wait for any key
+      return $error
+    end
+    whatever ->
+      return [$success, rendered]
+    end
+  end
+end
+
+def bowsette(rendered, current_path ,history)
+  dude = display(rendered, [0,0])
   match dude
     $quit ->
-      io:print_string(bif:ansi_clear_screen())
+      io:print_strings([bif:ansi_clear_terminal(), bif:ansi_cursor_to(0, 0)])
       return $ok
     end
+    $back ->
+      if history == []
+        return bowsette(rendered, current_path, history)
+      end
+      [<<new_history>>, path] = history
+      result = load_and_render(path)
+      match result
+        [$success, new_render] ->
+          return bowsette(new_render, path, new_history)
+        end
+        whatever ->
+          return bowsette(rendered, current_path, history)
+        end
+      end
+    end
     [$go_to_page, [_, path, _]] ->
-      return load_and_render(path)
+      result = load_and_render(path)
+      match result
+        [$success, newRender] ->
+          return bowsette(newRender, path, [<<history>>, current_path])
+        end
+        whatever ->
+          return bowsette(rendered, current_path, history)
+        end
+      end
     end
   end
 end
 
 def _entry()
-  io:print_string(bif:ansi_clear_screen())
+  io:print_string(bif:ansi_clear_terminal())
   utils:load_module('darkmown')
   utils:load_module('view')
-  load_and_render('test_stuff,test.dm')
+  [_, rendered] = load_and_render('test_stuff,test.dm')
+  bowsette(rendered, 'test_stuff,test.dm', [])
   --content = fs:read('test.dm')
   --[text, sections, links] = darkmown:render(content)
   ----io:raw_debug(links)
