@@ -205,7 +205,7 @@ def load_and_render(path)
     end
   end
   write_in_bottom('Rendering')
-  rendered = darkmown:render(content)
+  rendered = downey:render(content)
   write_in_bottom('')
   match rendered
     [$error, atom, message, <<_>>] ->
@@ -257,7 +257,7 @@ end
 
 def _entry()
   io:print_string(bif:ansi_clear_terminal())
-  utils:load_module('darkmown')
+  utils:load_module('downey')
   utils:load_module('view')
   [_, rendered] = load_and_render('test_stuff,test.dm')
   bowsette(rendered, 'test_stuff,test.dm', [])

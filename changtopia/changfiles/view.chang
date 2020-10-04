@@ -126,7 +126,7 @@ def fits_on_screen(content, size)
 end
 
 def scrolling(content, origin, size)
-  io:print_string(bif:ansi_clear_screen())
+  io:print_string(bif:ansi_clear_terminal())
   [text_width, text_height] = size
   [x0, y0] = origin
   bounds = [x0 + text_width - 1, y0 + text_height]
@@ -188,14 +188,14 @@ def scroll_or_show(content)
     scrolling(display_lines, [0,0], [width, height])
     return $ok
   end
-  io:print_string(bif:ansi_clear_screen())
+  io:print_string(bif:ansi_clear_terminal())
   display_lines(display_lines, [0,0], [width, height])
   return $ok
 end
 
 
 def _entry()
-  io:print_string(bif:ansi_clear_screen())
+  io:print_string(bif:ansi_clear_terminal())
   io:print_string(bif:ansi_cursor_hide())
   content = fs:read('epigrams.txt')
   size = bif:send(bif:io_pid(), $get_console_size)
