@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@babel/core": "^7.10.2",
+    "@babel/preset-env": "^7.11.5",
     "@babel/preset-react": "^7.10.1",
     "@dash4/react-xterm": "^0.8.5",
     "axios": "^0.19.2",
@@ -33,5 +34,8 @@
     "eslint": "^7.2.0",
     "eslint-config-react-app": "^5.2.1",
     "eslint-loader": "^4.0.2"
+  },
+  "resolutions": {
+    "acorn": "npm:acorn-with-stage3"
   }
 }

@@ -1,4 +1,4 @@
-FROM node:13.14.0
+FROM node:14.13.0
 
 WORKDIR /opt/
 COPY gcp-config.json config.json
