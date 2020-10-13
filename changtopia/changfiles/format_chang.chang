@@ -1,0 +1,295 @@
+module format_chang
+-- This is for chang syntax highlighting.
+-- Sorry about the mess, did some wierd parzing and tokenizing
+-- at the same time. Don't hate me for it.
+
+def is_keyword(word)
+  match word
+    'def' -> return true end
+    'module' -> return true end
+    'end' -> return true end
+    'match' -> return true end
+    'if' -> return true end
+    'return' -> return true end
+  end
+  return false
+end
+
+def is_operator(word)
+  match word
+    '!=' -> return true end
+    '>'  -> return true end
+    '>=' -> return true end
+    '<=' -> return true end
+    '<'  -> return true end
+    '&&' -> return true end
+    '||' -> return true end
+    '+'  -> return true end
+    '-'  -> return true end
+    '*'  -> return true end
+    '/'  -> return true end
+    '%'  -> return true end
+    '==' -> return true end
+    '=' -> return true end
+  end
+  return false
+end
+
+def is_digit_class(c)
+  return c >= 48 && c <= 57
+end
+
+def is_word_class(c)
+  return (c >= 65 && c <= 90) || c == 95 || (c >= 97 && c <= 122)
+end
+
+def get_character_class(c)
+  match c
+    "\n" -> return $nl end
+    " " -> return $ws end
+    "\t" -> return $tab end
+    "\"" -> return $d_quote end
+    "'" -> return $s_quote end
+    "(" -> return $l_paren end
+    ")" -> return $r_paren end
+    "[" -> return $l_bracket end
+    "]" -> return $r_bracket end
+  end
+  if is_digit_class(c)
+    return $digit
+  end
+  if is_word_class(c)
+    return $word
+  end
+  return $any
+end
+
+def tokenize([], class, current_token, tokens)
+  return [<<tokens>>, [class, current_token]]
+end
+
+def tokenize([c, <<input>>])
+  class = get_character_class(c)
+  return tokenize(input, class, [c], [])
+end
+
+def tokenize([c1, c2, <<input>>], $s_quote, current_token, tokens)
+  match [c1, c2]
+    '\\\'' ->
+      return tokenize(input, $s_quote, [<<current_token>>, c1, c2], tokens)
+    end
+    whatever ->
+      match get_character_class(c1)
+        $s_quote ->
+          return tokenize(input, get_character_class(c2), [c2], [<<tokens>>, [$s_quote, [<<current_token>>, c1]]])
+        end
+        whatever ->
+          return tokenize([c2, <<input>>], $s_quote, [<<current_token>>, c1], tokens)
+        end
+      end
+    end
+  end
+end
+
+def tokenize([c1, c2, <<input>>], $d_quote, current_token, tokens)
+  match [c1, c2]
+    '\"' ->
+      return tokenize(input, $d_quote, [<<current_token>>, c1, c2], tokens)
+    end
+    whatever ->
+      match get_character_class(c1)
+        $d_quote ->
+          return tokenize(input, get_character_class(c2), [c2], [<<tokens>>, [$d_quote, [<<current_token>>, c1]]])
+        end
+        whatever ->
+          return tokenize([c2, <<input>>], $d_quote, [<<current_token>>, c1], tokens)
+        end
+      end
+    end
+  end
+end
+
+def tokenize([c, <<input>>], $l_bracket, current_token, tokens)
+  return tokenize(input, get_character_class(c), [c], [<<tokens>>, [$l_bracket, current_token]])
+end
+
+def tokenize([c, <<input>>], $r_bracket, current_token, tokens)
+  return tokenize(input, get_character_class(c), [c], [<<tokens>>, [$r_bracket, current_token]])
+end
+
+def tokenize([c, <<input>>], $l_paren, current_token, tokens)
+  return tokenize(input, get_character_class(c), [c], [<<tokens>>, [$l_paren, current_token]])
+end
+
+def tokenize([c, <<input>>], $r_paren, current_token, tokens)
+  return tokenize(input, get_character_class(c), [c], [<<tokens>>, [$r_paren, current_token]])
+end
+
+def tokenize(["-", <<input>>], $any, ["-"], tokens)
+  return tokenize(input, $comment, ["-","-"], tokens)
+end
+
+def tokenize(["<", c, <<input>>], $any, ["<"], tokens)
+  return tokenize(input, get_character_class(c), [c], [<<tokens>>, [$l_spread, '<<' ]])
+end
+
+def tokenize([">", c, <<input>>], $any, [">"], tokens)
+  return tokenize(input, get_character_class(c), [c], [<<tokens>>, [$r_spread, '>>' ]])
+end
+
+def tokenize(input, $any, ["$"], tokens)
+  return tokenize(input, $atom, ["$"], tokens)
+end
+
+def tokenize([c, <<input>>], $atom, current_token, tokens)
+  match get_character_class(c)
+    $word ->
+      return tokenize(input, $atom, [<<current_token>>, c], tokens)
+    end
+    $digit ->
+      return tokenize(input, $atom, [<<current_token>>, c], tokens)
+    end
+    whatever ->
+      return tokenize(input, get_character_class(c), [c], [<<tokens>>, [$atom, current_token]])
+    end
+  end
+end
+
+def tokenize([c, <<input>>], $comment, current_token, tokens)
+  match get_character_class(c)
+    $nl ->
+      return tokenize(input, $nl, [c], [<<tokens>>, [$comment, current_token]])
+    end
+    whatever ->
+      return tokenize(input, $comment, [<<current_token>>, c], tokens)
+    end
+  end
+end
+
+def tokenize([c, <<input>>], class, current_token, tokens)
+  new_class = get_character_class(c)
+  match new_class == class
+    false ->
+      return tokenize(input, new_class, [c], [<<tokens>>, [class, current_token]])
+    end
+    true ->
+      return tokenize(input, class, [<<current_token>>, c], tokens)
+    end
+  end
+end
+
+def get_bracket_color(n)
+  -- Some colors look stupid as brackets
+  match n % 11
+    0 -> return colors:get_color(1) end
+    1 -> return colors:get_color(2) end
+    2 -> return colors:get_color(4) end
+    3 -> return colors:get_color(5) end
+    4 -> return colors:get_color(6) end
+    5 -> return colors:get_color(9) end
+    6 -> return colors:get_color(10) end
+    7 -> return colors:get_color(11) end
+    8 -> return colors:get_color(12) end
+    9 -> return colors:get_color(13) end
+    10 -> return colors:get_color(14) end
+    whatever -> return colors:get_color(16) end
+  end
+end
+
+def color_tokens(tokens)
+  return color_tokens(tokens, 0, [])
+end
+
+def color_tokens([], _, res)
+  return res
+end
+
+def color_tokens([token, <<tokens>>], bracket_depth, res)
+  [kind, content] = token
+  match kind
+    $nl -> return color_tokens(tokens, bracket_depth, [<<res>>, <<content>>]) end
+    $ws -> return color_tokens(tokens, bracket_depth, [<<res>>, <<content>>]) end
+    $tab -> return color_tokens(tokens, bracket_depth, [<<res>>, <<content>>]) end
+    $word ->
+      match is_keyword(content)
+        true ->
+          cool_content = [<<colors:get_color('green')>>, <<content>>, <<colors:close_color()>>]
+          return color_tokens(tokens, bracket_depth, [<<res>>, <<cool_content>>])
+        end
+        false ->
+          return color_tokens(tokens, bracket_depth, [<<res>>, <<content>>])
+        end
+      end
+    end
+    $s_quote ->
+      cool_content = [<<colors:get_color('cyan')>>, <<content>>, <<colors:close_color()>>]
+      return color_tokens(tokens, bracket_depth, [<<res>>, <<cool_content>>])
+    end
+    $d_quote ->
+      cool_content = [<<colors:get_color('cyan')>>, <<content>>, <<colors:close_color()>>]
+      return color_tokens(tokens, bracket_depth, [<<res>>, <<cool_content>>])
+    end
+    $digit ->
+      cool_content = [<<colors:get_color('blue')>>, <<content>>, <<colors:close_color()>>]
+      return color_tokens(tokens, bracket_depth, [<<res>>, <<cool_content>>])
+    end
+    $atom ->
+      cool_content = [<<colors:get_color('blue')>>, <<content>>, <<colors:close_color()>>]
+      return color_tokens(tokens, bracket_depth, [<<res>>, <<cool_content>>])
+    end
+    $any ->
+      match is_operator(content)
+        true ->
+          cool_content = [<<colors:get_color('violet')>>, <<content>>, <<colors:close_color()>>]
+          return color_tokens(tokens, bracket_depth, [<<res>>, <<cool_content>>])
+        end
+        whatever ->
+          cool_content = [<<colors:get_color('orange')>>, <<content>>, <<colors:close_color()>>]
+          return color_tokens(tokens, bracket_depth, [<<res>>, <<cool_content>>])
+        end
+      end
+    end
+    $l_bracket ->
+      cool_content = [<<get_bracket_color(bracket_depth + 1)>>, <<content>>, <<colors:close_color()>>]
+      return color_tokens(tokens, bracket_depth + 1, [<<res>>, <<cool_content>>])
+    end
+    $r_bracket ->
+      cool_content = [<<get_bracket_color(bracket_depth)>>, <<content>>, <<colors:close_color()>>]
+      return color_tokens(tokens, bracket_depth - 1, [<<res>>, <<cool_content>>])
+    end
+    $l_paren ->
+      cool_content = [<<get_bracket_color(bracket_depth + 1)>>, <<content>>, <<colors:close_color()>>]
+      return color_tokens(tokens, bracket_depth + 1, [<<res>>, <<cool_content>>])
+    end
+    $r_paren ->
+      cool_content = [<<get_bracket_color(bracket_depth)>>, <<content>>, <<colors:close_color()>>]
+      return color_tokens(tokens, bracket_depth - 1, [<<res>>, <<cool_content>>])
+    end
+    $l_spread ->
+      cool_content = [<<get_bracket_color(bracket_depth + 1)>>, <<content>>, <<colors:close_color()>>]
+      return color_tokens(tokens, bracket_depth + 1, [<<res>>, <<cool_content>>])
+    end
+    $r_spread ->
+      cool_content = [<<get_bracket_color(bracket_depth)>>, <<content>>, <<colors:close_color()>>]
+      return color_tokens(tokens, bracket_depth - 1, [<<res>>, <<cool_content>>])
+    end
+    $comment ->
+      cool_content = [<<colors:get_color('black')>>, <<content>>, <<colors:close_color()>>]
+      return color_tokens(tokens, bracket_depth, [<<res>>, <<cool_content>>])
+    end
+    whatever -> return color_tokens(tokens, bracket_depth, [<<res>>, <<content>>]) end
+  end
+end
+
+def format(code)
+  return color_tokens(tokenize(code))
+end
+
+def _entry(_)
+  utils:load_module('colors')
+  content = fs:read('test.dm')
+  tokens = tokenize(content)
+  io:raw_debug(tokens)
+  io:raw_debug(color_tokens(tokens))
+  io:print_string(color_tokens(tokens))
+end

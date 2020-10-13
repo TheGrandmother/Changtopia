@@ -112,7 +112,8 @@ def _split_by(list, delimiter, current_word, res)
       return _split_by(tail, delimiter, [<<current_word>>, thing], res)
     end
   end
-  return $ok
+  -- I think this a bug here... I have to think at some point in my life
+  return res
 end
 
 def all(list)

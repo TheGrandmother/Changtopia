@@ -1,0 +1,22 @@
+[[title]]Changlang[[]]
+So This is vain attempt of mine att documenting how to actually use changlang, or the programming changuage as it is sometimes reffered to.
+[[section 1]]Descritption[[]]
+Changlang is a functional language... well in the paradigm sense of the word, not in the more broad sense.
+Changlang has a lot of similairities with Erlang but it is bareley even a real programming language.
+[[p]]
+Like most functional languages changlang has no refferences, is strictly pass by value and have no constructs for itteration. It is very importnt
+to rember that, like Erlang, changlang is not at all pure. The thing that spoiles the purity of a changlang function is the ability to send and receive messages.
+It is impossible to know what a message will return at compiletime and it is thuss impossible to guarantee that a function will always return the same value given
+the same arguments.
+[[p]]
+Once important difference between changlang and other functional languages is how lists are handled and implemented. Lists in changlang are arrays (they are just
+implemented as plain old Javascript arrays). Changlang does not support indexed accessed to arrays so in practice they are used as plain old lists. Being arrays
+this enables us to do some neat things such as matching on things at both the beginning or the end of the list. Don't make any assumptions about the time complexity
+of operations on lists, I have no recollection of how some of the things are implemented.
+[[p]]
+There is currently no scoping (inside functions) in changtopia. This is going to be addressed at some point. Supprisingly enough this hasn't been that much of an issue,
+I expected this to be an unprecedented pain but it has actually been quite chill... Until I added pattern matching on functions, then it became an absolute pain.
+[[section 2]]Modules[[]]
+Changtopia is built around the concept of dynamically loaded modules. One file of chang code defines a single module. Within a module you can directly access calling them
+by name, if you want to call a function outside the current module you must make sure that the module is loaded which can be done by sending a load module message or use
+the util module, you then have to call the function by module_name:function_name(args).

@@ -33,8 +33,8 @@ end
 
 def run_module(arg)
   match arg
-    [name] ->
-      return spawn_module(name)
+    [name, <<args>>] ->
+      return spawn_module(name, args)
     end
     [] ->
       io:print_string('No module name provided\n')
@@ -67,13 +67,14 @@ def _help(commands)
   return $ok
 end
 
-def spawn_module(name)
-  pid = bif:spawn(['shell', '_spawn_module'], name)
+def spawn_module(name, args)
+  io:debug(args)
+  pid = bif:spawn(['shell', '_spawn_module'], name, args)
   bif:link(pid)
   response = bif:request(pid, $run)
   match response
-    [$error, error_atom, msg, verbose] ->
-      io:print_strings(['Error running: ', name, '\n', verbose])
+    [[$error, error_atom, msg, <<faff>>]] ->
+      io:print_strings(['Error running: ', name, '\n', msg, '\n'])
       return $error
     end
     $ok ->
@@ -82,13 +83,9 @@ def spawn_module(name)
     $no_return ->
       return $ok
     end
-    -- [the_fuck, something, msg] ->
-    --   -- Why the hell did I write this clause???
-    --   -- I have no memmory of doing
-    --   return $ok
-    -- end
     whatever ->
-      io:print_strings([name, ' Sent us some strange shit...\n', response, '\n'])
+      io:print_strings([name, ' Sent us some strange shit...\n The strangeness is in the debug log\n'])
+      io:raw_debug(response)
       return $ok
     end
   end
@@ -96,15 +93,15 @@ def spawn_module(name)
   return $ok
 end
 
-def _spawn_module(name)
-  result = bif:listen(['shell', '_spawn_listener'], name)
+def _spawn_module(name, args)
+  result = bif:listen(['shell', '_spawn_listener'], name, args)
   return result
 end
 
-def _spawn_listener(name, sender, payload)
+def _spawn_listener(name, args, sender, payload)
   match payload
     $run ->
-      result = bif:run([name, '_entry'])
+      result = bif:run([name, '_entry'], args)
       return result
     end
     whatever ->

@@ -1,59 +1,60 @@
 [[title]]DAFAQ IS CHANGTOPIA?[[]]
 
-So, this is changtopia...[[nl]]
+So, this is Changtopia...[[nl]]
 And I don't really know how to explain it.[[nl]]
 It is simply just a little thing consisting of a language (which is garbage), a virtual machine (which at first glance might sound kinda cool but isn't)
 and an operating system (for a very liberal definition of operating system). Another more compact way of describing Changtopia would be to describe it as a broken mess.
+Some of you may think this is somehow impressive, and if that is the case, you are gravely mistaken.
 [[p]]
 Below follows an ultimately failed attempt at giving a more detailed explanation of what is even going on.
 
-[[section 1]] The broader scope [[]]
-Well... there are/were big and lofty plans for things that could potentially be cool, but they are all contingent on there being anybody here. And there proably
-aren't any users here. If you are reading this thats probably because I have nagged you to check this out, and in that case I'm happy that you read past the first
-paragraph, it means alot.
+[[section 1]]The broader scope[[]]
+Well... there are/were big and lofty plans for things that could potentially be cool, but they are all contingent on there being anybody here. And there probably
+aren't any users here. If you are reading this that's probably because I have nagged you to check this out, and in that case I'm happy that you read past the first
+paragraph, it means a lot.
 [[p]]
-But anyway. For the unlikely case that anyones adventures on the internet leads them here, Changtopia is intended to be a kind of "chose your own adventure" kind of place.
-There is no goal or point to all of this.. The core guiding design pholosophy behin Changtopia is that there shall be [[bold]]NO PRACTICAL APPLICATIONS[[]]. There are to many
-of those already. The world is a scary neoliberal place, especially when it comes to computing nowadays. Do you kinds rember when it was an adventure? When the internet
-wasnt't just file social media platforms and a few other websites sprinkled around. Back when using Linux was still an act of rebelion (a small and weak one, but a small act non the less).
-Nowadays everything is either just the fucking alt right or just so very, very corporate.
+But anyway. For the unlikely case that anyone's adventures on the internet leads them here, Changtopia is intended to be a kind of "chose your own adventure" kind of place.
+There is no goal or point to all of this.. The core guiding design philosophy behind Changtopia is that there shall be [[bold]]NO PRACTICAL APPLICATIONS[[]]. There are to many
+of those already. The world is a scary neoliberal place, especially when it comes to computing nowadays. Do you kinds remember when it was an adventure? When the internet
+wasn't just file social media platforms and a few other websites sprinkled around.
+Nowadays it feels like everything on the internet is either just the fucking alt right or just so very, very corporate.
 [[p]]
-But yhea, something confusing, pretentios and vauge like that. Do what you want, have fun, be chill.
-
+But yhea, something confusing, pretentious and vague like that. Do what you want, have fun, be chill.
+[[p]]
 [[section 2]]The changuage[[]]
-One of the main ingedients in this flaming bag of garbage is the language, called changlang, just chang, or the changuage depending on what sounds the least cringe in the given context.
-The launguage is essentially a clone of erlang, just imagine erlang but so much worse and you are imagining chang. The language is functional, strictly pass by value, in practice untyped,
-buggy and just sketchy in general. The language supports concurrency/parallelism in a similair fashion as erlang. The syntax is a bit more confusing and annoying tho. The only
-really neat thing about the language is the automatic support for blocking requests. This is to reolve the issue in erlang where if you need to get a response from another process you have to
+One of the main ingredients in this flaming bag of garbage is the language, called changlang, just chang, or the changuage depending on what sounds the least cringe in the given context.
+The language is essentially a clone of Erlang, just imagine Erlang but so much worse and you are imagining chang. The language is functional, strictly pass by value, in practice untyped,
+buggy and just sketchy in general. The language supports concurrency/parallelism in a similar fashion as Erlang. The syntax is a bit more confusing and annoying tho. The only
+really neat thing about the language is the automatic support for blocking requests. This is to resolve the issue in Erlang where if you need to get a response from another process you have to
 manually enter a state in which you wait for the message, this can turn into a real pain when the waiting process receives other messages during the time when it is waiting for the specific reply.
-In that case one ahs to manually faff with the message queue in order to make sure that the who application doesn't enter some wierd ass state. In other languages that uses some form of SCP but
-uses chanels instead, like Go, I have no idea if this is even a problem, it probably isn't and my solution is just dumb compared to using chanells.
+In that case one has to manually faff with the message queue in order to make sure that the who application doesn't enter some weird ass state. In other languages that uses some form of SCP but
+uses channels instead, like Go, I have no idea if this is even a problem, it probably isn't and my solution is just dumb compared to using channels.
 [[p]]
-This is implemented in chang by first seeing if the message is part of an expression and make the assumption that if it is the user really needs to get a value back. For example in the expression:[[nl]]
-[[bgcolor black]][[color white]]return 5 + bif:send(a_pid, $something)[[]][[]][[nl]]
+This is implemented in chang by first seeing if the message is part of an expression and make the assumption that if it is the user really needs to get a value back. For example in the expression:
+#$return 5 + bif:send(a_pid, $something)#$
 It is, to me at least, absolutely obvious that the $something message to a_pid will return something and there is no point in doing carrying on with the execution until we have gotten the response back.
-But in this case:[[nl]]
-[[bgcolor black]][[color white]][[nl]
-call_a_function()[[nl]]
-bif:send(a_pid, $something)[[nl]]
-call_another_function()[[nl]]
-[[]][[]][[nl]]
-It is obvious that we don't care about what the recipient does and we can just dispatch the message and then continue executing code) to our hearts content. Sorry for the long and ranty description of this feature, but it is the only
+But in this case:
+#$
+call_a_function()
+bif:send(a_pid, $something)
+call_another_function()
+#$
+
+It is obvious that we don't care about what the recipient does and we can just dispatch the message and then continue executing code to our hearts content. Sorry for the long and ranty description of this feature, but it is the only
 thing in chang that I'm even remotely satisfied with and I think most people will vocally disagree with this so I have an urge to defend it.
 [[p]]
-There is a lot of things wrong and missing in chang. Here follows a pretty depressing list of caveats and just general WTF things:
+There is a lot of things wrong and missing in chang. Here follows a pretty depressing list of caveats and just general WTF things:[[p]]
 • No associative data structures, only arrays.[[nl]]
-• Built ontop of javascripts horrible dynamic typing, with some strictness thrown in just to confuse.[[nl]]
+• Built on top of JavaScript horrible dynamic typing, with some strictness thrown in just to confuse.[[nl]]
 • There is no scoping inside functions. This wasn't as bad as it sounds actually, but it has now become a fucking pain.[[nl]]
-• Whitespaces are annoying. Due to some bugs in the grammar, rouge white spaces to the lack thereof can cause compilation to fail.[[nl]]
+• White spaces are annoying. Due to some bugs in the grammar, rouge white spaces to the lack thereof can cause compilation to fail.[[nl]]
 • There was an attempt at error handling.[[nl]]
 • If an error occurs during the binding of a handler function everything breaks.[[nl]]
 • There is something weird with expressions inside the spread operator.[[nl]]
 • There is a complete and utter lack of documentation.[[nl]]
 • Function references are just lists of strings, this is very limiting[[nl]]
-• The compiled will use up a lot more memory that necessary.[[nl]]
+• Things could be mighty more memory efficient.[[nl]]
 • Recursive patterns is a bit broken for unpacking.[[nl]]
-• Du to the lack of scoping match the pattern in match clauses can overwrite values even if the pattern doesn't match.[[nl]]
+• Due to the lack of scoping the pattern in match clauses can overwrite values even if the pattern doesn't match.[[nl]]
+• The tail call optimization only optimizes for function calls that are actually returned[[nl]]
 [[bold]]This is by no means a complete list.[[]]
-
-

@@ -15,15 +15,26 @@ module downey
 --[[bold]] creates a bullet point
 --[[link <target>]] creates a link. if the link is a path it will be an external link
 --                  if it is a number it will go to that section
-
+--#$ begins and ends a block of chang code. Chang will be formatted by the cang formatter
 
 def lex(content, $void, value_acc, output)
   match content
-    ["[", "[", "]", "]", <<rest>>] -> return [$error, $missing_close, 'Unexpected close', []] end
+    --["[", "[", "]", "]", <<rest>>] -> return [$error, $missing_close, 'Unexpected close', []] end
+    ["[", "[", "]", "]", <<rest>>] -> return lex(rest, $void, [], [<<output>>, [$close]]) end
     ["[", "[", <<rest>>] -> return lex(rest, $directive, [], output) end
+    ["#", "$", <<rest>>] -> return lex(rest, $chang, [], output) end
     [" ", <<rest>>] -> return lex(rest, $void, [], output) end
     ["\n", <<rest>>] -> return lex(rest, $void, [], output) end
     [x, <<rest>>] -> return lex(rest, $text, [x], output) end
+    [] -> return output end
+  end
+end
+
+def lex(content, $chang, value_acc, output)
+  io:debug('lexing chang')
+  match content
+    ["#", "$", <<rest>>] -> return lex(rest, $void, [], [<<output>>, [$chang, $solitary, value_acc]]) end
+    [x, <<rest>>] -> return lex(rest, $chang, [<<value_acc>>, x], output) end
     [] -> return output end
   end
 end
@@ -33,6 +44,7 @@ def lex(content, $text, value_acc, output)
   match content
     ["[", "[", "]", "]", <<rest>>] -> return lex(rest, $void, [], [<<output>>, current_token, [$close]]) end
     ["[", "[", <<rest>>] -> return lex(rest, $directive, [], [<<output>>, current_token]) end
+    ["#", "$", <<rest>>] -> return lex(rest, $chang, [], [<<output>>, current_token]) end
     [" ", <<rest>>] -> return lex(rest, $ws, [], [<<output>>, current_token]) end
     ["\n", <<rest>>] -> return lex(rest, $ws, [], [<<output>>, current_token]) end
     [x, <<rest>>] -> return lex(rest, $text, [<<value_acc>>, x], output) end
@@ -45,7 +57,9 @@ def lex(content, $ws, value_acc, output)
     [" ", <<rest>>] -> return lex(rest, $ws, [], output) end
     ["\n", <<rest>>] -> return lex(rest, $ws, [], output) end
     ["\t", <<rest>>] -> return lex(rest, $ws, [], output) end
+    ["[", "[", "]", "]", <<rest>>] -> return lex(rest, $void, [], [<<output>>, [$ws, $solitary], [$close]]) end
     ["[", "[", <<rest>>] -> return lex(rest, $directive, [], [<<output>>, [$ws, $solitary]]) end
+    ["#", "$", <<rest>>] -> return lex(rest, $chang, [], [<<output>>, [$ws, $solitary]]) end
     [x, <<rest>>] -> return lex(rest, $text, [x], [<<output>>, [$ws, $solitary]]) end
     [] -> return output end
   end
@@ -65,6 +79,7 @@ def lex(content)
 end
 
 def resolve_directives([[$directive, body], <<rest>>], res)
+  --io:raw_debug(body)
   match body
     ['title'] -> return resolve_directives(rest, [<<res>>, [$title]]) end
     ['p'] -> return resolve_directives(rest, [<<res>>, [$p, $solitary]]) end
@@ -81,8 +96,9 @@ def resolve_directives([[$directive, body], <<rest>>], res)
       return resolve_directives(rest, [<<res>>, [$section, num]])
     end
     ['link', path] -> return resolve_directives(rest, [<<res>>, [$link, path]]) end
-    [x] -> return [$error, $bad_directive, 'What kind of directive is this?', x] end
-    [] -> return [$error, $bad_directive, 'Empty directive', body] end
+    [[]] -> return [$error, $bad_directive, 'Empty directive', body] end
+    [x] -> return [$error, $bad_directive, [<<'What kind of directive is this? "'>>, x, <<'"'>>], x] end
+    [x, <<_>>] -> return [$error, $bad_directive, 'What kind of directive is this?', x] end
   end
 end
 
@@ -99,6 +115,7 @@ def resolve_directives(content)
 end
 
 def parse([token, <<rest>>], tree)
+  --io:raw_debug(token)
   match token
     [$close] ->
       return [tree, rest]
@@ -152,6 +169,10 @@ def render_words([[$color, [color], body], <<rest>>], words)
   return render_words(rest, [<<words>>, [$ansi, colors:get_color(color)], <<render_words(body, [])>>, [$ansi, colors:close_color()]])
 end
 
+def render_words([[$bgcolor, [color], body], <<rest>>], words)
+  return render_words(rest, [<<words>>, [$ansi, colors:get_bg_color(color)], <<render_words(body, [])>>, [$ansi, colors:close_bg_color()]])
+end
+
 def render_words([[$bold, _, body], <<rest>>], words)
   return render_words(rest, [<<words>>, [$ansi, bif:ansi_bold()], <<render_words(body, [])>>, [$ansi, bif:ansi_bold_close()]])
 end
@@ -166,6 +187,10 @@ end
 
 def render_words([[$text, text, <<_>>], <<rest>>], words)
   return render_words(rest, [<<words>>, <<text>>])
+end
+
+def render_words([[$chang, code, <<_>>], <<rest>>], words)
+  return render_words(rest, [<<words>>, [$chang, code]])
 end
 
 def render_words([[$p, <<_>>], <<rest>>], words)
@@ -204,6 +229,16 @@ def render_text([[$ws], <<rest>>], current_line, current_length, width, output)
     return render_text(rest, [<<current_line>>, <<' '>>], current_length + 1, width, output)
   end
   return render_text(rest, [], 0, width, [<<output>>, current_line])
+end
+
+def render_text([[$chang, [code]], <<rest>>], current_line, current_length, width, output)
+  utils:load_module('format_chang')
+  io:raw_debug([$keeeso, code])
+  aron = format_chang:format(code)
+  io:raw_debug([$dafaq, aron])
+  chang = list:split_by(aron, "\n")
+  io:raw_debug(chang)
+  return render_text(rest, [], 0, width, [<<output>>, current_line, <<chang>>])
 end
 
 def render_text([word, <<rest>>], [], current_length, width, output)
@@ -263,11 +298,12 @@ def render(content)
 
 end
 
-def _entry()
-  content = fs:read('test.dm')
+def _entry(_)
+  content = fs:read('web,apology.jr')
   tokens = lex(content)
   match tokens
     [$error, atom, message, token] ->
+      io:raw_debug(token)
       io:print_strings(['Error: ', message, ' in token: ', list:flatten(token),'\n'])
       return $ok
     end

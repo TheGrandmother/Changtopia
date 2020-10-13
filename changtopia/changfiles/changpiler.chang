@@ -45,7 +45,7 @@ def _entry(args)
         [$ok, module_name] ->
           if list:contains(options, 'run')
             _ = utils:load_module(module_name)
-            return bif:run([module_name, '_entry'])
+            return bif:run([module_name, '_entry'], [])
           end
           io:print_strings(['Successfully compiled ', file_name, ' as module ', module_name,'\n'])
           return $ok
