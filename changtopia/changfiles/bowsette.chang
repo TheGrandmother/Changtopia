@@ -203,6 +203,17 @@ def load_and_render(path)
       _ = io:get_char() --just wait for any key
       return $error
     end
+    [$error, $bad_path, <<_>>] ->
+      write_in_bottom([<<'Error: The path "'>>, <<path>>, <<'" is mallformed'>>])
+      _ = io:get_char() --just wait for any key
+      return $error
+    end
+    [$error, atom, <<_>>] ->
+      io:raw_debug(atom)
+      write_in_bottom([<<'Error: Something went wrong when fetching '>>, <<path>>])
+      _ = io:get_char() --just wait for any key
+      return $error
+    end
   end
   write_in_bottom('Rendering')
   rendered = downey:render(content)
@@ -255,18 +266,46 @@ def bowsette(rendered, current_path ,history)
   end
 end
 
+
+def _entry([])
+  return _entry(['web,home.jr'])
+end
+
 def _entry()
+  return _entry(['web,home.jr'])
+  --io:print_string(bif:ansi_clear_terminal())
+  --utils:load_module('downey')
+  --utils:load_module('view')
+  --landing_page = 'web,home.jr'
+  --[_, rendered] = load_and_render(landing_page)
+  --bowsette(rendered, landing_page, [])
+  ----content = fs:read('test.dm')
+  ----[text, sections, links] = darkmown:render(content)
+  ------io:raw_debug(links)
+  ----dude = display(text, sections, links, [0,0])
+  ----[_, stuff, thing] = dude
+  ----io:debug(stuff)
+  ----io:debug(thing)
+  --return $ok
+end
+
+def _entry([path, <<stuff>>])
+  if bif:length(stuff) > 0
+    io:raw_debug(stuff)
+    io:print_string('Oi! the web only wants one argument!\n')
+    return $error
+  end
+  io:raw_debug(path)
   io:print_string(bif:ansi_clear_terminal())
   utils:load_module('downey')
   utils:load_module('view')
-  [_, rendered] = load_and_render('test_stuff,test.dm')
-  bowsette(rendered, 'test_stuff,test.dm', [])
-  --content = fs:read('test.dm')
-  --[text, sections, links] = darkmown:render(content)
-  ----io:raw_debug(links)
-  --dude = display(text, sections, links, [0,0])
-  --[_, stuff, thing] = dude
-  --io:debug(stuff)
-  --io:debug(thing)
-  return $ok
+  match load_and_render(path)
+    [$success, rendered] ->
+      return bowsette(rendered, path, [])
+    end
+    $error ->
+      io:print_string('\n')
+      return $error
+    end
+  end
 end

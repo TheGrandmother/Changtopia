@@ -2,6 +2,8 @@ const {Storage} = require('@google-cloud/storage')
 const config = require('../../config.json')
 const fs = require('fs').promises
 
+class GcsError extends (Error) {}
+
 const storage = new Storage()
 
 const bucketName = config.gcs_bucket
@@ -40,6 +42,8 @@ async function writeFile(path, content) {
         cacheControl: 'no-cache',
       },
     })
+  } catch (err) {
+    throw err
   } finally {
     deleteTempFile(tmpPath)
   }
@@ -61,5 +65,6 @@ module.exports = {
   getFile,
   writeFile,
   fileExists,
-  listFiles
+  listFiles,
+  GcsError
 }

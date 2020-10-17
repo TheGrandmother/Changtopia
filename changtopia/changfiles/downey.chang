@@ -31,9 +31,8 @@ def lex(content, $void, value_acc, output)
 end
 
 def lex(content, $chang, value_acc, output)
-  io:debug('lexing chang')
   match content
-    ["#", "$", <<rest>>] -> return lex(rest, $void, [], [<<output>>, [$chang, $solitary, value_acc]]) end
+    ["#", "$", <<rest>>] -> return lex(rest, $void, [], [<<output>>, [$chang, $solitary, value_acc], [$ws, $solitary]]) end
     [x, <<rest>>] -> return lex(rest, $chang, [<<value_acc>>, x], output) end
     [] -> return output end
   end
@@ -215,7 +214,7 @@ end
 
 def render_text([[$section, num], <<rest>>], current_line, current_length, width, output)
   line_no = bif:length(output)
-  return render_text(rest, current_line, current_length, width, [<<output>>, [$section, num, line_no]])
+  return render_text(rest, current_line, current_length, width, [<<output>>, [], [$section, num, line_no]])
 end
 
 def render_text([[$link, path, text], <<rest>>], current_line, current_length, width, output)
@@ -233,11 +232,17 @@ end
 
 def render_text([[$chang, [code]], <<rest>>], current_line, current_length, width, output)
   utils:load_module('format_chang')
-  io:raw_debug([$keeeso, code])
   aron = format_chang:format(code)
-  io:raw_debug([$dafaq, aron])
   chang = list:split_by(aron, "\n")
-  io:raw_debug(chang)
+  if bif:length(chang) == 1
+    -- The chang code is inline
+    [line] = chang
+    printed_length = bif:length(bif:ansi_strip(line))
+    if printed_length + current_length < width
+      return render_text(rest, [<<current_line>>, <<line>>], current_length + printed_length, width, output)
+    end
+    return render_text(rest, line, printed_length, width, [<<output>>, current_line])
+  end
   return render_text(rest, [], 0, width, [<<output>>, current_line, <<chang>>])
 end
 
@@ -246,7 +251,7 @@ def render_text([word, <<rest>>], [], current_length, width, output)
 end
 
 def render_text([word, <<rest>>], current_line, current_length, width, output)
-  word_length = bif:length(word)
+  word_length = bif:length(bif:ansi_strip(word))
   if word_length + current_length < width
     return render_text(rest, [<<current_line>>, <<word>>], current_length + word_length, width, output)
   end

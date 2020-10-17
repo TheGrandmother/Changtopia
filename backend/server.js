@@ -3,10 +3,20 @@ const express = require('express')
 const fs = require('fs').promises
 const cors = require('cors')
 const config = require('../config.json')
+const FileHandler = require('./fileHandler/fileHandler.js')
 
 const app = express()
 app.use(cors())
 const port = config.server_port
+
+
+async function loadSeedFiles() {
+  const seedFiles = await fs.readdir('./seed_files')
+  for (let file of seedFiles) {
+    const content = (await fs.readFile('./seed_files/' + file)).toString()
+    await FileHandler.storeFile(file.split(','), 'super_admin', content, {}, true)
+  }
+}
 
 app.use(express.static(__dirname + '/public'))
 
@@ -28,7 +38,9 @@ app.get('/get_dem_files', (req, res) => {
 
 app.get('/health', (req, res) => res.json('ok'))
 
-app.listen(port, () => {
-  startMediator()
-  console.log(`Server up and listening on ${port}`)
-})
+loadSeedFiles().then(() => {
+  app.listen(port, () => {
+    startMediator()
+    console.log(`Server up and listening on ${port}`)
+  })
+}).catch(err => console.error(err))

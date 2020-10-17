@@ -1,6 +1,7 @@
 const {fromJsString, toJsString} = require('../../util/strings.js')
 const ansiEscapes = require('ansi-escapes')
 const ansiStyles = require('ansi-styles')
+const stripAnsi = require('strip-ansi')
 
 const ansiFaff = {
   cursor_to: (x, y) => ansiEscapes.cursorTo(x,y),
@@ -36,6 +37,7 @@ const ansiFaff = {
   bg_color_hex: (s) => ansiStyles.bgColor.ansi16m.hex(toJsString(s)),
   color_reset: () => ansiStyles.color.close,
   bg_color_reset: () => ansiStyles.bgColor.close,
+  strip: (s) => stripAnsi(toJsString(s))
 }
 
 const ansi = Object.keys(ansiFaff).map(key => (

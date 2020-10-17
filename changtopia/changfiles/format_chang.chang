@@ -140,6 +140,12 @@ end
 def tokenize(input, $any, ["$"], tokens)
   return tokenize(input, $atom, ["$"], tokens)
 end
+def tokenize(["(", <<input>>], $word, current_token, tokens)
+  return tokenize(input, $l_paren, ["("], [<<tokens>>, [$function, current_token]])
+end
+def tokenize([":", <<input>>], $word, current_token, tokens)
+  return tokenize(input, $any, [":"], [<<tokens>>, [$module, current_token]])
+end
 
 def tokenize([c, <<input>>], $atom, current_token, tokens)
   match get_character_class(c)
@@ -213,13 +219,22 @@ def color_tokens([token, <<tokens>>], bracket_depth, res)
     $word ->
       match is_keyword(content)
         true ->
-          cool_content = [<<colors:get_color('green')>>, <<content>>, <<colors:close_color()>>]
+          cool_content = [<<bif:ansi_bold()>>, <<colors:get_color('green')>>, <<content>>, <<colors:close_color()>>, <<bif:ansi_bold_close()>>]
           return color_tokens(tokens, bracket_depth, [<<res>>, <<cool_content>>])
         end
         false ->
-          return color_tokens(tokens, bracket_depth, [<<res>>, <<content>>])
+          cool_content = [<<colors:get_color('violet')>>, <<content>>, <<colors:close_color()>>]
+          return color_tokens(tokens, bracket_depth, [<<res>>, <<cool_content>>])
         end
       end
+    end
+    $function ->
+      cool_content = [<<colors:get_color('red')>>, <<content>>, <<colors:close_color()>>]
+      return color_tokens(tokens, bracket_depth, [<<res>>, <<cool_content>>])
+    end
+    $module ->
+      cool_content = [<<colors:get_color('red')>>, <<content>>, <<colors:close_color()>>]
+      return color_tokens(tokens, bracket_depth, [<<res>>, <<cool_content>>])
     end
     $s_quote ->
       cool_content = [<<colors:get_color('cyan')>>, <<content>>, <<colors:close_color()>>]
@@ -244,8 +259,7 @@ def color_tokens([token, <<tokens>>], bracket_depth, res)
           return color_tokens(tokens, bracket_depth, [<<res>>, <<cool_content>>])
         end
         whatever ->
-          cool_content = [<<colors:get_color('orange')>>, <<content>>, <<colors:close_color()>>]
-          return color_tokens(tokens, bracket_depth, [<<res>>, <<cool_content>>])
+          return color_tokens(tokens, bracket_depth, [<<res>>, <<content>>])
         end
       end
     end

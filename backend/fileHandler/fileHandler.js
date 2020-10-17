@@ -64,7 +64,7 @@ async function storeFile(path, user, content, options = {}, override = false) {
 }
 
 async function getFile(path) {
-  path = checkAndTrimPath(path, true)
+  path = checkAndTrimPath(path)
   const fileExists = await FileHandler.fileExists(path)
   if (fileExists) {
     const [_, ...content] =  (await FileHandler.getFile(path)).split('\n')

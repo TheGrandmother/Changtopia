@@ -148,6 +148,7 @@ def commands()
     ['chat', 0, ['chat', '_entry'], 'Chat with other people on changtopia, I.e, nobody'],
     ['clear', 0, ['shell', 'clear'], 'Clears the screen'],
     ['changpile', 0, ['changpiler', '_entry'], 'Changpile some code. run "changpile help" for additional info'],
+    ['web', 0, ['bowsette', '_entry'], 'Literally surf the changtopia web.'],
     ['fs', 0, ['fs', '_entry'], 'Do filey stuff. Type "fs help" to be more confused'],
   ]
   return bob

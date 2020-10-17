@@ -34,23 +34,23 @@ def _get_color_by_number(isBg, number)
     color_fn = ['bif', 'ansi_bg_color_hex']
   end
   match number
-    0  -> return @color_fn('#101010') end
-    1  -> return @color_fn('#EFA6A2') end
-    2  -> return @color_fn('#80C990') end
-    3  -> return @color_fn('#A69460') end
-    4  -> return @color_fn('#A3B8EF') end
-    5  -> return @color_fn('#E6A3DC') end
-    6  -> return @color_fn('#50CACD') end
-    7  -> return @color_fn('#808080') end
-    8  -> return @color_fn('#454545') end
-    9  -> return @color_fn('#E0AF85') end
-    10 -> return @color_fn('#5ACCAF') end
-    11 -> return @color_fn('#C8C874') end
-    12 -> return @color_fn('#CCACED') end
-    13 -> return @color_fn('#F2A1C2') end
-    14 -> return @color_fn('#74C3E4') end
-    15 -> return @color_fn('#C0C0C0') end
-    x  -> return @color_fn('#FFFFFF') end
+    0  -> return @color_fn('101010') end
+    1  -> return @color_fn('EFA6A2') end
+    2  -> return @color_fn('80C990') end
+    3  -> return @color_fn('A69460') end
+    4  -> return @color_fn('A3B8EF') end
+    5  -> return @color_fn('E6A3DC') end
+    6  -> return @color_fn('50CACD') end
+    7  -> return @color_fn('808080') end
+    8  -> return @color_fn('454545') end
+    9  -> return @color_fn('E0AF85') end
+    10 -> return @color_fn('5ACCAF') end
+    11 -> return @color_fn('C8C874') end
+    12 -> return @color_fn('CCACED') end
+    13 -> return @color_fn('F2A1C2') end
+    14 -> return @color_fn('74C3E4') end
+    15 -> return @color_fn('C0C0C0') end
+    x  -> return @color_fn('FFFFFF') end
   end
 end
 
@@ -104,4 +104,52 @@ end
 
 def close_bg_color()
   return bif:ansi_bg_color_reset()
+end
+
+def _make_test_row(n, acc)
+  if n <= 15
+    return _make_test_row(n + 1, [<<acc>>, <<get_color(n)>>, "■", "■", <<close_color()>>])
+  end
+  return [<<acc>>, <<get_color(n)>>, " ", " ", <<close_color()>>]
+end
+
+def _make_test_column(n, acc)
+  if n <= 15
+    return _make_test_column(n + 1, [<<acc>>, <<get_bg_color(n)>>, <<_make_test_row(0, [])>>, <<close_bg_color()>>, <<bif:cast(n, 'string')>>, "\n"])
+  end
+  return acc
+end
+
+def _make_test_ramp(r)
+  if r < 256
+    io:print_strings([bif:ansi_bg_color(r,0,0), ' ', close_bg_color()])
+    return _make_test_ramp(r + 1)
+  end
+  return io:print_string('\n')
+end
+
+def _make_test_gamp(r)
+  if r < 256
+    io:debug(bif:ansi_bg_color(0,r,0))
+    io:print_strings([bif:ansi_bg_color(0,r,0), ' ', close_bg_color()])
+    return _make_test_gamp(r + 1)
+  end
+  return io:print_string('\n')
+end
+
+def _make_test_bamp(r)
+  if r < 256
+    io:print_strings([bif:ansi_bg_color(0,0,r), ' ', close_bg_color()])
+    return _make_test_bamp(r + 1)
+  end
+  return io:print_string('\n')
+end
+
+def _entry(_)
+  derp = _make_test_column(0, [])
+  io:debug(derp)
+  io:print_string(derp)
+  _make_test_ramp(0)
+  _make_test_gamp(0)
+  _make_test_bamp(0)
 end

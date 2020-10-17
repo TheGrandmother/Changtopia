@@ -91,7 +91,7 @@ class MessageHandler {
       if (this[kind]) {
         this[kind](ws, host, message).catch(err => {
           if (!err.atom) {
-            ws.send(makeReply(message, [h('error'), h('mediator_panic'), fromJsString('Mediator dissaster: ', err.message)]))
+            ws.send(makeReply(message, [h('error'), h('mediator_panic'), fromJsString('Mediator dissaster: ' + err.message)]))
           } else {
             ws.send(makeReply(message, [h('error'), err.atom, fromJsString(err.message)]))
           }
