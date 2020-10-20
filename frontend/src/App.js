@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react'
-import { Term } from '@dash4/react-xterm'
-import '@dash4/react-xterm/lib/ReactXterm.css'
 import axios from 'axios'
 import saveAs from 'file-saver'
+import { Terminal } from 'xterm'
+import 'xterm/css/xterm.css'
+import { FitAddon } from 'xterm-addon-fit'
 
 import config from '../../config.json'
 import {changpile} from 'changtopia/changlang/compiler.js'
 import {crazyCoolStarter} from 'changtopia/main.js'
 import {createFile, getFile} from 'changtopia/Io/BrowserIO.js'
+
+
 
 function App() {
   return (
@@ -21,9 +24,33 @@ const known_modules ={}
 
 let thing = () => console.log('Not loaded')
 
+const terminalOptions = {
+  scrollback: false,
+  cursorBlink: true,
+  cursorStyle: 'block',
+  fontFamily:'Share Tech Mono',
+  fontSize:'16',
+  fontWeight:'200',
+  renderType: 'webGl',
+  theme: {
+    foreground: '#c0c0c0',
+    background: '#454545',
+    cursor: '#c0c0c0'
+  }
+}
+
+const setupTerminal = (term) => {
+  const fit = new FitAddon()
+  term.loadAddon(fit)
+  window.term = term
+  term.open(document.getElementById('chang-window'))
+  fit.fit()
+  term.focus()
+}
+
 const MyComponent = () => {
 
-  const [term, setTerm] = useState(undefined)
+  const [term, setTerm] = useState(new Terminal(terminalOptions))
   const [loaded, setLoaded] = useState(false)
 
   function inputTraps(d, listener) {
@@ -36,11 +63,12 @@ const MyComponent = () => {
   useEffect(() => {
     async function loadStuff() {
       if (!loaded && term) {
-        term.write('Fetching source files...')
+        setupTerminal(term)
+        term.write('Fetching the chang sauce...')
         const files = (await axios(`${config.server_host}/get_dem_files`)).data
         term.write(' Ok\n\r')
         const loadedModules = []
-        term.write('Compiling sources...')
+        term.write('Changpiling...')
         Object.entries(files).forEach(([name, content]) => {
           createFile(name, content)
           try {
@@ -65,10 +93,11 @@ const MyComponent = () => {
           mediatorUrl = `${config.mediator_host}:${config.mediator_port}`
         }
         const ioDude = crazyCoolStarter(JSON.parse(localStorage._module_main), term, mediatorUrl)
-        ioDude.getTerminalSize = async () => [term.term.cols, term.term.rows]
+        ioDude.getTerminalSize = async () => [term.cols, term.rows]
         ioDude.importFile = async () => importFile()
         ioDude.saveFile = async (name) => await saveFile(name)
-        thing = (d) => inputTraps(d, ioDude.inputListener)
+        thing = (d) => inputTraps(d.key, ioDude.inputListener)
+        term.onKey(thing)
         setLoaded(true)
       }
     }
@@ -102,27 +131,11 @@ const MyComponent = () => {
   }
 
   function handleTermRef(uid, xterm) {
-    setTerm(xterm)
   }
 
   return (
     <div>
-      <div className="chang-window">
-        <Term
-          ref_={handleTermRef}
-          onData={(d) => thing(d)}
-          scrollback={false}
-          cursorBlink={true}
-          cursorColor={'white'}
-          backgroundColor="#454545"
-          foregroundColor="#c0c0c0"
-          fontFamily='Share Tech Mono'
-          fontSize='16'
-          fontWeight='200'
-          isTermActive={true}
-          webGLRenderer={false}
-          style={{overflowY: 'null'}}/>
-      </div>
+      <div className="chang-window" id="chang-window"></div>
       <div>
         <input
           type="file"

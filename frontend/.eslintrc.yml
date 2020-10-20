@@ -1,7 +1,6 @@
 env:
   browser: true
-  commonjs: true
-  es11: true
+ecmaVersion: 2020
 extends:
   - 'plugin:react/recommended'
   - '../.eslintrc.yml'

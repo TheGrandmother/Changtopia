@@ -41,7 +41,9 @@ def center(strings)
   [width, <<_>>] = bif:request(bif:io_pid(), $get_console_size)
   _center = def (strings, acc)
     match strings
-      [] -> return acc end
+      [] ->
+        return acc
+      end
       [head, <<tail>>] ->
         pad_length = bif:cast((width - bif:length(head)) / 2, 'integer')
         padding = list:repeat(" ", pad_length)

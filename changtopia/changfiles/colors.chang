@@ -120,36 +120,6 @@ def _make_test_column(n, acc)
   return acc
 end
 
-def _make_test_ramp(r)
-  if r < 256
-    io:print_strings([bif:ansi_bg_color(r,0,0), ' ', close_bg_color()])
-    return _make_test_ramp(r + 1)
-  end
-  return io:print_string('\n')
-end
-
-def _make_test_gamp(r)
-  if r < 256
-    io:debug(bif:ansi_bg_color(0,r,0))
-    io:print_strings([bif:ansi_bg_color(0,r,0), ' ', close_bg_color()])
-    return _make_test_gamp(r + 1)
-  end
-  return io:print_string('\n')
-end
-
-def _make_test_bamp(r)
-  if r < 256
-    io:print_strings([bif:ansi_bg_color(0,0,r), ' ', close_bg_color()])
-    return _make_test_bamp(r + 1)
-  end
-  return io:print_string('\n')
-end
-
 def _entry(_)
   derp = _make_test_column(0, [])
-  io:debug(derp)
-  io:print_string(derp)
-  _make_test_ramp(0)
-  _make_test_gamp(0)
-  _make_test_bamp(0)
 end

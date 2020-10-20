@@ -117,11 +117,6 @@ class BrowserIO extends BaseIO {
     }
   }
 
-  async getTerminalSize() {
-    console.log([parseInt(this.term.term.cols), parseInt(this.term.terms.rows)])
-    return [parseInt(this.term.term.cols), parseInt(this.term.term.rows)]
-  }
-
   async getModule(moduleName) {
     return localStorage[`_module_${moduleName}`] && JSON.parse(localStorage[`_module_${moduleName}`])
   }
