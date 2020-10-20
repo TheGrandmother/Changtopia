@@ -120,6 +120,7 @@ const MyComponent = () => {
           fontSize='16'
           fontWeight='200'
           isTermActive={true}
+          webGLRenderer={false}
           style={{overflowY: 'null'}}/>
       </div>
       <div>

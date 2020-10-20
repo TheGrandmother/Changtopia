@@ -1,4 +1,3 @@
-/* global  __non_webpack_require__*/
 const {Process} = require('./process.js')
 const {h, randomHash} = require('../util/hash.js')
 const builtins = require('./builtins/builtins.js')
@@ -7,31 +6,8 @@ const Pid = require('./pid.js')
 const {prettyInst} = require('./instructions/pretty.js')
 const {toJsString} = require('../util/strings.js')
 const {formatMessage, makeReply} = require('../util/messages.js')
-const process = require('process')
-
-
-let isMainThread
-let postToParent
-let workerData
-let parentPort
-
-if (!process.browser) {
-  __non_webpack_require__ = require // eslint-disable-line no-global-assign
-}
-
-if (process.browser) {
-  postToParent = (msg) => postMessage(msg)
-  isMainThread = false
-
-} else {
-  const {
-    isMainThread: _isMainThread, parentPort: _parentPort, workerData: _workerData
-  } = __non_webpack_require__('worker_threads')
-  isMainThread = _isMainThread
-  postToParent = (msg) => _parentPort.postMessage(msg)
-  parentPort = _parentPort
-  workerData = _workerData
-}
+require('setimmediate')
+const postToParent = (msg) => postMessage(msg)
 
 class Vm {
 
@@ -47,11 +23,7 @@ class Vm {
     this.instance = instance
     this.host = host
     this.chattyThreshold = 5
-    if (process.browser) {
-      onmessage = (e) => this.handleExternalMessage(e.data)
-    } else {
-      parentPort.on('message', (message) => this.handleExternalMessage(message))
-    }
+    onmessage = (e) => this.handleExternalMessage(e.data)
   }
 
   log(...args) {
@@ -260,26 +232,14 @@ class Vm {
 
 }
 
-if (isMainThread) {
-  module.exports = {
-    Vm
-  }
-} else {
-  if (process.browser) {
-    //uuuuuuugh......... fuuuuuk diss
-    const whyIsLifeSoHacky = (message) => {
-      if (!message || !message.data || message.data.type !== 'init') {
-        onmessage = whyIsLifeSoHacky
-        return
-      }
-      const {modules, host, instance} = message.data
-      const vm = new Vm(instance, host)
-      vm.loadModule(modules)
-    }
+// This is a remnant from when shit was both node and browser compatible
+const whyIsLifeSoHacky = (message) => {
+  if (!message || !message.data || message.data.type !== 'init') {
     onmessage = whyIsLifeSoHacky
-  } else {
-    const {modules, host, instance} = workerData
-    const vm = new Vm(instance, host)
-    vm.loadModule(modules)
+    return
   }
+  const {modules, host, instance} = message.data
+  const vm = new Vm(instance, host)
+  vm.loadModule(modules)
 }
+onmessage = whyIsLifeSoHacky

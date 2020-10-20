@@ -1,7 +1,6 @@
 env:
   browser: true
   commonjs: true
-  es11: true
 extends: 'eslint:recommended'
 globals:
   Atomics: readonly

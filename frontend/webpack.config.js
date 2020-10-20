@@ -1,4 +1,5 @@
 const path = require('path')
+const webpack = require('webpack')
 const HtmlWebPackPlugin = require('html-webpack-plugin')
 
 module.exports = {
@@ -30,13 +31,6 @@ module.exports = {
             loader: 'html-loader'
           }
         ]
-      },
-      {
-        test: /\.(eot|woff|woff2|svg|ttf)([?]?.*)$/,
-        loader: 'file-loader',
-        options: {
-          name: '[name].[ext]'
-        }
       }
     ]
   },
@@ -52,6 +46,9 @@ module.exports = {
     new HtmlWebPackPlugin({
       template: './src/index.html',
       filename: './index.html'
+    }),
+    new webpack.ProvidePlugin({
+      process: 'process',
     })
   ],
 }

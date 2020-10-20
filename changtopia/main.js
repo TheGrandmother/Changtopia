@@ -1,60 +1,38 @@
-/* global  __non_webpack_require__*/
-
-const os = require('os')
-const process = require('process')
-const ansiEscapes = require('ansi-escapes')
-const ansiStyles = require('ansi-styles')
 const {randomHash} = require('./util/hash.js')
 const Pid = require('./VM/pid.js')
-const config = require('../config.json')
 
 let ws
 let Worker
-let argv
 
-if (!process.browser) {
-  __non_webpack_require__ = require // eslint-disable-line no-global-assign
+Worker = class extends window.Worker{
+  constructor(url, thing) {
+    super(url)
+    this.postMessage({type: 'init', ...thing.workerData})
+  }
+
+  on(type, handler) {
+    if (type === 'message') {
+      this.onmessage = (e) => handler(e.data)
+    }
+    if (type === 'error') {
+      this.onerror = handler
+    }
+  }
 }
 
-if (process.browser) {
-  Worker = class extends window.Worker{
-    constructor(url, thing) {
-      super(url)
-      this.postMessage({type: 'init', ...thing.workerData})
-    }
+ws = class extends WebSocket{
 
-    on(type, handler) {
-      if (type === 'message') {
-        this.onmessage = (e) => handler(e.data)
-      }
-      if (type === 'error') {
-        this.onerror = handler
-      }
-    }
+  on(type, handler) {
+    this.addEventListener(type, (e) => {
+      handler(e.data)
+    })
   }
 
-  ws = class extends WebSocket{
-
-    on(type, handler) {
-      this.addEventListener(type, (e) => {
-        handler(e.data)
-      })
-    }
-
-    once(type, handler) {
-      this.addEventListener(type, (e) => {
-        handler(e.data)
-      }, {once: true})
-    }
+  once(type, handler) {
+    this.addEventListener(type, (e) => {
+      handler(e.data)
+    }, {once: true})
   }
-
-} else {
-  Worker = __non_webpack_require__('worker_threads').Worker
-  argv = __non_webpack_require__('yargs')
-    .option('no-mediator', {alias: 'r', description: 'Don\'t connect to remote instances', type:'boolean', default: false})
-    .option('mediator-host', {alias: 'h', description: 'Hostname of remote mediator', type:'string', default: config.mediator_host})
-    .argv
-  ws = require('ws')
 }
 
 class Coordinator {
@@ -107,13 +85,6 @@ class Coordinator {
   }
 
   debugStatus () {
-    //const statusString = ansiEscapes.cursorSavePosition + ansiEscapes.cursorTo(0,0) + ansiEscapes.eraseLine + ansiStyles.color.close
-    //const summaries = Object.keys(this.workers).map(instance => {
-    //  const {topQueue, bottomQueue, waiting} = this.workers[instance].stats
-    //  return `|I:${parseInt(instance).toString(16)}\tT:${topQueue}\tB:${bottomQueue}\tW:${waiting}|`
-    //}).join('\t')
-    //process.stdout.write(`${statusString}` + summaries + ansiEscapes.cursorRestorePosition)
-    //fs.writeFile('.monitor', `${statusString}` + summaries +'\n' +`THERE ARE: ${process._getActiveHandles().length} HANDLES AND ${process._getActiveRequests().length} requests` + ansiEscapes.cursorRestorePosition, {flag: 'a+'})
   }
 
   start() {
@@ -178,7 +149,7 @@ class Coordinator {
 
   spawnVm() {
     const instance = randomHash()
-    const worker = new Worker(process.browser ? 'vm.js' : './VM/vm.js', {workerData: {modules: this.modules, host: this.host, instance}})
+    const worker = new Worker('vm.js', {workerData: {modules: this.modules, host: this.host, instance}})
     worker.instance = instance
     worker.host = this.host
     worker.workers = this.workers
@@ -195,18 +166,6 @@ class Coordinator {
   }
 }
 
-async function main () {
-  const fs = __non_webpack_require__('fs').promises
-  console.log('Launching VM')
-  const [,, inFile] = process.argv
-  const modules = JSON.parse((await fs.readFile(inFile)).toString())
-
-  const cpuCount = os.cpus().length
-
-  const {NodeIoHandler} = __non_webpack_require__('./Io/NodeIO.js')
-  new Coordinator(cpuCount, modules, new NodeIoHandler(), argv['mediator-host'])
-}
-
 function crazyCoolStarter(initModules, term, mediatorHost) {
   const cpuCount = window.navigator.hardwareConcurrency
   const {BrowserIO} = require('./Io/BrowserIO.js')
@@ -215,8 +174,4 @@ function crazyCoolStarter(initModules, term, mediatorHost) {
   return browserIO
 }
 
-if (process.browser) {
-  module.exports = {crazyCoolStarter}
-} else {
-  main().then().catch((err) => {console.log('Uncaucght fuckup'); console.error(err); process.exit(420)})
-}
+module.exports = {crazyCoolStarter}
