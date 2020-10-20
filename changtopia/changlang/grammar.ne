@@ -6,41 +6,41 @@
 
 @lexer lexer
 
-main -> module (function_def):+ {% ast.flattenAndStrip%}
+main -> module (function_def):+                                               {% ast.flattenAndStrip%}
 
-module -> %MODULE _ identifier %NL                                        {% ast.makeModule %}
+module -> %MODULE _ identifier %NL                                            {% ast.makeModule %}
 
 function_def ->
-  %DEF _ identifier _ thing_tuple %NL block %NL %END %NL                  {% ast.makeFunction %}
+  %DEF _ identifier _ thing_tuple %NL block %NL %END %NL                      {% ast.makeFunction %}
 
-closure -> %DEF _ name_tuple (%WS | %NL) block (%WS | %NL) %END                  {% ast.makeClosure %}
+closure -> %DEF _ name_tuple (%WS | %NL) block (%WS | %NL) %END               {% ast.makeClosure %}
 
 block ->
     compound                                                                  {% ast.makeBlock %}
-  | compound _ (";"|%NL|%WS)  block                                             {% ast.makeBlock %}
-  | match  %NL   block                                                   {% ast.makeBlock %}
+  | compound _ (";"|%NL|%WS)  block                                           {% ast.makeBlock %}
+  | match  %NL   block                                                        {% ast.makeBlock %}
   | match
 
-match -> %MATCH __ expr _ %NL _ match_clauses              {% ast.makeMatcher %}
+match -> %MATCH __ expr _ %NL _ match_clauses                                 {% ast.makeMatcher %}
 
 match_clauses ->
     match_clause _ match_clauses
   | %END
 
 match_clause ->
-  thing __ %CLAUSE (%WS | %NL) block  (%WS | %NL) %END %NL       {% ast.makeClause %}
+  thing __ %CLAUSE (%WS | %NL) block  (%WS | %NL) %END %NL                    {% ast.makeClause %}
 
 compound ->
     assignment
   | function_call
-  | %RETURN _ expr                                                           {% ast.makeReturn %}
+  | %RETURN _ expr                                                            {% ast.makeReturn %}
   | if                                                                        {% ast.makeIfStatement %}
 
 if -> %IF __ math (%WS | %NL) block (%WS | %NL) %END
 
 assignment ->
-    unpack __ %ASSIGN _ expr                                                      {% ast.makeAssignment %}
-  | identifier __ %ASSIGN _ expr                                                  {% ast.makeAssignment %}
+    unpack __ %ASSIGN _ expr                                                  {% ast.makeAssignment %}
+  | identifier __ %ASSIGN _ expr                                              {% ast.makeAssignment %}
 
 expr ->
     math                                                                      {% ast.makeExpr %}
@@ -73,10 +73,14 @@ thing ->
   | constant                                                                  {% ast.makeConstant %}
 
 constant ->
-    %NUMBER                                                                   {% ast.makeNumber %}
+    number                                                                    {% ast.makeNumber %}
   | %CHAR                                                                     {% ast.makeChar%}
   | %ATOM                                                                     {% ast.makeAtom %}
   | %BOOL                                                                     {% ast.makeBool %}
+
+number ->
+    %NUMBER
+  | "-" %NUMBER
 
 function_call -> explicit_call | refference_call
 
@@ -133,7 +137,7 @@ _repack_list ->
   | _repack_list _ "," _ %NL:? expr
   | _repack_list _ "," _ %NL:? expr_blob
 
-expr_blob -> %OPEN_BLOB _ expr _ %CLOSE_BLOB                            {% ast.makeBlob %}
+expr_blob -> %OPEN_BLOB _ expr _ %CLOSE_BLOB                                  {% ast.makeBlob %}
 name_blob -> %OPEN_BLOB _ identifier _ %CLOSE_BLOB                            {% ast.makeBlob %}
 
 unpack ->

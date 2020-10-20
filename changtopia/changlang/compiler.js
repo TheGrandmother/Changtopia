@@ -16,6 +16,7 @@ function parse(string, showAmbigous) {
     result = parser.feed(string).results
   } catch (err) {
     if(err.token) {
+      console.log(err)
       const fixTokenDisplay = (token) => {
         if (typeof token.value === 'string') {
           return token.value.replace(/\s*\n\s*/m, '\\n')

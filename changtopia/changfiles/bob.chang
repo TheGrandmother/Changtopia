@@ -1,5 +1,8 @@
 module bob
 
 def _entry()
-  return $ok
+  a = 5+-5
+  a = 5-5
+  a = 5 - 5
+  return 5 + -5
 end

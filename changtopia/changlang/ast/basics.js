@@ -48,6 +48,13 @@ function makeBool(d) {
 function makeNumber(d) {
   const pos = helpers.findPositionOfToken(d, 'NUMBER')
   d = helpers.flattenAndStrip(d)
+  if (d.length === 2 && d[0].type === 'ARITHMETIC') {
+    return {
+      type: 'number',
+      value: d[1].value * -1,
+      pos: pos
+    }
+  }
   return {
     type: 'number',
     value: d.value,
@@ -102,7 +109,7 @@ function makeChar(d) {
 
 function makeConstantNode (value, valueType, pos) {
   if (value === undefined) {
-    throw new Error('Value cannot be undefined')
+    throw new Error('Constant value cannot be undefined')
   }
   return {
     type: 'constant',

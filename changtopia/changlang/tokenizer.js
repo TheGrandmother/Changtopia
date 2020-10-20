@@ -11,7 +11,7 @@ const lexer = moo.compile({
   },
   WS: /[ \t]+/u,
   NUMBER: {
-    match: /-?[0-9]+(?:\.?[0-9]+)?/u,
+    match: /[0-9]+(?:\.?[0-9]+)?/u,
     value: (n) => parseFloat(n)
   },
   BOOL: {match: /(?:true)|(?:false)/u, value: (x) => x === 'true'},
