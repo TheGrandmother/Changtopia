@@ -231,10 +231,12 @@ def load_and_render(path)
 end
 
 def bowsette(rendered, current_path ,history)
+  io:print_string(bif:ansi_cursor_hide())
   dude = display(rendered, [0,0])
   match dude
     $quit ->
       io:print_strings([bif:ansi_clear_terminal(), bif:ansi_cursor_to(0, 0)])
+      io:print_string(bif:ansi_cursor_show())
       return $ok
     end
     $back ->

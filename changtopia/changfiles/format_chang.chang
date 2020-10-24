@@ -186,7 +186,7 @@ end
 
 def get_bracket_color(n)
   -- Some colors look stupid as brackets
-  match n % 11
+  match n % 12
     0 -> return colors:get_color(1) end
     1 -> return colors:get_color(2) end
     2 -> return colors:get_color(4) end
@@ -198,6 +198,7 @@ def get_bracket_color(n)
     8 -> return colors:get_color(12) end
     9 -> return colors:get_color(13) end
     10 -> return colors:get_color(14) end
+    11 -> return colors:get_color(3) end
     whatever -> return colors:get_color(16) end
   end
 end

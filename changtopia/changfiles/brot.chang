@@ -59,7 +59,7 @@ def worker(x, y, width, height, max, controler)
       color = color_ramp(result, max)
     end
   end
-  -- bif:send(controler, [result, x, y])
+  bif:send(controler, [result, x, y])
   io:print_strings([bif:ansi_cursor_to(x, y), color,'█'])
 end
 
@@ -70,7 +70,7 @@ end
 
 def _plot_line(x, y, width, height, max, parent)
   io:print_strings([bif:ansi_cursor_to(x, y), bif:ansi_color(125,225,125), '█'])
-  match x == width - 1
+  match x == width
     false ->
       bif:spawn(['brot', 'worker'], x, y, width, height, max, parent)
       return _plot_line(x + 1, y, width, height, max, parent)
@@ -93,8 +93,8 @@ end
 def listener(width, height, max, count, sender, payload)
   [result, x, y] = payload
   count = count + 1
-  io:print_strings([bif:ansi_cursor_to(0, height), bif:ansi_color(255,255,255), bif:cast(count, 'string'), '/', bif:cast(width*height, 'string')])
-  match count == width * height
+  io:print_strings([bif:ansi_cursor_to(0, height), bif:ansi_color(255,255,255), bif:cast(count, 'string'), '/', bif:cast(width*(height-1), 'string')])
+  match count == width * (height - 1)
     true ->
       return $ok
     end
@@ -120,7 +120,7 @@ def color_ramp(m, max)
   return bif:ansi_color(255, fac * 255, 255)
 end
 
-def _entry()
+def _entry(_)
   io:print_string(bif:ansi_clear_screen())
   start = bif:time()
   [width, height] = bif:request(bif:io_pid(), $get_console_size)

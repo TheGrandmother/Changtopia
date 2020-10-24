@@ -166,8 +166,17 @@ def view(args)
           io:print_string(error)
         end
         content ->
-          utils:load_module('view')
-          view:scroll_or_show(content)
+          match list:split_by(name, ".")
+            [<<_>>, 'chang'] ->
+              utils:load_module('format_chang')
+              utils:load_module('view')
+              view:scroll_or_show(format_chang:format(content))
+            end
+            whatever ->
+              utils:load_module('view')
+              view:scroll_or_show(content)
+            end
+          end
         end
       end
     end
