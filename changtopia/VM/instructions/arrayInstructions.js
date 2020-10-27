@@ -1,5 +1,37 @@
 const Errors = require('../../errors.js')
 
+function quickUnpack(process, location, array, hasBody, leadingCount, trailingCount, args) {
+  if (!hasBody) {
+    if(trailingCount === 0) {
+      // [a,b,c] complete unpack
+      array.forEach((e, i) => {
+        process.frame.write(args[i], e)
+      })
+    }
+    if (trailingCount !== 0) {
+      throw new Error('We are trying to do a complete unpack but for some dumb reason the trailing count aint 0')
+    }
+    return true
+  }
+  if (trailingCount === 0 && leadingCount !== 0) {
+    // [a, b, ...x, <<blob>>] Head unpack
+    for (let i = 0; i < leadingCount; i++) {
+      process.frame.write(args[i], array[i])
+    }
+    process.frame.write(args[args.length - 1], array.slice(leadingCount))
+    return true
+  }
+  if (leadingCount === 0 && trailingCount !== 0) {
+    // [<<blob>>, a, b, ...x] tail unpack
+    for (let i = 0; i < trailingCount; i++) {
+      process.frame.write(args[i], array[array.length - i - 1])
+    }
+    process.frame.write(args[args.length - 1], array.slice(0, -trailingCount))
+    return true
+  }
+  return false
+}
+
 const arrayInstructions = {
   'arrayCreate' : {
     name: 'arrayCreate',
@@ -44,6 +76,12 @@ const arrayInstructions = {
       }
       if (!hasBody && leadingCount + trailingCount !== array.length) {
         throw new Errors.ArrayIndexError(`To few values to unpack. Trying to unpack ${leadingCount + trailingCount} elements but array contains ${array.length} elements`)
+      }
+
+      const wasQuick = quickUnpack(process, location, array, hasBody, leadingCount, trailingCount, args)
+      if (wasQuick) {
+        process.incrementLine()
+        return
       }
 
       const leadingLocations = args.slice(0, leadingCount)
