@@ -69,6 +69,9 @@ function identifyUnbound(argNames, body) {
       node.unpack.leading.forEach(e => boundByMe.push(e.name))
       node.unpack.trailing.forEach(e => boundByMe.push(e.name))
       node.unpack.body && boundByMe.push(node.unpack.body.name)
+      if (node.unpack.body) {
+        node.unpack.body.type === 'blob' ? boundByMe.push(node.unpack.body.value.name) : boundByMe.push(node.unpack.body.name)
+      }
     }
 
     if (node.type && node.type === 'identifier') {
@@ -77,6 +80,11 @@ function identifyUnbound(argNames, body) {
         return
       }
     }
+
+    if (node.type === 'closure') {
+      node.args.forEach(a => boundByMe.push(a.name))
+    }
+
     node.lhs && node.type !== 'assignemnt' && traverse(node.lhs)
     node.rhs && traverse(node.rhs)
     node.body && traverse(node.body)
