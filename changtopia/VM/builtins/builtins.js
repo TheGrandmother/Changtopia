@@ -4,6 +4,7 @@ const {arrayFunctions} = require('./array_functions.js')
 const {pidHelpers} = require('./pids.js')
 const {basics} = require('./basic.js')
 const {ansi} = require('./ansi.js')
+const {math} = require('./math.js')
 
 const functions = {}
 const funcs = [
@@ -12,7 +13,8 @@ const funcs = [
   ...processControlFunctions,
   ...pidHelpers,
   ...basics,
-  ...ansi
+  ...ansi,
+  ...math
 ]
 
 funcs.forEach(func => functions[func.functionId] = func)
