@@ -1,0 +1,320 @@
+module ray
+
+def dot_prod(p1, p2)
+  [x1, y1] = p1
+  [x2, y2] = p2
+  return x1*x2 + y1*y2
+end
+
+def cross_prod(p1, p2)
+  [x1, y1] = p1
+  [x2, y2] = p2
+  return x1*y2 - y1*x2
+end
+
+def add(v1, v2)
+  [x1, y1] = v1
+  [x2, y2] = v2
+  return [x1+x2, y1+y2]
+end
+
+def sub(v1, v2)
+  [x1, y1] = v1
+  [x2, y2] = v2
+  return [x1-x2, y1-y2]
+end
+
+def scale(v1, x)
+  [x1, y1] = v1
+  return [x1*x, y1*x]
+end
+
+
+def find_intersection(origin, angle, wall)
+  [o_x, o_y] = origin
+  [p1, p2] = wall
+  [p1_x, p1_y] = p1
+  [p2_x, p2_y] = p2
+
+  v1_x = o_x - p1_x
+  v1_y = o_y - p1_y
+
+  v2_x = p2_x - p1_x
+  v2_y = p2_y - p1_y
+
+  v3_x = -1 * bif:sin(angle)
+  v3_y = bif:cos(angle)
+
+  dot = v2_x * v3_x + v2_y * v3_y
+
+  if bif:abs(dot) <= 0
+    return $miss
+  end
+
+  t1 = (v2_x * v1_y - v2_y * v1_x) / dot
+  t2 = (v1_x * v3_x + v1_y * v3_y) / dot
+
+  if (t1 >= 0 && (t2 >= 0 && t2 <= 1))
+    return t1
+  end
+
+  return $miss
+end
+
+def pseudo_distance(p1, p2)
+  [x1, y1] = p1
+  [x2, y2] = p2
+  return (x2 - x1)*(x2 - x1) + (y2 - y1)*(y2 - y1)
+end
+
+def make_angle_range(n, fov)
+  step = fov / n
+  start = fov / -2
+  itterate = def (i, acc)
+    match i == n
+      true -> return acc end
+      false ->
+        return @itterate(i+1,[<<acc>>, start + step * i])
+      end
+    end
+  end
+  return @itterate(0, [])
+end
+
+def test_for_hit(pos, angle, [wall, <<walls>>])
+  bob = find_intersection(pos, angle, wall)
+  match bob
+    $miss -> return test_for_hit(pos,angle, walls) end
+    x -> return x end
+  end
+end
+
+def test_for_hit(pos, angel, [])
+  return $miss
+end
+
+def min(a,b)
+  if a < b
+    return a
+  end
+  return b
+end
+
+def max(a,b)
+  if a > b
+    return a
+  end
+  return b
+end
+
+def gray_scale()
+  return ' .:-=+*%#@'
+end
+
+def make_pixel(x, y, color)
+  return [<<bif:ansi_cursor_to(x, y)>>, list:get(gray_scale(), color)]
+end
+
+def sort(walls, position)
+  return sort(walls, [], true, position)
+end
+
+def sort([s1, s2, <<rest>>], acc, sorted, position)
+  [this_is_a_bug, still_sorted] = order(s1, s2, position)
+  [closest, furthest] = this_is_a_bug
+  return sort([furthest, <<rest>>], [<<acc>>, closest], sorted && still_sorted, position)
+end
+
+def sort([x], acc, sorted, position)
+  return sort([], [<<acc>>, x], sorted, position)
+end
+
+def sort([], acc, true, position)
+  return acc
+end
+
+def sort([], acc, false, position)
+  return sort(acc, [], true, position)
+end
+
+def order(s1, s2, position)
+  [d1, w1] = s1
+  [d2, w2] = s2
+  if d1 != w2
+    if d1 > d2
+      return [[s2, s1], false]
+    end
+    return [[s1, s2], true]
+  end
+  [w1p1, w1p2] = w1
+  [w2p1, w2p2] = w2
+  w1_max = max(pseudo_distance(w1p1, position), pseudo_distance(w1p2, position))
+  w2_max = max(pseudo_distance(w2p1, position), pseudo_distance(w2p2, position))
+  if (w1_max > w2_max)
+    return [[s2, s1], false]
+  end
+  return [[s1, s2], true]
+end
+
+
+def sort_walls(position, walls)
+  measure_walls = def (walls, acc)
+    match walls
+      [] -> return acc end
+      [[p1, p2], <<rest>>] ->
+        return @measure_walls(rest, [<<acc>>, [min(pseudo_distance(p1, position), pseudo_distance(p2, position)), [p1, p2]]])
+      end
+    end
+  end
+
+  measured_walls = @measure_walls(walls, [])
+  sorted = sort(measured_walls, position)
+  strip_distances = def (walls, acc)
+    match walls
+      [] -> return acc end
+      [[_, w],<<rest>>] -> return @strip_distances(rest, [<<acc>>, w]) end
+    end
+  end
+  return @strip_distances(sorted, [])
+end
+
+def worker()
+  [width, height] = bif:request(bif:io_pid(), $get_console_size)
+  height = height - 1
+  scale_factor = 1
+  base_height = 2/3 --height at distaxce 1
+  full_range = list:range(0,height)
+  column_renderer = def (line, x)
+    match line
+      $miss -> return [] end
+      distance ->
+        draw_wall = def (y)
+          return list:flatten(make_pixel(x, y, bif:cast(min(9/distance, 9), 'integer')))
+        end
+        segment_height = bif:cast((height * base_height) / distance, 'integer')
+        if segment_height > height
+          return list:flatten(list:map(full_range, draw_wall))
+        end
+        padding = bif:cast((height - segment_height) / 2, 'integer')
+        return list:flatten(list:map(list:range(padding, padding + segment_height), draw_wall))
+      end
+      whatever ->
+        return []
+      end
+    end
+  end
+  make_string = def (x, lines, acc)
+    match lines
+      [] -> return acc end
+      [line, <<rest>>] ->
+        otto = @column_renderer(line, x)
+        return @make_string(x + 1, rest, [<<acc>>, otto])
+      end
+    end
+  end
+  worker_listener = def (content, sender, payload)
+    match payload
+      [$render, lines, x] ->
+        string = @make_string(x, lines, [])
+        io:print_string(list:flatten(string))
+        bif:send(sender, $render_complete)
+        bif:listen(worker_listener, string)
+      end
+      [$display] ->
+        io:print_string(content)
+        bif:listen(worker_listener, content)
+      end
+      [$die] ->
+        return $ok
+      end
+    end
+  end
+  bif:listen(worker_listener, '')
+end
+
+def render(world_line, workers)
+
+  listener = def (count, sender, payload)
+    if count == 1
+      return $ok
+    end
+    bif:listen(listener, count - 1)
+  end
+
+  segments = list:partition(world_line, bif:length(workers))
+  segment_length = bif:cast(bif:length(world_line)/bif:length(workers), 'integer')
+
+  start_dudes = def (workers, segments, start)
+    match workers
+      [worker, <<rest_workers>>] ->
+        [segment, <<rest>>] = segments
+        bif:send(worker, [$render, segment, start])
+        return @start_dudes(rest_workers, rest, start + segment_length)
+      end
+    end
+  end
+  start = bif:time()
+  @start_dudes(workers, segments, 0)
+  bif:listen(listener, bif:length(workers))
+  return bif:time() - start
+end
+
+def loop(direction, pos, walls, workers)
+  io:print_string(bif:ansi_cursor_to(0,0))
+  [width, height] = bif:request(bif:io_pid(), $get_console_size)
+  fov = bif:pi()/2
+  -- render(width, pos, direction, bif:pi()/2, walls)
+  start = bif:time()
+  sorted_walls = sort_walls(pos, walls)
+  tester = def (angle)
+    return test_for_hit(pos, angle + direction, sorted_walls)
+  end
+  world_line = list:map(make_angle_range(width, fov), tester)
+  line_time = bif:time() - start
+  io:print_string(bif:ansi_clear_screen())
+  render_time = render(world_line, workers)
+  total_time = line_time + render_time
+  io:print_string(bif:ansi_cursor_to(0,height - 1))
+  io:print_strings(['Total time: ', bif:cast(total_time, 'string'), ' '])
+  io:print_strings(['Line time: ', bif:cast(line_time, 'string'), ' '])
+  io:print_strings(['Render time: ', bif:cast(render_time, 'string'), ' '])
+  io:print_strings(['FPS: ', bif:cast(1000/total_time, 'string'), ' '])
+
+
+  quit = false
+  turn_rate = 50
+  speed = 0.7
+  r = [bif:cos(direction), bif:sin(direction)]
+  match io:get_char()
+    "q" -> quit = true end
+    "l" -> direction = direction + bif:pi()/turn_rate end
+    "h" -> direction = direction - bif:pi()/turn_rate end
+    "k" -> pos = add(pos, scale(r, speed)) end
+    "j" -> pos = add(pos, scale(r, speed * -1)) end
+  end
+  if quit
+    kill = def (pid) bif:send(pid, [$die]) end
+    list:map(workers, kill)
+    io:print_string('\n')
+    return $ok
+  end
+  return loop(direction, pos, sorted_walls, workers)
+end
+
+def _entry(_)
+  io:print_string(bif:ansi_clear_screen())
+  utils:load_module('colors')
+  walls = [
+    [[1,0.5], [1,-0.5]],
+    [[1,0.5], [0.5,0.5]],
+    [[0.25,0.25], [0.75,-0.25]],
+  ]
+
+  spawn_worker = def (_)
+    return bif:spawn(['ray', 'worker'])
+  end
+  cpu_count = bif:send(bif:io_pid(), $cpu_count)
+  workers = list:map(list:range(0, 8), spawn_worker)
+  loop(0, [0,0], walls, workers)
+  return $ok
+end
