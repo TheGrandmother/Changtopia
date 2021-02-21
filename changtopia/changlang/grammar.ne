@@ -17,8 +17,8 @@ closure -> %DEF _ name_tuple (%WS | %NL) block (%WS | %NL) %END               {%
 
 block ->
     compound                                                                  {% ast.makeBlock %}
-  | compound _ (";"|%NL|%WS)  block                                           {% ast.makeBlock %}
-  | match  %NL   block                                                        {% ast.makeBlock %}
+  | compound  _ ((";" _)|%NL|%WS) block                                       {% ast.makeBlock %}
+  | match  %NL  block                                                         {% ast.makeBlock %}
   | match
 
 match -> %MATCH __ expr _ %NL _ match_clauses                                 {% ast.makeMatcher %}
