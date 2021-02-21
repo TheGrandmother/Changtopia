@@ -134,6 +134,10 @@ class BaseIO {
     this.shutDown()
   }
 
+  async [h('cpu_count')](worker, message) {
+    worker.postMessage(makeReply(message, window.navigator.hardwareConcurrency))
+  }
+
   async [h('print_raw')](worker, message) {
     this.writeOut(`Printing: From ${message.sender}: ${message.payload}`)
   }
