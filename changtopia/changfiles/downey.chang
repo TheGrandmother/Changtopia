@@ -78,7 +78,6 @@ def lex(content)
 end
 
 def resolve_directives([[$directive, body], <<rest>>], res)
-  --io:raw_debug(body)
   match body
     ['title'] -> return resolve_directives(rest, [<<res>>, [$title]]) end
     ['p'] -> return resolve_directives(rest, [<<res>>, [$p, $solitary]]) end
@@ -114,7 +113,6 @@ def resolve_directives(content)
 end
 
 def parse([token, <<rest>>], tree)
-  --io:raw_debug(token)
   match token
     [$close] ->
       return [tree, rest]
@@ -308,26 +306,13 @@ def _entry(_)
   tokens = lex(content)
   match tokens
     [$error, atom, message, token] ->
-      io:raw_debug(token)
       io:print_strings(['Error: ', message, ' in token: ', list:flatten(token),'\n'])
       return $ok
     end
   end
-  --io:raw_debug(tokens)
   [tree, _] = parse(tokens, [])
-  --io:debug('parsy mc parse face')
-  --io:raw_debug(tree)
   words = render_words(tree)
-  --io:debug('Worder von wordface')
-  --io:raw_debug(words)
   [text, sections, links] = render_text(words, 80)
-  --io:debug('der text und der yodel')
-  --io:raw_debug(sections)
-  --io:raw_debug(links)
-  ----io:debug(list:join_with(text, '\n'))
-  --cool_stuff = fuzzy_search('', links)
-  --io:debug('the cool')
-  --io:raw_debug(cool_stuff)
   utils:load_module('view')
   view:scrolling(text, [0,0], bif:send(bif:io_pid(), $get_console_size))
   return $ok

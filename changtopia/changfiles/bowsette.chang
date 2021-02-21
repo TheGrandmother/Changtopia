@@ -70,7 +70,6 @@ def link_search(links, input, selected)
     match  candidates
       [link, <<rest>>] ->
         if n == selected
-          io:debug('Returning a fucking link....')
           return link
         end
         return @get_selected(rest, n + 1)
@@ -106,7 +105,6 @@ def link_search(links, input, selected)
       return $nothing
     end
     x ->
-      io:raw_debug(x)
       return link_search(links, [<<input>>, x], selected)
     end
   end
@@ -209,7 +207,6 @@ def load_and_render(path)
       return $error
     end
     [$error, atom, <<_>>] ->
-      io:raw_debug(atom)
       write_in_bottom([<<'Error: Something went wrong when fetching '>>, <<path>>])
       _ = io:get_char() --just wait for any key
       return $error
@@ -275,29 +272,13 @@ end
 
 def _entry()
   return _entry(['web,home.jr'])
-  --io:print_string(bif:ansi_clear_terminal())
-  --utils:load_module('downey')
-  --utils:load_module('view')
-  --landing_page = 'web,home.jr'
-  --[_, rendered] = load_and_render(landing_page)
-  --bowsette(rendered, landing_page, [])
-  ----content = fs:read('test.dm')
-  ----[text, sections, links] = darkmown:render(content)
-  ------io:raw_debug(links)
-  ----dude = display(text, sections, links, [0,0])
-  ----[_, stuff, thing] = dude
-  ----io:debug(stuff)
-  ----io:debug(thing)
-  --return $ok
 end
 
 def _entry([path, <<stuff>>])
   if bif:length(stuff) > 0
-    io:raw_debug(stuff)
     io:print_string('Oi! the web only wants one argument!\n')
     return $error
   end
-  io:raw_debug(path)
   io:print_string(bif:ansi_clear_terminal())
   utils:load_module('downey')
   utils:load_module('view')

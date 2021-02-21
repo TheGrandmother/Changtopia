@@ -304,7 +304,5 @@ def _entry(_)
   utils:load_module('colors')
   content = fs:read('test.dm')
   tokens = tokenize(content)
-  io:raw_debug(tokens)
-  io:raw_debug(color_tokens(tokens))
   io:print_string(color_tokens(tokens))
 end

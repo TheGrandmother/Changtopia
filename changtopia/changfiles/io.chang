@@ -131,7 +131,7 @@ def debug(str)
   return $ok
 end
 
-def raw_debug(payload)
+def debug_raw(payload)
   bif:send(bif:io_pid(), $raw_debug, payload)
   return $ok
 end

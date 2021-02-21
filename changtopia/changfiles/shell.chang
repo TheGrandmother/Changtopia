@@ -68,7 +68,6 @@ def _help(commands)
 end
 
 def spawn_module(name, args)
-  io:debug(args)
   pid = bif:spawn(['shell', '_spawn_module'], name, args)
   bif:link(pid)
   response = bif:request(pid, $run)
@@ -85,7 +84,7 @@ def spawn_module(name, args)
     end
     whatever ->
       io:print_strings([name, ' Sent us some strange shit...\n The strangeness is in the debug log\n'])
-      io:raw_debug(response)
+      io:debug_raw(response)
       return $ok
     end
   end
