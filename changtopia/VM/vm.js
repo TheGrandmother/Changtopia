@@ -61,8 +61,8 @@ class Vm {
         }
         return
       } else if (message.secret === 'spawn') {
-        const [pid, module, entryPoint, ...args] = message.payload
-        this.spawnProcess(Pid.toPid(pid), toJsString(module), toJsString(entryPoint), args)
+        const [pid, module, entryPoint, bindings, ...args] = message.payload
+        this.spawnProcess(Pid.toPid(pid), toJsString(module), toJsString(entryPoint), args, bindings)
         return
       } else {
         throw new Error(`I can't handle the secret: ${message.secret}`)
@@ -95,12 +95,12 @@ class Vm {
     this.modules[module.moduleName] = module
   }
 
-  spawnProcess(pid, module, entryPoint, args) {
+  spawnProcess(pid, module, entryPoint, args, bindings) {
     if (!pid) {
       pid = new Pid(this.instance, randomHash(), this.host)
     }
     const process = new Process(this, pid)
-    process.bindFunction(module, entryPoint, 'program_result', args)
+    process.bindFunction(module, entryPoint, 'program_result', args, bindings)
     this.processes[pid] = process
     this.topQueue.push(pid)
     return pid

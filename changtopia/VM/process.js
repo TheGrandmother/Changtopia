@@ -155,10 +155,10 @@ class Process {
       this.waiting = true
     }
 
-    // TODO: Speeed this up
-    if (typeof message.payload === 'object') {
-      message.payload = JSON.parse(JSON.stringify(message.payload))
-    }
+    // // TODO: Speeed this up
+    // if (typeof message.payload === 'object') {
+    //   message.payload = JSON.parse(JSON.stringify(message.payload))
+    // }
     this.vm.dispatchMessage(message)
   }
 

@@ -67,8 +67,9 @@ function parse(string, showAmbigous) {
 
 function pretty(functions) {
   return functions.reduce((acc, func) => {
-    const {name, code} = func
-    return `${acc}${name}:\n` + code.reduce((acc2, line, i) => {
+    const {name, code, argLocations, unbound} = func
+    const binds = unbound ? `  binds: ${unbound.join(', ')}\n` : ''
+    return `${acc}${name} (${argLocations.join(', ')}):\n${binds}` + code.reduce((acc2, line, i) => {
       return(`${acc2}  ${i}:  ${line.id}  ${line.args.join(',  ')}\n`)
     }, '') + '\n'
   }, '')

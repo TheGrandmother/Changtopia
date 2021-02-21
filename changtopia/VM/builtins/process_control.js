@@ -46,11 +46,11 @@ const processControlFunctions = [
     functionId: 'spawn',
     bif: true,
     exec: (process, returnLocation, funcRef, ...args) => {
-      const [module, functionId] = funcRef
+      const [module, functionId, ...bindings] = funcRef
       if (returnLocation === '__dump__') {
-        process.sendMessage({payload: [module, functionId, ...args], internal: 'spawn'})
+        process.sendMessage({payload: [module, functionId, bindings, ...args], internal: 'spawn'})
       } else {
-        process.sendMessage({payload: [module, functionId, ...args], internal: 'spawn'}, returnLocation)
+        process.sendMessage({payload: [module, functionId, bindings, ...args], internal: 'spawn'}, returnLocation)
       }
     }
   },

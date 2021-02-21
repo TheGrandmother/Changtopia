@@ -170,7 +170,8 @@ function crazyCoolStarter(initModules, term, mediatorHost) {
   const cpuCount = window.navigator.hardwareConcurrency
   const {BrowserIO} = require('./Io/BrowserIO.js')
   const browserIO = new BrowserIO(term)
-  new Coordinator(cpuCount, initModules, browserIO, mediatorHost)
+  window.coordinator = new Coordinator(cpuCount, initModules, browserIO, mediatorHost)
+
   return browserIO
 }
 
