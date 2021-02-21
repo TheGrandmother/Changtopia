@@ -1,7 +1,49 @@
 module list
 
+def get(l, n)
+  match l
+    [] -> return $nothing end
+    [x, <<rest>>] ->
+      if n == 0
+        return x
+      end
+      return get(rest, n - 1)
+    end
+  end
+end
+
 def length(list)
   return bif:length(list)
+end
+
+def range(start, finish)
+  _range = def (n, acc)
+    if n == finish
+      return acc
+    end
+    return @_range(n+1, [<<acc>>, n])
+  end
+  return @_range(start, [])
+end
+
+def partition(l, n)
+  segment_length = bif:cast(bif:length(l) / n, 'integer')
+
+  _partition = def (l, current_segment, curr_length, segments_left, segments)
+    if curr_length == segment_length
+      if segments_left == 1
+        return [<<segments>>, [<<current_segment>>, <<l>>]]
+      end
+      return @_partition(l, [], 0, segments_left - 1, [<<segments>>, current_segment])
+    end
+    match l
+      [] -> return [<<segments>>, current_segment] end
+      [x ,<<rest>>] ->
+        return @_partition(rest, [<<current_segment>>, x], curr_length + 1, segments_left, segments)
+      end
+    end
+  end
+  return @_partition(l, [], 0, n, [])
 end
 
 def pad_left(list, pad, length)
@@ -34,7 +76,7 @@ end
 
 def repeat(x, length)
   _ = def (n, acc)
-    if n == length
+    if n >= length
       return acc
     end
     return @_(n + 1, [<<acc>>, x])
