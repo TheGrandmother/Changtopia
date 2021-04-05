@@ -183,7 +183,7 @@ def worker()
   height = height - 1
   scale_factor = 1
   base_height = 2/3 --height at distaxce 1
-  full_range = list:range(0,height)
+  full_range = core:range(0,height)
   column_renderer = def (line, x)
     match line
       $miss -> return [] end
@@ -196,7 +196,7 @@ def worker()
           return list:flatten(list:map(full_range, draw_wall))
         end
         padding = core:cast((height - segment_height) / 2, 'integer')
-        return list:flatten(list:map(list:range(padding, padding + segment_height), draw_wall))
+        return list:flatten(list:map(core:range(padding, padding + segment_height), draw_wall))
       end
       whatever ->
         return []
@@ -314,7 +314,7 @@ def _entry(_)
     return core:spawn(['ray', 'worker'])
   end
   cpu_count = core:send(core:io_pid(), $cpu_count)
-  workers = list:map(list:range(0, 8), spawn_worker)
+  workers = list:map(core:range(0, 8), spawn_worker)
   loop(0, [0,0], walls, workers)
   return $ok
 end

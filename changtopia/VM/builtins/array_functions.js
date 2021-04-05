@@ -32,6 +32,24 @@ const arrayFunctions = [
       return faff.length
     }
   },
+  {
+    functionId: 'range',
+    core: true,
+    exec: (process, resultLocation, min, max, _step) => {
+      const step = typeof _step === 'undefined' ? 1 : _step
+      const arr = []
+      if (min < max && step > 0) {
+        for (let n = min; n < max; n = n + step) {
+          arr.push(n)
+        }
+      } else if (min > max && step < 0) {
+        for (let n = max; n > min; n = n - step) {
+          arr.push(n)
+        }
+      }
+      return arr
+    }
+  },
 ]
 
 module.exports = {arrayFunctions}
