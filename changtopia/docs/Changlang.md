@@ -45,14 +45,14 @@ def listener_dude(....random_args, sender, payload)
 
 use like:
 ```
-bif:listen(module, listener_dude, ...random_args)
+core:listen(module, listener_dude, ...random_args)
 ```
 
 ### Spawning processes
 
 
 ## Errors
-Errors must be handled between processes using the `bif:link` dude.
+Errors must be handled between processes using the `core:link` dude.
 If a process has been linked and has an error the linked process will recevie
 a message with the payload:
 `[$error, <erroe_atom>, <error message>]`

@@ -20,6 +20,6 @@ const funcs = [
 funcs.forEach(func => functions[func.functionId] = func)
 
 module.exports  = {
-  moduleName: 'bif',
+  moduleName: 'core',
   functions
 }

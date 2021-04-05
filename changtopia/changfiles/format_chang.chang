@@ -220,7 +220,7 @@ def color_tokens([token, <<tokens>>], bracket_depth, res)
     $word ->
       match is_keyword(content)
         true ->
-          cool_content = [<<bif:ansi_bold()>>, <<colors:get_color('green')>>, <<content>>, <<colors:close_color()>>, <<bif:ansi_bold_close()>>]
+          cool_content = [<<core:ansi_bold()>>, <<colors:get_color('green')>>, <<content>>, <<colors:close_color()>>, <<core:ansi_bold_close()>>]
           return color_tokens(tokens, bracket_depth, [<<res>>, <<cool_content>>])
         end
         false ->

@@ -1,35 +1,35 @@
 const math = [
   {
     functionId: 'sin',
-    bif: true,
+    core: true,
     exec: (_, __ , a) => {
       return Math.sin(a)
     }
   },
   {
     functionId: 'cos',
-    bif: true,
+    core: true,
     exec: (_, __ , a) => {
       return Math.cos(a)
     }
   },
   {
     functionId: 'sqrt',
-    bif: true,
+    core: true,
     exec: (_, __ , a) => {
       return Math.sqrt(a)
     }
   },
   {
     functionId: 'abs',
-    bif: true,
+    core: true,
     exec: (_, __ , a) => {
       return Math.abs(a)
     }
   },
   {
     functionId: 'pi',
-    bif: true,
+    core: true,
     exec: () => {
       return Math.PI
     }

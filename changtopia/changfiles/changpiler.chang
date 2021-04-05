@@ -1,7 +1,7 @@
 module changpiler
 
 def changpile(input, options)
-  return bif:send(bif:io_pid(), $changpile, input, list:map(options, ['bif', 'to_atom']))
+  return core:send(core:io_pid(), $changpile, input, list:map(options, ['core', 'to_atom']))
 end
 
 def print_help()
@@ -37,15 +37,15 @@ def _entry(args)
     end
   end
   [file_name, <<options>>] = args
-  match bif:request(bif:io_pid(), $open_file, file_name)
+  match core:request(core:io_pid(), $open_file, file_name)
     [_, filePid] ->
-      content = bif:request(filePid, $read_all)
+      content = core:request(filePid, $read_all)
       result = changpile(content, options)
       match result
         [$ok, module_name] ->
           if list:contains(options, 'run')
             _ = utils:load_module(module_name)
-            return bif:run([module_name, '_entry'], [])
+            return core:run([module_name, '_entry'], [])
           end
           io:print_strings(['Successfully compiled ', file_name, ' as module ', module_name,'\n'])
           return $ok

@@ -3,7 +3,7 @@ const Pid = require('../pid.js')
 const pidHelpers = [
   {
     functionId: 'my_pid',
-    bif: true,
+    core: true,
     exec: (process) => {
       return process.pid
     }
@@ -11,7 +11,7 @@ const pidHelpers = [
 
   {
     functionId: 'io_pid',
-    bif: true,
+    core: true,
     exec: (process) => {
       return Pid.ioPid(process.vm.host)
     }
@@ -19,7 +19,7 @@ const pidHelpers = [
 
   {
     functionId: 'mediator_pid',
-    bif: true,
+    core: true,
     exec: () => {
       return Pid.mediatorPid()
     }
@@ -27,7 +27,7 @@ const pidHelpers = [
 
   {
     functionId: 'destruct_pid',
-    bif: true,
+    core: true,
     exec: (process,_ , pid) => {
       return [pid.host, pid.instance, pid.id]
     }
@@ -35,7 +35,7 @@ const pidHelpers = [
 
   {
     functionId: 'pid_to_string',
-    bif: true,
+    core: true,
     exec: (process, _, pid) => {
       return fromJsString(Pid.toPid(pid).toString())
     }

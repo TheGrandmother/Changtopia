@@ -18,7 +18,7 @@ function tailOptimize (func) {
     if (node.type !== 'call') {
       return false
     }
-    if (node.module === 'bif' && node.name === 'run') {
+    if (node.module === 'core' && node.name === 'run') {
       return node.args[0].name === name
     } else {
       return !node.module && node.name === name
@@ -52,7 +52,7 @@ function tailOptimize (func) {
     }
     if (node.type === 'return') {
       if (isCallRecursive(node.rhs)) {
-        if (node.rhs.module === 'bif') {
+        if (node.rhs.module === 'core') {
           // Here we know that the first argument is the fucntion ref. We can drop it like it was hot
           node.rhs.args = node.rhs.args.slice(1)
         }

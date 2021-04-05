@@ -4,23 +4,23 @@ def _entry(_)
   [pids, nicks] = fetch_dudes()
   nick = prompt_for_nick(nicks)
 
-  io:print_string(bif:ansi_clear_screen())
-  _ = bif:send(bif:mediator_pid(), $publish, 'chat', bif:my_pid())
-  broadcast_join([<<pids>>, bif:my_pid()], nick)
-  bif:spawn(['chat', 'input_handler'], bif:my_pid(), nick)
+  io:print_string(core:ansi_clear_screen())
+  _ = core:send(core:mediator_pid(), $publish, 'chat', core:my_pid())
+  broadcast_join([<<pids>>, core:my_pid()], nick)
+  core:spawn(['chat', 'input_handler'], core:my_pid(), nick)
 
   message_listener([], nick)
 
-  io:print_string(bif:ansi_clear_screen())
-  io:print_string(bif:ansi_cursor_to(0,0))
+  io:print_string(core:ansi_clear_screen())
+  io:print_string(core:ansi_cursor_to(0,0))
   io:print_string('Leaving chat\n')
-  _ = bif:send(bif:mediator_pid(), $unpublish, 'chat')
+  _ = core:send(core:mediator_pid(), $unpublish, 'chat')
 
   return $ok
 end
 
 def message_listener(messages, nick)
-  match bif:listen(['chat', '_message_listener'], messages, nick)
+  match core:listen(['chat', '_message_listener'], messages, nick)
     [$continue, new_messages] -> return message_listener(new_messages, nick) end
     $quit -> return $ok end
     whatever -> return message_listener(messages, nick) end
@@ -44,17 +44,17 @@ def _message_listener(messages, nick, sender, message)
 end
 
 def input_handler(main_pid, nick)
-  [_, height] = bif:send(bif:io_pid(), $get_console_size)
-  io:print_strings([bif:ansi_cursor_to(0,height), bif:ansi_erase_line()])
+  [_, height] = core:send(core:io_pid(), $get_console_size)
+  io:print_strings([core:ansi_cursor_to(0,height), core:ansi_erase_line()])
   input = io:get_line()
   match input
     [":", <<command>>] ->
       match command
         'q' ->
           broadcast_message(main_pid, 'Has left the chat with a bat', nick)
-          bif:send(main_pid, [$quit]) end
+          core:send(main_pid, [$quit]) end
         whatever ->
-          bif:send(main_pid, [$error, list:flatten([command, ' is not a valid command.'])])
+          core:send(main_pid, [$error, list:flatten([command, ' is not a valid command.'])])
           input_handler(main_pid, nick) end
       end
     end
@@ -65,21 +65,21 @@ def input_handler(main_pid, nick)
 end
 
 def broadcast_message(main_pid, message, nick)
-  [pids] = bif:send(bif:mediator_pid(), $fetch_dem_dudes, 'chat')
+  [pids] = core:send(core:mediator_pid(), $fetch_dem_dudes, 'chat')
   nicks = message_map([<<pids>>, main_pid], [$chat_message, nick, message])
 end
 
 def render(messages)
-  [width, _height] = bif:send(bif:io_pid(), $get_console_size)
+  [width, _height] = core:send(core:io_pid(), $get_console_size)
   height = _height - 3
   [message_string, new_messages] = print_messages(messages, height, [], '')
   strings = [
-    bif:ansi_cursor_save_position(),
-    bif:ansi_cursor_to(0, height + 1),
-    bif:ansi_erase_up(),
+    core:ansi_cursor_save_position(),
+    core:ansi_cursor_to(0, height + 1),
+    core:ansi_erase_up(),
     message_string,
     make_sepparator(0, width, ''),
-    bif:ansi_cursor_restore_position()
+    core:ansi_cursor_restore_position()
   ]
   io:print_strings(strings)
   return new_messages
@@ -98,13 +98,13 @@ def print_messages(messages, line, new_messages, string)
       [nick, content] = m
 
       message_string = list:flatten([
-        bif:ansi_cursor_to(0, line),
-        bif:ansi_bold(),
-        bif:ansi_color(225,221,143),
+        core:ansi_cursor_to(0, line),
+        core:ansi_bold(),
+        core:ansi_color(225,221,143),
         nick,
-        bif:ansi_color_reset(),
+        core:ansi_color_reset(),
         ': ',
-        bif:ansi_bold_close(),
+        core:ansi_bold_close(),
         content,
         '\n'
         ])
@@ -124,7 +124,7 @@ def broadcast_join(pids, nick)
   match pids
     [] -> return $ok end
     [pid, <<rest>>] ->
-      bif:send(pid, [$chat_message, nick, 'Has joined the chat!'])
+      core:send(pid, [$chat_message, nick, 'Has joined the chat!'])
       return broadcast_join(rest, nick) end
   end
 end
@@ -144,7 +144,7 @@ def is_nick_used(nicks, nick)
   match nicks
     [] -> return false end
     [n, <<rest>>] ->
-      match bif:array_compare(n, nick)
+      match core:array_compare(n, nick)
         true -> return true end
         false -> return is_nick_used(rest, nick) end
       end
@@ -153,7 +153,7 @@ def is_nick_used(nicks, nick)
 end
 
 def fetch_dudes()
-  [pids] = bif:send(bif:mediator_pid(), $fetch_dem_dudes, 'chat')
+  [pids] = core:send(core:mediator_pid(), $fetch_dem_dudes, 'chat')
   nicks = message_map(pids, [$get_nick])
   return [pids, nicks]
 end
@@ -165,7 +165,7 @@ end
 def _message_map(arr, msg, res)
   match arr
     [pid, <<rest>>] ->
-      resp = bif:send(pid, msg)
+      resp = core:send(pid, msg)
       return _message_map(rest, msg, [<<res>>, resp])
     end
     [] -> return res end

@@ -4,7 +4,7 @@ module shell
 def load_module(arg)
   match arg
     [name] ->
-      match bif:request(bif:io_pid(), $load_module, name)
+      match core:request(core:io_pid(), $load_module, name)
         $module_not_found ->
           io:print_strings(['Could not find module: ', name, '\n'])
           return $fail
@@ -68,9 +68,9 @@ def _help(commands)
 end
 
 def spawn_module(name, args)
-  pid = bif:spawn(['shell', '_spawn_module'], name, args)
-  bif:link(pid)
-  response = bif:request(pid, $run)
+  pid = core:spawn(['shell', '_spawn_module'], name, args)
+  core:link(pid)
+  response = core:request(pid, $run)
   match response
     [[$error, error_atom, msg, <<faff>>]] ->
       io:print_strings(['Error running: ', name, '\n', msg, '\n'])
@@ -88,19 +88,19 @@ def spawn_module(name, args)
       return $ok
     end
   end
-  bif:unlink(pid)
+  core:unlink(pid)
   return $ok
 end
 
 def _spawn_module(name, args)
-  result = bif:listen(['shell', '_spawn_listener'], name, args)
+  result = core:listen(['shell', '_spawn_listener'], name, args)
   return result
 end
 
 def _spawn_listener(name, args, sender, payload)
   match payload
     $run ->
-      result = bif:run([name, '_entry'], args)
+      result = core:run([name, '_entry'], args)
       return result
     end
     whatever ->
@@ -112,7 +112,7 @@ end
 
 def quit(_)
   io:print_string('Thanks for nothing... cya l8r\n')
-  bif:send(bif:io_pid(), $shut_down)
+  core:send(core:io_pid(), $shut_down)
   return $ok
 end
 
@@ -125,12 +125,12 @@ def run_command(input)
     end
     [_, arg_count, thing, __] ->
       [module_name, function] = thing
-      if bif:send(bif:io_pid(), $has_module, module_name) == false
+      if core:send(core:io_pid(), $has_module, module_name) == false
         match utils:load_module(module_name)
           $fail -> io:print_strings(['Failed to load module "', module_name, '" needed to run ', name, '\n']) end
         end
       end
-      return bif:run([module_name, function], arguments)
+      return core:run([module_name, function], arguments)
     end
   end
   return $ok
@@ -154,7 +154,7 @@ def commands()
 end
 
 def clear(_)
-  io:print_strings([bif:ansi_clear_terminal()])
+  io:print_strings([core:ansi_clear_terminal()])
   return $ok
 end
 
@@ -170,7 +170,7 @@ def _find_command(name, commands)
     end
     [command, <<rest>>] ->
       [command_name, <<_>>] = command
-      if bif:array_compare(name, command_name)
+      if core:array_compare(name, command_name)
         return command
       end
       return _find_command(name, rest)
@@ -194,7 +194,7 @@ def prompt()
 end
 
 def _entry(main_pid)
-  bif:link(main_pid)
+  core:link(main_pid)
   io:print_string('Starting shell\n')
   utils:load_module('splash_screen')
   splash_screen:splash()

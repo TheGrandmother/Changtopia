@@ -9,15 +9,15 @@ end
 
 def process_onscreen_lines(starting_line, line_count, content)
   line_number = def (line_no)
-    width = bif:length(bif:cast(line_count, 'string'))
-    line_marker = list:pad_left(bif:cast(line_no + 1, 'string'), " ", width)
+    width = core:length(core:cast(line_count, 'string'))
+    line_marker = list:pad_left(core:cast(line_no + 1, 'string'), " ", width)
     return list:flatten([
-      bif:ansi_bg_color(128,128,128),
-      bif:ansi_color(69,69,69),
+      core:ansi_bg_color(128,128,128),
+      core:ansi_color(69,69,69),
       line_marker,
       ' ',
-      bif:ansi_color_reset(),
-      bif:ansi_bg_color_reset()
+      core:ansi_color_reset(),
+      core:ansi_bg_color_reset()
     ])
   end
 
@@ -42,17 +42,17 @@ def process_onscreen_lines(starting_line, line_count, content)
 end
 
 def draw_screen(content, starting_line, height)
-  io:print_strings([bif:ansi_cursor_to(0, 0)])
+  io:print_strings([core:ansi_cursor_to(0, 0)])
 
   onscreen_content = list:slice(starting_line, starting_line + height - 2, content)
 
-  processed_lines = process_onscreen_lines(starting_line, bif:length(content), onscreen_content)
+  processed_lines = process_onscreen_lines(starting_line, core:length(content), onscreen_content)
 
   clear_and_draw = def (lines)
     match lines
       [] -> return $ok end
       [l, <<rest>>] ->
-        io:print_strings([bif:ansi_erase_line(), l])
+        io:print_strings([core:ansi_erase_line(), l])
         return clear_and_draw(rest)
       end
     end
@@ -63,7 +63,7 @@ def draw_screen(content, starting_line, height)
 end
 
 def input_listener(current_content, starting_line, marker_pos, sender, payload)
-  [width, height] = bif:request(bif:io_pid(), $get_console_size)
+  [width, height] = core:request(core:io_pid(), $get_console_size)
   redraw = false
   continue = true
   match payload
@@ -78,7 +78,7 @@ def input_listener(current_content, starting_line, marker_pos, sender, payload)
     end
 
     [$input_data, "J"] ->
-      match starting_line + height + 1 < bif:length(current_content)
+      match starting_line + height + 1 < core:length(current_content)
         true ->
           starting_line = starting_line + 1
           redraw = true
@@ -93,7 +93,7 @@ def input_listener(current_content, starting_line, marker_pos, sender, payload)
   end
 
   if continue
-    return bif:listen(
+    return core:listen(
       ['dead', 'input_listener'],
       current_content,
       starting_line,
@@ -106,15 +106,15 @@ end
 def _entry()
   io:print_string('Please enter the file name\n')
   file_name = io:get_line()
-  match bif:request(bif:io_pid(), $open_file, file_name)
+  match core:request(core:io_pid(), $open_file, file_name)
     [$opened, file_pid] ->
-      content = bif:request(file_pid, $read_all)
+      content = core:request(file_pid, $read_all)
       lines = split_into_lines(content)
-      [width, height] = bif:request(bif:io_pid(), $get_console_size)
+      [width, height] = core:request(core:io_pid(), $get_console_size)
       draw_screen(lines, 0, height)
-      bif:send(bif:io_pid(), $get_input_stream)
-      bif:listen(['dead', 'input_listener'], lines, 0, [0,0])
-      bif:send(bif:io_pid(), $release_input_stream)
+      core:send(core:io_pid(), $get_input_stream)
+      core:listen(['dead', 'input_listener'], lines, 0, [0,0])
+      core:send(core:io_pid(), $release_input_stream)
     end
     [error] ->
       io:print_strings(['Could not read file: ', file_name, '\n'])

@@ -25,12 +25,12 @@ def print_help()
 end
 
 def commit(source, path, options)
-  match bif:request(bif:io_pid(), $open_file, source)
+  match core:request(core:io_pid(), $open_file, source)
     [_, file_pid] ->
-      content = bif:request(file_pid, $read_all)
+      content = core:request(file_pid, $read_all)
       split_path = list:split_by(path, ',')
       user = '' -- handling the user needs to be fixed
-      match bif:send(bif:mediator_pid(), $commit_a_file, split_path, user, content, options)
+      match core:send(core:mediator_pid(), $commit_a_file, split_path, user, content, options)
         [$error, message] ->
           print_strings([message, '\n'])
         end
@@ -44,18 +44,18 @@ end
 
 def fetch(path, destination)
   split_path = list:split_by(path, ',')
-  match bif:send(bif:mediator_pid(), $fetch_a_file, split_path)
+  match core:send(core:mediator_pid(), $fetch_a_file, split_path)
     [$error, message] ->
       io:print_strings([message, '\n'])
     end
     [content] ->
-      match bif:send(bif:io_pid(), $open_file, destination)
+      match core:send(core:io_pid(), $open_file, destination)
         [_, file_pid] ->
-          _ = bif:send(file_pid, $write, content)
+          _ = core:send(file_pid, $write, content)
         end
         $file_not_found ->
-          [file_pid] = bif:send(bif:io_pid(), $create_file, destination)
-          _ = bif:send(file_pid, $write, content)
+          [file_pid] = core:send(core:io_pid(), $create_file, destination)
+          _ = core:send(file_pid, $write, content)
         end
       end
     end
@@ -64,7 +64,7 @@ end
 
 def read_remote(path)
   split_path = list:split_by(path, ',')
-  match bif:send(bif:mediator_pid(), $fetch_a_file, split_path)
+  match core:send(core:mediator_pid(), $fetch_a_file, split_path)
     [$error, <<err>>] ->
       return [$error, <<err>>]
     end
@@ -81,7 +81,7 @@ def export(arg)
       return $ok
      end
     [name] ->
-      match bif:send(bif:io_pid(), $export, name)
+      match core:send(core:io_pid(), $export, name)
         $ok -> return $ok end
         $file_not_found ->
           io:print_strings(['No file named ', name, ' exists\n'])
@@ -90,25 +90,25 @@ def export(arg)
       end
     end
   end
-  _ = bif:send(bif:io_pid(), $import)
+  _ = core:send(core:io_pid(), $import)
   return $ok
 end
 
 def import()
-  _ = bif:send(bif:io_pid(), $import)
+  _ = core:send(core:io_pid(), $import)
   return $ok
 end
 
 def ls(args)
   match args
     [] ->
-      files = bif:request(bif:io_pid(), $list_files)
+      files = core:request(core:io_pid(), $list_files)
       io:print_string(list:join_with(files, '\n'))
       return $ok
     end
     ['remote', <<path>>] ->
       split_path = list:split_by(path, ',')
-      match bif:send(bif:mediator_pid(), $find_a_file, split_path)
+      match core:send(core:mediator_pid(), $find_a_file, split_path)
         [$error, message] ->
           io:print_strings([message, '\n'])
         end
@@ -124,15 +124,15 @@ end
 def copy(args)
   match args
     [oldName, newName] ->
-      match bif:request(bif:io_pid(), $open_file, oldName)
+      match core:request(core:io_pid(), $open_file, oldName)
         [_, filePid] ->
-          content = bif:request(filePid, $read_all)
-          match bif:send(bif:io_pid(), $create_file, newName)
+          content = core:request(filePid, $read_all)
+          match core:send(core:io_pid(), $create_file, newName)
             $file_exists ->
               io:print_string('Destination file already exists\n')
             end
             [new_file] ->
-              _ = bif:send(new_file, $write, content)
+              _ = core:send(new_file, $write, content)
             end
           end
           return $ok
@@ -149,9 +149,9 @@ def copy(args)
 end
 
 def read(name)
-  match bif:request(bif:io_pid(), $open_file, name)
+  match core:request(core:io_pid(), $open_file, name)
     [_, filePid] ->
-      content = bif:request(filePid, $read_all)
+      content = core:request(filePid, $read_all)
       return content
     end
     error -> return [$error, error] end
@@ -191,9 +191,9 @@ end
 def delete(args)
   match args
     [name] ->
-      match bif:request(bif:io_pid(), $open_file, name)
+      match core:request(core:io_pid(), $open_file, name)
         [_, filePid] ->
-          _ = bif:request(filePid, $delete)
+          _ = core:request(filePid, $delete)
           return $ok
         end
         [$file_not_found] -> io:print_string('File not found\n') end
@@ -210,9 +210,9 @@ end
 def rename(args)
   match args
     [oldName, newName] ->
-      match bif:request(bif:io_pid(), $open_file, oldName)
+      match core:request(core:io_pid(), $open_file, oldName)
         [_, filePid] ->
-          _ = bif:request(filePid, $rename, newName)
+          _ = core:request(filePid, $rename, newName)
           return $ok
         end
         [$file_not_found] -> io:print_string('File not found\n') end

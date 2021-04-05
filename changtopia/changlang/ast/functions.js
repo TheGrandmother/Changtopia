@@ -105,7 +105,7 @@ function makeModule(d) {
 }
 
 function makeRefferenceCallNode(identifier, args, pos) {
-  return makeFunctionCallNode('run', [identifier, ...args], 'bif', pos)
+  return makeFunctionCallNode('run', [identifier, ...args], 'core', pos)
 }
 
 function makeRefferenceCall(d) {

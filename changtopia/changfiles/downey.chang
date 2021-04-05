@@ -87,7 +87,7 @@ def resolve_directives([[$directive, body], <<rest>>], res)
     ['bullet'] -> return resolve_directives(rest, [<<res>>, [$bullet]]) end
     ['bold'] -> return resolve_directives(rest, [<<res>>, [$bold]]) end
     ['section', num] ->
-      num = bif:cast(num, 'integer')
+      num = core:cast(num, 'integer')
       if num == $nan
         return [$error, $bad_directive, 'section does not define a propper number', body]
       end
@@ -136,7 +136,7 @@ end
 
 def render_words([[$title, _, body], <<rest>>], words)
   title_text = render_words(body, [])
-  return render_words(rest, [<<words>>, [$ansi, bif:ansi_bold()], <<title_text>>, [$ansi, bif:ansi_bold_close()], [$nl], [$nl]])
+  return render_words(rest, [<<words>>, [$ansi, core:ansi_bold()], <<title_text>>, [$ansi, core:ansi_bold_close()], [$nl], [$nl]])
 end
 
 def render_words([[$link, [path], body], <<rest>>], words)
@@ -145,12 +145,12 @@ def render_words([[$link, [path], body], <<rest>>], words)
     [
       <<words>>,
       [$link, path, link_text],
-      [$ansi, bif:ansi_bold()],
+      [$ansi, core:ansi_bold()],
       [$ansi, colors:get_color('aquamarine')],
       '<',
       <<link_text>>,
       '>',
-      [$ansi, bif:ansi_bold_close()],
+      [$ansi, core:ansi_bold_close()],
       [$ansi, colors:close_color()],
     ])
 end
@@ -171,7 +171,7 @@ def render_words([[$bgcolor, [color], body], <<rest>>], words)
 end
 
 def render_words([[$bold, _, body], <<rest>>], words)
-  return render_words(rest, [<<words>>, [$ansi, bif:ansi_bold()], <<render_words(body, [])>>, [$ansi, bif:ansi_bold_close()]])
+  return render_words(rest, [<<words>>, [$ansi, core:ansi_bold()], <<render_words(body, [])>>, [$ansi, core:ansi_bold_close()]])
 end
 
 def render_words([[$nl, <<_>>], <<rest>>], words)
@@ -211,12 +211,12 @@ def render_text([[$nl], <<rest>>], current_line, current_length, width, output)
 end
 
 def render_text([[$section, num], <<rest>>], current_line, current_length, width, output)
-  line_no = bif:length(output)
+  line_no = core:length(output)
   return render_text(rest, current_line, current_length, width, [<<output>>, [], [$section, num, line_no]])
 end
 
 def render_text([[$link, path, text], <<rest>>], current_line, current_length, width, output)
-  line_no = bif:length(output)
+  line_no = core:length(output)
   [link_text] = render_text(text, [], 0, 10000, []) -- Hacky but worky.... and nested unpacking assignments are broken
   return render_text(rest, current_line, current_length, width, [<<output>>, [$link, line_no, path, link_text]])
 end
@@ -232,10 +232,10 @@ def render_text([[$chang, [code]], <<rest>>], current_line, current_length, widt
   utils:load_module('format_chang')
   aron = format_chang:format(code)
   chang = list:split_by(aron, "\n")
-  if bif:length(chang) == 1
+  if core:length(chang) == 1
     -- The chang code is inline
     [line] = chang
-    printed_length = bif:length(bif:ansi_strip(line))
+    printed_length = core:length(core:ansi_strip(line))
     if printed_length + current_length < width
       return render_text(rest, [<<current_line>>, <<line>>], current_length + printed_length, width, output)
     end
@@ -245,11 +245,11 @@ def render_text([[$chang, [code]], <<rest>>], current_line, current_length, widt
 end
 
 def render_text([word, <<rest>>], [], current_length, width, output)
-  return render_text(rest, word, bif:length(word), width, output)
+  return render_text(rest, word, core:length(word), width, output)
 end
 
 def render_text([word, <<rest>>], current_line, current_length, width, output)
-  word_length = bif:length(bif:ansi_strip(word))
+  word_length = core:length(core:ansi_strip(word))
   if word_length + current_length < width
     return render_text(rest, [<<current_line>>, <<word>>], current_length + word_length, width, output)
   end
@@ -279,7 +279,7 @@ end
 def rendered_length([thing, <<rest>>])
   match thing
     [$ws] -> return 1 + rendered_length(rest) end
-    text -> return bif:length(text) + rendered_length(rest) end
+    text -> return core:length(text) + rendered_length(rest) end
   end
 end
 
@@ -314,6 +314,6 @@ def _entry(_)
   words = render_words(tree)
   [text, sections, links] = render_text(words, 80)
   utils:load_module('view')
-  view:scrolling(text, [0,0], bif:send(bif:io_pid(), $get_console_size))
+  view:scrolling(text, [0,0], core:send(core:io_pid(), $get_console_size))
   return $ok
 end

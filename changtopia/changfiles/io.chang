@@ -1,9 +1,9 @@
 module io
 
 def erase()
-  print_string(bif:ansi_cursor_move(-1,0))
-  bif:send(bif:io_pid(), $print_string, ' ')
-  print_string(bif:ansi_cursor_move(-1,0))
+  print_string(core:ansi_cursor_move(-1,0))
+  core:send(core:io_pid(), $print_string, ' ')
+  print_string(core:ansi_cursor_move(-1,0))
   return 0
 end
 
@@ -32,7 +32,7 @@ def build_input(input_string, input)
       end
     end
     whatever ->
-      bif:send(bif:io_pid(), $print_string, [input])
+      core:send(core:io_pid(), $print_string, [input])
       return [<<input_string>>, input]
     end
   end
@@ -40,7 +40,7 @@ def build_input(input_string, input)
 end
 
 def _get_line(input_string, sender, payload)
-  match utils:pid_compare(sender, bif:io_pid())
+  match utils:pid_compare(sender, core:io_pid())
     true ->
       match payload
         [$input_data, d] ->
@@ -55,24 +55,24 @@ def _get_line(input_string, sender, payload)
           end
         end
         whatever ->
-          bif:send(bif:io_pid(), $print_string, 'Got some starnge shit')
-          bif:send(bif:io_pid(), $print_raw, payload)
+          core:send(core:io_pid(), $print_string, 'Got some starnge shit')
+          core:send(core:io_pid(), $print_raw, payload)
         end
       end
     end
     false ->
-      bif:send(bif:io_pid(), $print_string, '>Got a message from someone completley different!?\n')
+      core:send(core:io_pid(), $print_string, '>Got a message from someone completley different!?\n')
     end
   end
-  return bif:listen(['io', '_get_line'], input_string)
+  return core:listen(['io', '_get_line'], input_string)
 end
 
 def get_line()
-  bif:send(bif:io_pid(), $get_input_stream)
-  bif:send(bif:io_pid(), $print_string, '>')
-  bif:send(bif:io_pid(), $print_string, bif:ansi_cursor_show())
-  input = bif:listen(['io', '_get_line'], '')
-  bif:send(bif:io_pid(), $release_input_stream)
+  core:send(core:io_pid(), $get_input_stream)
+  core:send(core:io_pid(), $print_string, '>')
+  core:send(core:io_pid(), $print_string, core:ansi_cursor_show())
+  input = core:listen(['io', '_get_line'], '')
+  core:send(core:io_pid(), $release_input_stream)
   return input
 end
 
@@ -82,15 +82,15 @@ def get_char()
       [$input_data, d] -> return d end
     end
   end
-  bif:send(bif:io_pid(), $get_input_stream)
-  input = bif:listen(_get_char)
-  bif:send(bif:io_pid(), $release_input_stream)
+  core:send(core:io_pid(), $get_input_stream)
+  input = core:listen(_get_char)
+  core:send(core:io_pid(), $release_input_stream)
   return input
 end
 
 def print_tabs(n)
   if n > 0
-    bif:send(bif:io_pid(), $print_string, '  ')
+    core:send(core:io_pid(), $print_string, '  ')
     print_tabs(n)
   end
 end
@@ -101,37 +101,37 @@ def _print_list(list)
       return $ok
     end
     [thing, <<rest>>] ->
-      bif:send(bif:io_pid(), $print_string, '  ')
-      bif:send(bif:io_pid(), $print_string, thing)
-      bif:send(bif:io_pid(), $print_string, ',\n')
+      core:send(core:io_pid(), $print_string, '  ')
+      core:send(core:io_pid(), $print_string, thing)
+      core:send(core:io_pid(), $print_string, ',\n')
       return _print_list(rest)
     end
   end
 end
 
 def print_list(list)
-  bif:send(bif:io_pid(), $print_string, '[\n')
+  core:send(core:io_pid(), $print_string, '[\n')
   _print_list(list)
-  bif:send(bif:io_pid(), $print_string, ']\n')
+  core:send(core:io_pid(), $print_string, ']\n')
   return $ok
 end
 
 def print_strings(arr)
-  bif:send(bif:io_pid(), $print_string, list:flatten(arr))
+  core:send(core:io_pid(), $print_string, list:flatten(arr))
   return $ok
 end
 
 def print_string(str)
-  bif:send(bif:io_pid(), $print_string, str)
+  core:send(core:io_pid(), $print_string, str)
   return $ok
 end
 
 def debug(str)
-  bif:send(bif:io_pid(), $debug, str)
+  core:send(core:io_pid(), $debug, str)
   return $ok
 end
 
 def debug_raw(payload)
-  bif:send(bif:io_pid(), $raw_debug, payload)
+  core:send(core:io_pid(), $raw_debug, payload)
   return $ok
 end

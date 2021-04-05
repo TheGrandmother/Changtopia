@@ -42,12 +42,12 @@ def find_intersection(origin, angle, wall)
   v2_x = p2_x - p1_x
   v2_y = p2_y - p1_y
 
-  v3_x = -1 * bif:sin(angle)
-  v3_y = bif:cos(angle)
+  v3_x = -1 * core:sin(angle)
+  v3_y = core:cos(angle)
 
   dot = v2_x * v3_x + v2_y * v3_y
 
-  if bif:abs(dot) <= 0
+  if core:abs(dot) <= 0
     return $miss
   end
 
@@ -112,7 +112,7 @@ def gray_scale()
 end
 
 def make_pixel(x, y, color)
-  return [<<bif:ansi_cursor_to(x, y)>>, list:get(gray_scale(), color)]
+  return [<<core:ansi_cursor_to(x, y)>>, list:get(gray_scale(), color)]
 end
 
 def sort(walls, position)
@@ -179,7 +179,7 @@ def sort_walls(position, walls)
 end
 
 def worker()
-  [width, height] = bif:request(bif:io_pid(), $get_console_size)
+  [width, height] = core:request(core:io_pid(), $get_console_size)
   height = height - 1
   scale_factor = 1
   base_height = 2/3 --height at distaxce 1
@@ -189,13 +189,13 @@ def worker()
       $miss -> return [] end
       distance ->
         draw_wall = def (y)
-          return list:flatten(make_pixel(x, y, bif:cast(min(9/distance, 9), 'integer')))
+          return list:flatten(make_pixel(x, y, core:cast(min(9/distance, 9), 'integer')))
         end
-        segment_height = bif:cast((height * base_height) / distance, 'integer')
+        segment_height = core:cast((height * base_height) / distance, 'integer')
         if segment_height > height
           return list:flatten(list:map(full_range, draw_wall))
         end
-        padding = bif:cast((height - segment_height) / 2, 'integer')
+        padding = core:cast((height - segment_height) / 2, 'integer')
         return list:flatten(list:map(list:range(padding, padding + segment_height), draw_wall))
       end
       whatever ->
@@ -217,19 +217,19 @@ def worker()
       [$render, lines, x] ->
         string = @make_string(x, lines, [])
         io:print_string(list:flatten(string))
-        bif:send(sender, $render_complete)
-        bif:listen(worker_listener, string)
+        core:send(sender, $render_complete)
+        core:listen(worker_listener, string)
       end
       [$display] ->
         io:print_string(content)
-        bif:listen(worker_listener, content)
+        core:listen(worker_listener, content)
       end
       [$die] ->
         return $ok
       end
     end
   end
-  bif:listen(worker_listener, '')
+  core:listen(worker_listener, '')
 end
 
 def render(world_line, workers)
@@ -238,62 +238,62 @@ def render(world_line, workers)
     if count == 1
       return $ok
     end
-    bif:listen(listener, count - 1)
+    core:listen(listener, count - 1)
   end
 
-  segments = list:partition(world_line, bif:length(workers))
-  segment_length = bif:cast(bif:length(world_line)/bif:length(workers), 'integer')
+  segments = list:partition(world_line, core:length(workers))
+  segment_length = core:cast(core:length(world_line)/core:length(workers), 'integer')
 
   start_dudes = def (workers, segments, start)
     match workers
       [worker, <<rest_workers>>] ->
         [segment, <<rest>>] = segments
-        bif:send(worker, [$render, segment, start])
+        core:send(worker, [$render, segment, start])
         return @start_dudes(rest_workers, rest, start + segment_length)
       end
     end
   end
-  start = bif:time()
+  start = core:time()
   @start_dudes(workers, segments, 0)
-  bif:listen(listener, bif:length(workers))
-  return bif:time() - start
+  core:listen(listener, core:length(workers))
+  return core:time() - start
 end
 
 def loop(direction, pos, walls, workers)
-  io:print_string(bif:ansi_cursor_to(0,0))
-  [width, height] = bif:request(bif:io_pid(), $get_console_size)
-  fov = bif:pi()/2
-  -- render(width, pos, direction, bif:pi()/2, walls)
-  start = bif:time()
+  io:print_string(core:ansi_cursor_to(0,0))
+  [width, height] = core:request(core:io_pid(), $get_console_size)
+  fov = core:pi()/2
+  -- render(width, pos, direction, core:pi()/2, walls)
+  start = core:time()
   sorted_walls = sort_walls(pos, walls)
   tester = def (angle)
     return test_for_hit(pos, angle + direction, sorted_walls)
   end
   world_line = list:map(make_angle_range(width, fov), tester)
-  line_time = bif:time() - start
-  io:print_string(bif:ansi_clear_screen())
+  line_time = core:time() - start
+  io:print_string(core:ansi_clear_screen())
   render_time = render(world_line, workers)
   total_time = line_time + render_time
-  io:print_string(bif:ansi_cursor_to(0,height - 1))
-  io:print_strings(['Total time: ', bif:cast(total_time, 'string'), ' '])
-  io:print_strings(['Line time: ', bif:cast(line_time, 'string'), ' '])
-  io:print_strings(['Render time: ', bif:cast(render_time, 'string'), ' '])
-  io:print_strings(['FPS: ', bif:cast(1000/total_time, 'string'), ' '])
+  io:print_string(core:ansi_cursor_to(0,height - 1))
+  io:print_strings(['Total time: ', core:cast(total_time, 'string'), ' '])
+  io:print_strings(['Line time: ', core:cast(line_time, 'string'), ' '])
+  io:print_strings(['Render time: ', core:cast(render_time, 'string'), ' '])
+  io:print_strings(['FPS: ', core:cast(1000/total_time, 'string'), ' '])
 
 
   quit = false
   turn_rate = 50
   speed = 0.7
-  r = [bif:cos(direction), bif:sin(direction)]
+  r = [core:cos(direction), core:sin(direction)]
   match io:get_char()
     "q" -> quit = true end
-    "l" -> direction = direction + bif:pi()/turn_rate end
-    "h" -> direction = direction - bif:pi()/turn_rate end
+    "l" -> direction = direction + core:pi()/turn_rate end
+    "h" -> direction = direction - core:pi()/turn_rate end
     "k" -> pos = add(pos, scale(r, speed)) end
     "j" -> pos = add(pos, scale(r, speed * -1)) end
   end
   if quit
-    kill = def (pid) bif:send(pid, [$die]) end
+    kill = def (pid) core:send(pid, [$die]) end
     list:map(workers, kill)
     io:print_string('\n')
     return $ok
@@ -302,7 +302,7 @@ def loop(direction, pos, walls, workers)
 end
 
 def _entry(_)
-  io:print_string(bif:ansi_clear_screen())
+  io:print_string(core:ansi_clear_screen())
   utils:load_module('colors')
   walls = [
     [[1,0.5], [1,-0.5]],
@@ -311,9 +311,9 @@ def _entry(_)
   ]
 
   spawn_worker = def (_)
-    return bif:spawn(['ray', 'worker'])
+    return core:spawn(['ray', 'worker'])
   end
-  cpu_count = bif:send(bif:io_pid(), $cpu_count)
+  cpu_count = core:send(core:io_pid(), $cpu_count)
   workers = list:map(list:range(0, 8), spawn_worker)
   loop(0, [0,0], walls, workers)
   return $ok

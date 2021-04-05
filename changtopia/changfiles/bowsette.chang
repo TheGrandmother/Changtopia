@@ -36,10 +36,10 @@ def fuzzy_search(key, candidates)
 end
 
 def link_search(links, input, selected)
-  [width, height] = bif:send(bif:io_pid(), $get_console_size)
+  [width, height] = core:send(core:io_pid(), $get_console_size)
   candidates = fuzzy_search(input, links)
-  if selected > bif:length(candidates)
-    selected = bif:length(candidates)
+  if selected > core:length(candidates)
+    selected = core:length(candidates)
   end
 
   header = [<<'goto: '>>, <<input>>, <<' | '>>]
@@ -49,12 +49,12 @@ def link_search(links, input, selected)
       [link, <<rest>>] ->
         [_, _, text] = link
         if n == selected
-          if bif:length(acc) + bif:length(text) + 4 > width - 6 - bif:length(header)
+          if core:length(acc) + core:length(text) + 4 > width - 6 - core:length(header)
             return [<<acc>>, <<' (...)'>>]
           end
           return @get_link_text(rest, n + 1, [<<acc>>, <<', ['>>, <<text>>, <<']'>>])
         end
-        if bif:length(acc) + bif:length(text) + 2 > width - 6 - bif:length(header)
+        if core:length(acc) + core:length(text) + 2 > width - 6 - core:length(header)
           return [<<acc>>, <<' (...)'>>]
         end
         return @get_link_text(rest, n + 1, [<<acc>>, <<', '>>, <<text>>])
@@ -64,7 +64,7 @@ def link_search(links, input, selected)
   end
 
   link_text = @get_link_text(candidates, 0, [])
-  io:print_strings([bif:ansi_cursor_to(0, height - 1), bif:ansi_erase_line(), header, link_text])
+  io:print_strings([core:ansi_cursor_to(0, height - 1), core:ansi_erase_line(), header, link_text])
 
   get_selected = def (candidates, n)
     match  candidates
@@ -95,7 +95,7 @@ def link_search(links, input, selected)
       end
     end
     9 ->
-      return link_search(links, input, (selected + 1) % bif:length(candidates))
+      return link_search(links, input, (selected + 1) % core:length(candidates))
     end
     13 ->
       plz = @get_selected(candidates, 0)
@@ -115,8 +115,8 @@ def display([text, sections, links], origin)
 end
 
 def display(content, sections, links, origin)
-  [width, height] = bif:send(bif:io_pid(), $get_console_size)
-  io:print_strings([bif:ansi_cursor_to(0, height - 2), bif:ansi_erase_lines(height - 2)])
+  [width, height] = core:send(core:io_pid(), $get_console_size)
+  io:print_strings([core:ansi_cursor_to(0, height - 2), core:ansi_erase_lines(height - 2)])
   width = width
   text_height = height - 2
   text_width = width
@@ -125,24 +125,24 @@ def display(content, sections, links, origin)
   line_count = list:length(content)
 
   draw_scroll_bar = def (current_line, n)
-    plupp_line = bif:cast((current_line/(line_count - text_height)) * (text_height - 1), 'integer')
+    plupp_line = core:cast((current_line/(line_count - text_height)) * (text_height - 1), 'integer')
     if (n < text_height)
       if (n == plupp_line)
-        io:print_strings([bif:ansi_cursor_to(x0 + text_width, y0 + n), '+'])
+        io:print_strings([core:ansi_cursor_to(x0 + text_width, y0 + n), '+'])
         return @draw_scroll_bar(current_line, n + 1)
       end
-      io:print_strings([bif:ansi_cursor_to(x0 + text_width, y0 + n), '|'])
+      io:print_strings([core:ansi_cursor_to(x0 + text_width, y0 + n), '|'])
       return @draw_scroll_bar(current_line, n + 1)
     end
   end
 
   make_sepparator = def ()
     snek = list:repeat('=', width)
-    io:print_strings([bif:ansi_cursor_to(0, height - 2), bif:ansi_bold(),snek, bif:ansi_bold_close()])
+    io:print_strings([core:ansi_cursor_to(0, height - 2), core:ansi_bold(),snek, core:ansi_bold_close()])
   end
 
   scroller = def (current_line)
-    bif:send(bif:io_pid(), $release_input_stream)
+    core:send(core:io_pid(), $release_input_stream)
     quit = false
     match io:get_char()
       "k" ->
@@ -157,7 +157,7 @@ def display(content, sections, links, origin)
       end
       "f" ->
         selected_link = link_search(links, '', 0)
-        io:print_strings([bif:ansi_cursor_to(0, height - 1), bif:ansi_erase_line()])
+        io:print_strings([core:ansi_cursor_to(0, height - 1), core:ansi_erase_line()])
         if selected_link != $nothing
           return [$go_to_page, selected_link]
         end
@@ -172,24 +172,24 @@ def display(content, sections, links, origin)
     [_, lines] = list:split_at(content, current_line)
     view:display_lines(lines, origin, bounds)
     @make_sepparator()
-    io:print_strings([bif:ansi_color_reset(), bif:ansi_bg_color_reset(), bif:ansi_bold_close()])
+    io:print_strings([core:ansi_color_reset(), core:ansi_bg_color_reset(), core:ansi_bold_close()])
     @draw_scroll_bar(current_line, 0)
 
-    bif:send(bif:io_pid(), $get_input_stream)
+    core:send(core:io_pid(), $get_input_stream)
     return @scroller(current_line)
   end
 
   view:display_lines(content, origin, bounds)
-  bif:send(bif:io_pid(), $get_input_stream)
+  core:send(core:io_pid(), $get_input_stream)
   @draw_scroll_bar(0, 0)
   @make_sepparator()
   return @scroller(0)
 end
 
 def write_in_bottom(text)
-  [width, height] = bif:send(bif:io_pid(), $get_console_size)
-  io:print_strings([bif:ansi_cursor_to(0, height - 2), bif:ansi_bold(), <<list:repeat('=', width)>> , bif:ansi_bold_close()])
-  io:print_strings([bif:ansi_cursor_to(0, height - 1), bif:ansi_erase_line(), text])
+  [width, height] = core:send(core:io_pid(), $get_console_size)
+  io:print_strings([core:ansi_cursor_to(0, height - 2), core:ansi_bold(), <<list:repeat('=', width)>> , core:ansi_bold_close()])
+  io:print_strings([core:ansi_cursor_to(0, height - 1), core:ansi_erase_line(), text])
 end
 
 def load_and_render(path)
@@ -228,12 +228,12 @@ def load_and_render(path)
 end
 
 def bowsette(rendered, current_path ,history)
-  io:print_string(bif:ansi_cursor_hide())
+  io:print_string(core:ansi_cursor_hide())
   dude = display(rendered, [0,0])
   match dude
     $quit ->
-      io:print_strings([bif:ansi_clear_terminal(), bif:ansi_cursor_to(0, 0)])
-      io:print_string(bif:ansi_cursor_show())
+      io:print_strings([core:ansi_clear_terminal(), core:ansi_cursor_to(0, 0)])
+      io:print_string(core:ansi_cursor_show())
       return $ok
     end
     $back ->
@@ -275,11 +275,11 @@ def _entry()
 end
 
 def _entry([path, <<stuff>>])
-  if bif:length(stuff) > 0
+  if core:length(stuff) > 0
     io:print_string('Oi! the web only wants one argument!\n')
     return $error
   end
-  io:print_string(bif:ansi_clear_terminal())
+  io:print_string(core:ansi_clear_terminal())
   utils:load_module('downey')
   utils:load_module('view')
   match load_and_render(path)

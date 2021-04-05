@@ -67,7 +67,7 @@ class Process {
 
   bindFunction (module, functionId, returnLocation, args, bindings) {
     const func = this.getFunction(module, functionId)
-    if (module === 'bif') {
+    if (module === 'core') {
       const retval = func.exec(this, returnLocation, ...args)
       if (retval !== h('__ignore_return')) {
         retval !== undefined && this.frame.write(returnLocation, retval)

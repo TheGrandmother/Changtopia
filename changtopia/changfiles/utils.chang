@@ -1,13 +1,13 @@
 module utils
 
 def pid_compare(pid1, pid2)
-  [host1, instance1, id1] = bif:destruct_pid(pid1)
-  [host2, instance2, id2] = bif:destruct_pid(pid2)
+  [host1, instance1, id1] = core:destruct_pid(pid1)
+  [host2, instance2, id2] = core:destruct_pid(pid2)
   return host1 == host2 && instance1 == instance2 && id1 == id2
 end
 
 def load_module(module_name)
-  match bif:request(bif:io_pid(), $load_module, module_name)
+  match core:request(core:io_pid(), $load_module, module_name)
     $module_not_found ->
       return $fail
     end

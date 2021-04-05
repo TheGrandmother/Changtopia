@@ -5,7 +5,7 @@ const Pid = require('../pid.js')
 const processControlFunctions = [
   {
     functionId: 'send',
-    bif: true,
+    core: true,
     exec: (process, returnLocation, recipient, ...payload) => {
       recipient = Pid.toPid(recipient)
       if (returnLocation === '__dump__') {
@@ -17,14 +17,14 @@ const processControlFunctions = [
   },
   {
     functionId: 'death_hook',
-    bif: true,
+    core: true,
     exec: (process, _, recipient, ...payload) => {
       process.stack.frames[0].deathHook = {recipient, payload}
     }
   },
   {
     functionId: 'request',
-    bif: true,
+    core: true,
     exec: (process, returnLocation, recipient, ...payload) => {
       if (returnLocation === '__dump__') {
         process.sendMessage({recipient, payload})
@@ -35,7 +35,7 @@ const processControlFunctions = [
   },
   {
     functionId: 'listen',
-    bif: true,
+    core: true,
     exec: (process, returnLocation, funcRef, ...args) => {
       const [module, functionId, ...bindings] = funcRef
       process.listen(toJsString(module), toJsString(functionId), returnLocation, args, bindings)
@@ -44,7 +44,7 @@ const processControlFunctions = [
   },
   {
     functionId: 'spawn',
-    bif: true,
+    core: true,
     exec: (process, returnLocation, funcRef, ...args) => {
       const [module, functionId, ...bindings] = funcRef
       if (returnLocation === '__dump__') {
@@ -56,7 +56,7 @@ const processControlFunctions = [
   },
   {
     functionId: 'link',
-    bif: true,
+    core: true,
     exec: (process, returnLocation, pid) => {
       process.link(pid)
       return 0
@@ -64,7 +64,7 @@ const processControlFunctions = [
   },
   {
     functionId: 'unlink',
-    bif: true,
+    core: true,
     exec: (process, returnLocation, pid) => {
       process.unlink(pid)
       return 0
@@ -72,7 +72,7 @@ const processControlFunctions = [
   },
   {
     functionId: 'zeit_aus',
-    bif: true,
+    core: true,
     exec: (process, returnLocation, duration) => {
       process.setTimeout(duration)
       return 0
@@ -80,7 +80,7 @@ const processControlFunctions = [
   },
   {
     functionId: 'zeit_in',
-    bif: true,
+    core: true,
     exec: (process) => {
       process.unsetTimeout()
       return 0
@@ -89,7 +89,7 @@ const processControlFunctions = [
 
   {
     functionId: 'load',
-    bif: true,
+    core: true,
     exec: (process, returnLocation, _moduleName) => {
       const moduleName = String.fromCharCode(..._moduleName)
       if (process.vm.modules[moduleName]) {
@@ -102,7 +102,7 @@ const processControlFunctions = [
 
   {
     functionId: 'run',
-    bif: true,
+    core: true,
     exec: (process, returnLocation, funcRef, ...args) => {
       const [_moduleName, _functionName, ...bindings] = funcRef
       const moduleName = String.fromCharCode(..._moduleName)

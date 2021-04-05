@@ -2,7 +2,7 @@ module splash_screen
 
 def logo()
   return [
-        bif:ansi_bold(),
+        core:ansi_bold(),
         colors:get_color(6),
         '                                                                                                 ',
         '     _/_/_/  _/                                        _/                          _/            ',
@@ -12,8 +12,8 @@ def logo()
         ' _/_/_/  _/    _/    _/_/_/  _/    _/    _/_/_/      _/_/    _/_/    _/_/_/    _/    _/_/_/      ',
         '                                            _/                      _/                           ',
         '                                       _/_/                        _/                            ',
-        bif:ansi_bold_close(),
-        bif:ansi_color_reset()
+        core:ansi_bold_close(),
+        core:ansi_color_reset()
   ]
 end
 
@@ -38,14 +38,14 @@ def greeting()
 end
 
 def center(strings)
-  [width, <<_>>] = bif:request(bif:io_pid(), $get_console_size)
+  [width, <<_>>] = core:request(core:io_pid(), $get_console_size)
   _center = def (strings, acc)
     match strings
       [] ->
         return acc
       end
       [head, <<tail>>] ->
-        pad_length = bif:cast((width - bif:length(head)) / 2, 'integer')
+        pad_length = core:cast((width - core:length(head)) / 2, 'integer')
         padding = list:repeat(" ", pad_length)
         return @_center(tail, [<<acc>>, [<<padding>>, <<head>>]])
       end

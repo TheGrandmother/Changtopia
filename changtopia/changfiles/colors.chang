@@ -29,9 +29,9 @@ module colors
 -- *.color15:      #C0C0C0
 
 def _get_color_by_number(isBg, number)
-  color_fn = ['bif', 'ansi_color_hex']
+  color_fn = ['core', 'ansi_color_hex']
   if isBg
-    color_fn = ['bif', 'ansi_bg_color_hex']
+    color_fn = ['core', 'ansi_bg_color_hex']
   end
   match number
     0  -> return @color_fn('101010') end
@@ -77,7 +77,7 @@ def _get_color_by_name(isBg, name)
 end
 
 def get_color(thing)
-  match bif:cast(thing, 'integer')
+  match core:cast(thing, 'integer')
     $nan ->
       return _get_color_by_name(false, thing)
     end
@@ -88,7 +88,7 @@ def get_color(thing)
 end
 
 def get_bg_color(thing)
-  match bif:cast(thing, 'integer')
+  match core:cast(thing, 'integer')
     $nan ->
       return _get_color_by_name(true, thing)
     end
@@ -99,11 +99,11 @@ def get_bg_color(thing)
 end
 
 def close_color()
-  return bif:ansi_color_reset()
+  return core:ansi_color_reset()
 end
 
 def close_bg_color()
-  return bif:ansi_bg_color_reset()
+  return core:ansi_bg_color_reset()
 end
 
 def _make_test_row(n, acc)
@@ -115,7 +115,7 @@ end
 
 def _make_test_column(n, acc)
   if n <= 15
-    return _make_test_column(n + 1, [<<acc>>, <<get_bg_color(n)>>, <<_make_test_row(0, [])>>, <<close_bg_color()>>, <<bif:cast(n, 'string')>>, "\n"])
+    return _make_test_column(n + 1, [<<acc>>, <<get_bg_color(n)>>, <<_make_test_row(0, [])>>, <<close_bg_color()>>, <<core:cast(n, 'string')>>, "\n"])
   end
   return acc
 end

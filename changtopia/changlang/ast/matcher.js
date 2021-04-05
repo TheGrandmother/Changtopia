@@ -19,8 +19,8 @@ function makeConstantClause(clause, resultName, doneLabel) {
 function makeImmediateClause(clause, resultName, doneLabel) {
   const clauseIdentifier = basic.makeIdentifierNode(`array_${randomHash()}`, false, clause.pos)
   const assignArray = makeBasicAssignmentNode(clauseIdentifier.name, clause.pattern)
-  const isArrayCall = makeFunctionCallNode('is_array', [resultName], 'bif')
-  const arrayCompareCall = makeFunctionCallNode('array_compare', [resultName, clauseIdentifier], 'bif')
+  const isArrayCall = makeFunctionCallNode('is_array', [resultName], 'core')
+  const arrayCompareCall = makeFunctionCallNode('array_compare', [resultName, clauseIdentifier], 'core')
   return makeIfNode(isArrayCall, makeBlockNode(assignArray, makeIfNode(arrayCompareCall, makeBlockNode(clause.body, makeJumpNode(doneLabel)))))
 
 }
@@ -61,8 +61,8 @@ function generateChecks(clauseIdentifier, pattern, patternIdent, skipLabel) {
 
   const targetLength = pattern.entries.length - (hasBlob ? 1 : 0)
 
-  const isArrayCall = makeFunctionCallNode('is_array', [patternIdent], 'bif', pos)
-  const lengthCall = makeFunctionCallNode('length', [patternIdent], 'bif', pos)
+  const isArrayCall = makeFunctionCallNode('is_array', [patternIdent], 'core', pos)
+  const lengthCall = makeFunctionCallNode('length', [patternIdent], 'core', pos)
   const compareLength = makeExprNode(hasBlob ? '>=' : '==', lengthCall, {type: 'constant', value: targetLength, pos}, pos)
 
   const conditionals = []

@@ -13,7 +13,7 @@ def get(l, n)
 end
 
 def length(list)
-  return bif:length(list)
+  return core:length(list)
 end
 
 def range(start, finish)
@@ -27,7 +27,7 @@ def range(start, finish)
 end
 
 def partition(l, n)
-  segment_length = bif:cast(bif:length(l) / n, 'integer')
+  segment_length = core:cast(core:length(l) / n, 'integer')
 
   _partition = def (l, current_segment, curr_length, segments_left, segments)
     if curr_length == segment_length
@@ -47,18 +47,18 @@ def partition(l, n)
 end
 
 def pad_left(list, pad, length)
-  if bif:length(list) >= length
+  if core:length(list) >= length
     return list
   end
-  padding = repeat(pad, length - bif:length(list))
+  padding = repeat(pad, length - core:length(list))
   return [<<padding>>, <<list>>]
 end
 
 def pad_right(list, pad, length)
-  if bif:length(list) >= length
+  if core:length(list) >= length
     return list
   end
-  padding = repeat(pad, length - bif:length(list))
+  padding = repeat(pad, length - core:length(list))
   return [<<list>>, <<padding>>]
 end
 
@@ -94,13 +94,13 @@ def _flatten(lists, acc)
       return acc
     end
     [x] ->
-      if bif:is_array(x)
+      if core:is_array(x)
         return [<<acc>>, <<x>>]
       end
       return lists
     end
     [head, <<tail>>] ->
-      if bif:is_array(head)
+      if core:is_array(head)
         return _flatten(tail, [<<acc>>, <<head>>])
       end
       return lists
@@ -179,7 +179,7 @@ def _map(list, fn, res)
       return res
     end
     [x, <<rest>>] ->
-      return _map(rest, fn, [<<res>>, bif:run(fn, x)])
+      return _map(rest, fn, [<<res>>, core:run(fn, x)])
     end
   end
 end

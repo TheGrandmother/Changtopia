@@ -4,7 +4,7 @@ const {ArrayTypeError} = require('../../errors.js')
 const arrayFunctions = [
   {
     functionId: 'array_compare',
-    bif: true,
+    core: true,
     exec: (process, resultLocation, a1Location, a2Location) => {
       const a1 = a1Location
       const a2 = a2Location
@@ -20,14 +20,14 @@ const arrayFunctions = [
   },
   {
     functionId: 'is_array',
-    bif: true,
+    core: true,
     exec: (process, resultLocation, location) => {
       return Array.isArray(location)
     }
   },
   {
     functionId: 'length',
-    bif: true,
+    core: true,
     exec: (process, resultLocation, faff) => {
       return faff.length
     }

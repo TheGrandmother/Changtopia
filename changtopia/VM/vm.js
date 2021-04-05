@@ -12,7 +12,7 @@ const postToParent = (msg) => postMessage(msg)
 class Vm {
 
   constructor(instance, host) {
-    this.modules = {bif: builtins}
+    this.modules = {core: builtins}
     this.processes = {}
     this.waitingProcesses = []
     this.topQueue = []

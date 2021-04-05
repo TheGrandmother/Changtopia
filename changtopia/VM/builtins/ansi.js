@@ -43,7 +43,7 @@ const ansiFaff = {
 const ansi = Object.keys(ansiFaff).map(key => (
   {
     functionId: `ansi_${key}`,
-    module: 'bif',
+    module: 'core',
     exec: (_, __, ...args) => fromJsString(ansiFaff[key](...args))
   }
 ))

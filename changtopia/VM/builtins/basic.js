@@ -4,7 +4,7 @@ const {h} = require('../../util/hash.js')
 const basics = [
   {
     functionId: 'cast',
-    bif: true,
+    core: true,
     exec: (process, _, value, type) => {
       const casters = {
         'string': (v) => fromJsString(v.toString()),
@@ -18,14 +18,14 @@ const basics = [
   },
   {
     functionId: 'time',
-    bif: true,
+    core: true,
     exec: () => {
       return Date.now()
     }
   },
   {
     functionId: 'to_atom',
-    bif: true,
+    core: true,
     exec: (process, _, value) => {
       return typeof value === 'string' ? value : h(toJsString(value))
     }
