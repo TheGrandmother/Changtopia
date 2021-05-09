@@ -107,12 +107,24 @@ def max(a,b)
   return b
 end
 
-def gray_scale()
-  return ' .:-=+*%#@'
+def gray_scale(color)
+  match color
+    0 -> return ' ' end
+    1 -> return '.' end
+    2 -> return ':' end
+    3 -> return '-' end
+    4 -> return '=' end
+    5 -> return '+' end
+    6 -> return '*' end
+    7 -> return '%' end
+    8 -> return '#' end
+    9 -> return '@' end
+  end
+  -- return ' .:-=+*%#@'
 end
 
 def make_pixel(x, y, color)
-  return [<<core:ansi_cursor_to(x, y)>>, list:get(gray_scale(), color)]
+  return [<<core:ansi_cursor_to(x, y)>>, gray_scale(color)]
 end
 
 def sort(walls, position)
