@@ -250,8 +250,8 @@ class Process {
   }
 
   returnFromFunction() {
-    const currentFrame = this.stack.frames.pop()
-    const oldFrame = this.stack.frames.pop()
+    const currentFrame = this.stack.frames.pop() // Returning from frame
+    const oldFrame = this.stack.frames.pop()     // To frame
 
     if (!oldFrame) {
       if (!this.waiting) {

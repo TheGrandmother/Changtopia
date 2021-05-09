@@ -189,14 +189,14 @@ def worker()
       $miss -> return [] end
       distance ->
         draw_wall = def (y)
-          return list:flatten(make_pixel(x, y, core:cast(min(9/distance, 9), 'integer')))
+          return core:flatten(make_pixel(x, y, core:cast(min(9/distance, 9), 'integer')))
         end
         segment_height = core:cast((height * base_height) / distance, 'integer')
         if segment_height > height
-          return list:flatten(list:map(full_range, draw_wall))
+          return core:flatten(list:map(full_range, draw_wall))
         end
         padding = core:cast((height - segment_height) / 2, 'integer')
-        return list:flatten(list:map(core:range(padding, padding + segment_height), draw_wall))
+        return core:flatten(list:map(core:range(padding, padding + segment_height), draw_wall))
       end
       whatever ->
         return []
@@ -216,7 +216,7 @@ def worker()
     match payload
       [$render, lines, x] ->
         string = @make_string(x, lines, [])
-        io:print_string(list:flatten(string))
+        io:print_string(core:flatten(string))
         core:send(sender, $render_complete)
         core:listen(worker_listener, string)
       end

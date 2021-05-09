@@ -11,6 +11,7 @@ const argv = require('yargs')
   .option('no-optimize', {alias: 'k', description: 'Disable removal of redundant moves', type: 'boolean', default: false})
   .option('show-ambigous', {alias: 's', description: 'Show ambigous parsings', type: 'boolean', default: false})
   .option('dry', {alias: 'd', description: 'Dont output anything but errors', type: 'boolean', default: false})
+  .option('functions', {alias: 'f', description: 'Only print these functions, only works with -p or -n set', type: 'array', default: []})
   .argv
 
 const inName = path.basename(argv._[0], '.chang')
@@ -30,6 +31,7 @@ try {
     showIntermediate: argv.n,
     prettyPrint: argv.p,
     showAmbigous: argv.s,
+    printThese: argv.f
   })
   if (_module.ast) {
     console.log(_module.ast)

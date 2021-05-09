@@ -97,12 +97,14 @@ function changpile(_input, options = {}) {
     showIntermediate = false,
     prettyPrint = false,
     showAmbigous = false,
+    printThese = false
   } = options
 
   const input = _input.replace(/--.*$/mg,'')
 
   try {
-    const functions = collateFunctions(parse(input, showAmbigous))
+    const parseResult = parse(input, showAmbigous)
+    const functions = collateFunctions(parseResult)
 
     if (doTailOptimization) {
       functions.forEach(func => tailOptimize(func))
@@ -123,6 +125,11 @@ function changpile(_input, options = {}) {
     Object.keys(intermediateCode.functions).forEach(name => compiledFunctions[name] = generateCode(intermediateCode.functions[name], intermediateCode.moduleName))
 
     if (prettyPrint) {
+      if (printThese.length !== 0) {
+        const regex = new RegExp(parseResult[0].moduleName + '__(' + printThese.join('|') + ')_c\\d+')
+        const allNames = Object.keys(compiledFunctions).filter((name) => printThese.includes(name) || regex.test(name))
+        return {pretty: pretty(allNames.map((name) => compiledFunctions[name]))}
+      }
       return {pretty: pretty(Object.values(compiledFunctions))}
     }
 

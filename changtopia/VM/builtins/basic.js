@@ -1,11 +1,15 @@
 const {fromJsString, toJsString} = require('../../util/strings.js')
 const {h} = require('../../util/hash.js')
+const {ArgumentCountError} = require('../../errors.js')
 
 const basics = [
   {
     functionId: 'cast',
     core: true,
-    exec: (process, _, value, type) => {
+    exec: (process, _, value, type, derp) => {
+      if (derp) {
+        throw new ArgumentCountError('core:cast called with more than 2 arguments you fucking idiot')
+      }
       const casters = {
         'string': (v) => fromJsString(v.toString()),
         'integer': (v) => {

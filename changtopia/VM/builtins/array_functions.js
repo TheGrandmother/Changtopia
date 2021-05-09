@@ -33,6 +33,13 @@ const arrayFunctions = [
     }
   },
   {
+    functionId: 'flatten',
+    core: true,
+    exec: (process, resultLocation, arr, depth) => {
+      return arr.flat(depth)
+    }
+  },
+  {
     functionId: 'range',
     core: true,
     exec: (process, resultLocation, min, max, _step) => {
