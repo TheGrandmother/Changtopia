@@ -46,7 +46,7 @@ function makeBool(d) {
 }
 
 function makeNumber(d) {
-  const pos = helpers.findPositionOfToken(d, 'NUMBER')
+  const pos = helpers.findPositionOfToken(d.flat(Infinity), 'NUMBER')
   d = helpers.flattenAndStrip(d)
   if (d.length === 2 && d[0].type === 'ARITHMETIC') {
     return {

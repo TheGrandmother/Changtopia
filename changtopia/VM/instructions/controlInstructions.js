@@ -40,7 +40,8 @@ const controlInstructions = {
 
   'return' : {
     name: 'return',
-    evaluate: (process) => {
+    evaluate: (process, returnValue) => {
+      process.frame.write('__return__', process.frame.read(returnValue))
       process.returnFromFunction()
     }
   },

@@ -356,7 +356,7 @@ class Stack {
 
   getStackTrace(vm) {
     let trace = this.frames.slice(-5).map((frame) => {
-      const line = frame.func.code[frame.line].sourcePos.line
+      const line = frame.func.code[frame.line]?.sourcePos?.line || '??'
       const source = vm?.getModule(frame.func.moduleName)?.source[line - 1]?.trim() || 'Source not reachable'
       return `  ${frame.func.moduleName}:${frame.functionId}:${line}   ${source}`
     }).reverse().join('\n')
