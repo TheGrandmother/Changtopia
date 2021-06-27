@@ -33,8 +33,8 @@ try {
     showAmbigous: argv.s,
     printThese: argv.f
   })
-  if (_module.ast) {
-    console.log(_module.ast)
+  if (_module.intermediate) {
+    console.log(_module.intermediate)
   }
   if (_module.pretty) {
     console.log(_module.pretty)

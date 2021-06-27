@@ -105,8 +105,8 @@ const _generators = {
 
   'return': (state, node) => {
     const {rhs} = node
-    const rhsCode = generateNode(state, rhs, state.returnRef)
-    const myCode = [makeInstruction('return', [state.returnRef], node.pos)]
+    const [ref, rhsCode] = generateNodeAndRef(state, rhs, state.returnRef)
+    const myCode = [makeInstruction('return', [ref], node.pos)]
     return rhsCode.concat(myCode)
   },
 
@@ -334,8 +334,6 @@ function generateFunction(state, func) {
   unbound && Object.values(unbound).forEach(ref => {
     state.refs[ref.name] = ref
   })
-
-  state.returnRef = {ref: '__return__'}
 
   if (!generators[body.type]) {
     throw new CompilerError(`I dont know what to do with a ${body.type} node`)

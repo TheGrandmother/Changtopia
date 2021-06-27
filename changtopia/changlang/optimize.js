@@ -3,8 +3,6 @@ const {makeBasicAssignmentNode} = require('./ast/assign')
 const {makeIdentifierNode} = require('./ast/basics')
 const {makeArrayLitteralNode} = require('./ast/arrays.js')
 const {CompilerError} = require('../errors.js')
-const {randomHash} = require('../util/hash.js')
-//const {inspect} = require('util')
 
 function tailOptimize (func) {
 
@@ -59,11 +57,10 @@ function tailOptimize (func) {
         if (node.rhs.args.length !== func.args.length && !func.matchyBoi) {
           throw new CompilerError(`${name} takes ${func.args.length} arguments but only ${node.rhs.args.length} where provided at line ${node.pos.line} col ${node.pos.col}`)
         }
-        const randomIdent = randomHash()
         if (!func.matchyBoi) {
-          const moves = node.rhs.args.map((arg, i) => makeBasicAssignmentNode(`${func.args[i].name}_tco_${randomIdent}`, arg, node.pos))
+          const moves = node.rhs.args.map((arg, i) => makeBasicAssignmentNode(`${func.args[i].name}_tco`, arg, node.pos))
           if (moves.length !== 0) {
-            const thing = chainStatements([...moves, ...func.args.map(({name}) => makeBasicAssignmentNode(name, makeIdentifierNode(`${name}_tco_${randomIdent}`, false, node.pos))), makeJumpNode(func.entryLabel, node.pos)])
+            const thing = chainStatements([...moves, ...func.args.map(({name}) => makeBasicAssignmentNode(name, makeIdentifierNode(`${name}_tco`, false, node.pos))), makeJumpNode(func.entryLabel, node.pos)])
             node.type = thing.type
             node.rhs = thing.rhs
             node.lhs = thing.lhs
@@ -100,7 +97,80 @@ function tailOptimize (func) {
     func.entryLabel = `_${name}_entry_label`
     optimize(func.body)
   }
+}
 
+function resolveAliases(func) {
+  const {body, refs} = func
+  Object.values(refs).forEach((ref) => ref.safe = true)
+
+  //Resolve aliases
+  for (let line of body) {
+    const {instruction} = line
+    if (!instruction) { continue }
+    const {id, args} = instruction
+    //console.log(instruction)
+    if (id === 'move') {
+      const [from, to] = args
+      to.alias_of = from
+    }
+    if (id === 'op') {
+      const [_, res, ...__] = args
+      res.safe = false
+    }
+  }
+
+  function replaceAliases(args) {
+    let changed = false
+    const newArgs =  args.map((arg) => {
+      if (!arg.ref) {return arg} // Not even a ref
+      if (!arg.safe) {return arg}
+      if (arg.arg) {return arg} //dont replace arguments
+      if (arg.name && refs[arg.name].alias_of) {
+        if (arg.name !== refs[arg.name].alias_of.name) {
+          changed = true
+          return refs[arg.name].alias_of
+        } else {
+          return arg // In case some wanker wrote x = x
+        }
+      }
+      return arg
+    })
+    return [changed, newArgs]
+  }
+
+  //Replace Aliases
+  function replaceReferences(code) {
+    let changed = false
+    const newCode = code.map(line => {
+      const {instruction} = line
+      if (!instruction) { return line }
+      const {args} = instruction
+      const [_changed, newArgs] = replaceAliases(args)
+      changed = changed || _changed
+      return {...line, instruction: {...instruction, args: newArgs}}
+    })
+    if (!changed) {
+      return newCode
+    } else {
+      return replaceReferences(newCode)
+    }
+  }
+
+  const otto = replaceReferences(body.reverse()).reverse()
+
+  //Drop redundant moves
+  const reducedBody = otto.filter((line) => {
+    const {instruction} = line
+    if (!instruction) { return true }
+    const {id, args} = instruction
+    if (id === 'move') {
+      return args[0] !== args[1]
+    }
+    return true
+  })
+
+  func.body = reducedBody
 }
 
 module.exports.tailOptimize = tailOptimize
+module.exports.resolveAliases = resolveAliases

@@ -1,7 +1,7 @@
 const grammar = require('./compiled_grammar.js')
 const {generateIntermediateCode} = require('./intermediate.js')
 const {generateCode} = require('./codegen.js')
-const {tailOptimize} = require('./optimize.js')
+const {tailOptimize, resolveAliases} = require('./optimize.js')
 const {combine} = require('./collateFunctions.js')
 const nearley = require('nearley')
 const {inspect} = require('util')
@@ -70,7 +70,8 @@ function pretty(functions) {
     const {name, code, argLocations, unbound} = func
     const binds = unbound ? `  binds: ${unbound.join(', ')}\n` : ''
     return `${acc}${name} (${argLocations.join(', ')}):\n${binds}` + code.reduce((acc2, line, i) => {
-      return(`${acc2}  ${i}:  ${line.id}  ${line.args.join(',  ')}\n`)
+      // const pos = line.sourcePos ? `(${line.sourcePos.line}:${line.sourcePos.col})` : '(??:??)'
+      return(`${acc2} ${i}:  ${line.id}  ${line.args.join(',  ')}\n`)
     }, '') + '\n'
   }, '')
 }
@@ -117,7 +118,14 @@ function changpile(_input, options = {}) {
     const intermediateCode = generateIntermediateCode(functions)
 
 
+    Object.values(intermediateCode.functions).forEach(func => resolveAliases(func))
+
     if (showIntermediate) {
+      if (printThese && printThese.length !== 0) {
+        const regex = new RegExp(parseResult[0].moduleName + '__(' + printThese.join('|') + ')_c\\d+')
+        const allNames = Object.keys(intermediateCode.functions).filter((name) => printThese.includes(name) || regex.test(name))
+        return {intermediate: inspect(allNames.map((name) => intermediateCode.functions[name]), false, null, true)}
+      }
       return {intermediate: inspect(intermediateCode, false, null, true)}
     }
     const compiledFunctions = {}
@@ -125,7 +133,7 @@ function changpile(_input, options = {}) {
     Object.keys(intermediateCode.functions).forEach(name => compiledFunctions[name] = generateCode(intermediateCode.functions[name], intermediateCode.moduleName))
 
     if (prettyPrint) {
-      if (printThese.length !== 0) {
+      if (printThese && printThese.length !== 0) {
         const regex = new RegExp(parseResult[0].moduleName + '__(' + printThese.join('|') + ')_c\\d+')
         const allNames = Object.keys(compiledFunctions).filter((name) => printThese.includes(name) || regex.test(name))
         return {pretty: pretty(allNames.map((name) => compiledFunctions[name]))}
