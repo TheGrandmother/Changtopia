@@ -12,16 +12,23 @@ console._log = (...args) => console.log(args.map(arg => inspect(arg, false,null,
 
 function makeConstantClause(clause, resultName, doneLabel) {
   const compare = makeExprNode('==', resultName, clause.pattern, clause.pos)
-  const body = makeBlockNode(clause.body, makeJumpNode(doneLabel), clause.pos)
+  const body = makeBlockNode(clause.body, makeJumpNode(doneLabel, clause.pos), clause.pos)
   return makeIfNode(compare, body, clause.pos)
 }
 
 function makeImmediateClause(clause, resultName, doneLabel) {
   const clauseIdentifier = basic.makeIdentifierNode(`array_${randomHash()}`, false, clause.pos)
-  const assignArray = makeBasicAssignmentNode(clauseIdentifier.name, clause.pattern)
-  const isArrayCall = makeFunctionCallNode('is_array', [resultName], 'core')
-  const arrayCompareCall = makeFunctionCallNode('array_compare', [resultName, clauseIdentifier], 'core')
-  return makeIfNode(isArrayCall, makeBlockNode(assignArray, makeIfNode(arrayCompareCall, makeBlockNode(clause.body, makeJumpNode(doneLabel)))))
+  const assignArray = makeBasicAssignmentNode(clauseIdentifier.name, clause.pattern, clause.pos)
+  const isArrayCall = makeFunctionCallNode('is_array', [resultName], 'core', clause.pos)
+  const arrayCompareCall = makeFunctionCallNode('array_compare', [resultName, clauseIdentifier], 'core', clause.pos)
+  return makeIfNode(isArrayCall,
+    makeBlockNode(assignArray,
+      makeIfNode(arrayCompareCall,
+        makeBlockNode(clause.body,
+          makeJumpNode(doneLabel, clause.pos))
+        ,clause.pos)
+    )
+    , clause.pos)
 
 }
 
@@ -41,13 +48,6 @@ function makeUnpacking(unpack, patternIdent, pos) {
 
   const unpackNode = makeUnpackNode(leading, blob, trailing, pos)
   return makeUnpackingAssignmentNode(unpackNode, patternIdent, pos)
-}
-
-function jumpIfFalse(cond, label, pos) {
-  return makeIfNode(
-    makeExprNode('==', cond, {type: 'constant', value: false}, pos),
-    makeJumpNode(label.label, pos)
-  )
 }
 
 function generateChecks(clauseIdentifier, pattern, patternIdent, skipLabel) {
@@ -126,8 +126,8 @@ function makeArrayClause(clause, resultName, doneLabel) {
 
 function makeIdentClause(clause, resultName, doneLabel) {
   return makeBlockNode(
-    makeBasicAssignmentNode(clause.pattern.name, resultName),
-    makeBlockNode(clause.body, makeJumpNode(doneLabel)),
+    makeBasicAssignmentNode(clause.pattern.name, resultName, clause.pos),
+    makeBlockNode(clause.body, makeJumpNode(doneLabel, clause.pos)),
     clause.pos
   )
 }
@@ -135,6 +135,10 @@ function makeIdentClause(clause, resultName, doneLabel) {
 function makeClauses(clauses, resultName, doneLabel) {
 
   return clauses.filter(clause => clause.type).map((clause) => {
+    if (!clause.pos) {
+      //For some reason some clauses don*t have a position, take the one fromt the patters
+      clause.pos = clause.pattern.pos
+    }
     if (clause.pattern.type === 'constant') {
       return makeConstantClause(clause, resultName, doneLabel)
     }
@@ -145,7 +149,7 @@ function makeClauses(clauses, resultName, doneLabel) {
       return makeImmediateClause(clause, resultName, doneLabel)
     }
     if (clause.pattern.type === 'identifier' && clause.pattern.name === 'whatever') {
-      return makeBlockNode(clause.body, makeJumpNode(doneLabel))
+      return makeBlockNode(clause.body, makeJumpNode(doneLabel, clause.pos))
     }
     if (clause.pattern.type === 'identifier') {
       return makeIdentClause(clause, resultName, doneLabel)
