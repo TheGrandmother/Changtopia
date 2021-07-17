@@ -118,7 +118,6 @@ end
 
 def run_command(input)
   [name, <<arguments>>] = input
-  io:debug_raw(input)
   match find_command(name)
     $not_found ->
       io:print_strings(['What is even "', name, '"?\n'])
@@ -183,7 +182,6 @@ end
 def prompt()
   input_string = io:get_line()
   io:print_string('\n')
-  io:debug_raw(input_string)
   match run_command(list:split_by(input_string, " "))
     $quit ->
       return $quit

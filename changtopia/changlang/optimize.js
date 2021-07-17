@@ -12,13 +12,17 @@ function tailOptimize (func) {
 
   const name = func.cannonicalName || func.name
 
+  let containsAnyRecursion = false
+
   function isCallRecursive(node) {
     if (node.type !== 'call') {
       return false
     }
     if (node.module === 'core' && node.name === 'run') {
+      node.args[0].name === name && (containsAnyRecursion = true)
       return node.args[0].name === name
     } else {
+      !node.module && node.name === name && (containsAnyRecursion = true)
       return !node.module && node.name === name
     }
   }
@@ -93,7 +97,7 @@ function tailOptimize (func) {
     optimize(node.rhs)
   }
 
-  if (isTailRecursive(func.body)) {
+  if (isTailRecursive(func.body) && containsAnyRecursion) {
     func.entryLabel = `_${name}_entry_label`
     optimize(func.body)
   }
@@ -101,6 +105,11 @@ function tailOptimize (func) {
 
 function resolveAliases(func) {
   const {body, refs} = func
+  if (!body[0].lineLabel) {
+    // Dont bother with non recursive functions
+    // Adds to much overhead
+    return
+  }
   Object.values(refs).forEach((ref) => ref.safe = true)
   const aliases = {}
 
