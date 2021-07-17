@@ -31,7 +31,8 @@ try {
     showIntermediate: argv.n,
     prettyPrint: argv.p,
     showAmbigous: argv.s,
-    printThese: argv.f
+    printThese: argv.f,
+    optimize: !argv.k
   })
   if (_module.intermediate) {
     console.log(_module.intermediate)

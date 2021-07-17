@@ -50,7 +50,16 @@ const controlInstructions = {
     name: 'call',
     evaluate: (process, module, functionId, returnLocation, ...args) => {
       const _args = []
-      args.forEach(a => _args.push(process.frame.read(a)))
+      // ENSURE PASS BY VALUE
+      // Could be faster
+      args.forEach(a => {
+        const val = process.frame.read(a)
+        if (val.shared) {
+          _args.push(val.slice())
+        } else {
+          _args.push(val)
+        }
+      })
       process.bindFunction(module, functionId, returnLocation, _args)
     }
   }

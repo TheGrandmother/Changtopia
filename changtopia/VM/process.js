@@ -79,6 +79,43 @@ class Process {
 
   }
 
+  bindNormalFunction(func, returnLocation, args, bindings) {
+    const argData = {}
+
+    if (func.matchyBoi) {
+      const [loc] = func.argLocations
+      argData[loc] = args
+    } else {
+      if (func.argLocations.length !== args.length) {
+        throw new ArgumentCountError(`Argument length mismatch calling ${func.functionId}. You gave me [${args}] but i need stuff to fill [${func.argLocations}]`)
+      }
+      func.argLocations.forEach((loc, i) => argData[loc] = args[i])
+    }
+
+    if (this.stack.frames.length > 10000) {
+      throw new StackOverflow()
+    }
+
+    const frame = new Frame(func, returnLocation, argData)
+
+    if (func.unbound) {
+      if (bindings.length === func.unbound.length) {
+        func.unbound.forEach((name, i) => {
+          if (bindings[i] === h('__SELF__')) {
+            frame.write(name, [fromJsString(func.moduleName), fromJsString(func.functionId), ...bindings])
+          } else {
+            frame.write(name, bindings[i])
+          }
+        })
+      } else {
+        throw new IncorectClosureBindings()
+      }
+    }
+
+    this.stack.addFrame(frame)
+    this.frame = frame
+  }
+
   listen(module, functionId, returnLocation, additionalArgs, bindings) {
     const func = this.getFunction(module, functionId)
     this.handler = {func, returnLocation, additionalArgs, bindings}
@@ -188,42 +225,6 @@ class Process {
     }
   }
 
-  bindNormalFunction(func, returnLocation, args, bindings) {
-    const argData = {}
-
-    if (func.matchyBoi) {
-      const [loc] = func.argLocations
-      argData[loc] = args
-    } else {
-      if (func.argLocations.length !== args.length) {
-        throw new ArgumentCountError(`Argument length mismatch calling ${func.functionId}. You gave me [${args}] but i need stuff to fill [${func.argLocations}]`)
-      }
-      func.argLocations.forEach((loc, i) => argData[loc] = args[i])
-    }
-
-    if (this.stack.frames.length > 10000) {
-      throw new StackOverflow()
-    }
-
-    const frame = new Frame(func, returnLocation, argData)
-
-    if (func.unbound) {
-      if (bindings.length === func.unbound.length) {
-        func.unbound.forEach((name, i) => {
-          if (bindings[i] === h('__SELF__')) {
-            frame.write(name, [fromJsString(func.moduleName), fromJsString(func.functionId), ...bindings])
-          } else {
-            frame.write(name, bindings[i])
-          }
-        })
-      } else {
-        throw new IncorectClosureBindings()
-      }
-    }
-
-    this.stack.addFrame(frame)
-    this.frame = frame
-  }
 
   getCurrentInstruction () {
     return this.frame.func.code[this.frame.line]

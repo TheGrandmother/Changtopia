@@ -1,7 +1,7 @@
 const helpers = require('./helpers')
 const control = require('./control')
 
-function makeBasicAssignmentNode(name, rhs, pos) {
+function makeBasicAssignmentNode(name, rhs, pos, safe) {
   if (rhs.type === 'closure') {
     // We, or I rather, are forced to pass the name
     // onto the rhs if it is a closure to solve recursion
@@ -11,6 +11,7 @@ function makeBasicAssignmentNode(name, rhs, pos) {
     type: 'assignment',
     name,
     rhs,
+    safe,
     pos
   }
 }

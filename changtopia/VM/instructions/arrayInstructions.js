@@ -32,10 +32,31 @@ function quickUnpack(process, location, array, hasBody, leadingCount, trailingCo
   return false
 }
 
+function quickPush(process, location, values) {
+  const arr = process.frame.read(location)
+  for (let i = 0; i < values.length; i++ ) {
+    const val = process.frame.read(values[i])
+    if (val.shared) {
+      // If we are trying to nest a previously shared array.
+      // We will have a bad time.
+      arr[arr.length + i] = val.slice()
+    } else {
+      arr[arr.length + i] = val
+    }
+  }
+  arr.__proto__.shared = true
+  process.frame.write(location, arr)
+}
+
 const arrayInstructions = {
   'arrayCreate' : {
     name: 'arrayCreate',
     evaluate: (process, location, blobCount, ...things) => {
+      if (blobCount === 1 && things[0] === 0 && things[1] === location) {
+        quickPush(process, location, things.slice(2))
+        process.incrementLine()
+        return
+      }
       const blobLocations = things.slice(0, blobCount)
       const entries = things.slice(blobCount)
       let array = []
@@ -45,10 +66,18 @@ const arrayInstructions = {
           if (!Array.isArray(arr)) {
             throw new Errors.ArrayTypeError(`Data at location ${entry} is not an array, it is ${arr} of type ${typeof arr}`)
           }
-          array = array.concat(arr)
+          if (arr.shared) {
+            array = array.concat(arr.slice())
+          } else {
+            array = array.concat(arr)
+          }
         } else {
           const stuff = process.frame.read(entry)
-          array.push(stuff)
+          if (stuff.shared) {
+            array.push(stuff.slice())
+          } else {
+            array.push(stuff)
+          }
         }
       })
       process.frame.write(location, array)

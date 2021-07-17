@@ -38,8 +38,8 @@ function makeLineLabel(name) {
   return {lineLabel: `${name}`}
 }
 
-function makeInstruction(id, args, pos) {
-  return {instruction: {id, args, pos}}
+function makeInstruction(id, args, pos, safe) {
+  return {instruction: {id, args, pos, safe}}
 }
 
 function createAssignment(state, name) {
@@ -88,13 +88,13 @@ function mapGenerateNodesAndRefs(state, nodes) {
 
 const _generators = {
   'assignment': (state, node) => {
-    const {name, rhs} = node
+    const {name, rhs, safe} = node
     const assignRef = createAssignment(state, name)
     if (rhs.type !== 'identifier') {
       return generateNode(state, rhs, assignRef)
     } else {
       const [rhsRef, rhsCode] = generateNodeAndRef(state, rhs)
-      const myCode = [makeInstruction('move', [rhsRef, assignRef], node.pos)]
+      const myCode = [makeInstruction('move', [rhsRef, assignRef], node.pos, safe)]
       return rhsCode.concat(myCode)
     }
   },

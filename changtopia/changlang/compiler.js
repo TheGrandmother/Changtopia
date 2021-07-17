@@ -93,7 +93,7 @@ function collateFunctions(parseResult) {
 
 function changpile(_input, options = {}) {
   const {
-    doTailOptimization = true,
+    optimize = true,
     showAST = false,
     showIntermediate = false,
     prettyPrint = false,
@@ -107,7 +107,7 @@ function changpile(_input, options = {}) {
     const parseResult = parse(input, showAmbigous)
     const functions = collateFunctions(parseResult)
 
-    if (doTailOptimization) {
+    if (optimize) {
       functions.forEach(func => tailOptimize(func))
     }
 
@@ -118,7 +118,9 @@ function changpile(_input, options = {}) {
     const intermediateCode = generateIntermediateCode(functions)
 
 
-    Object.values(intermediateCode.functions).forEach(func => resolveAliases(func))
+    if (optimize) {
+      Object.values(intermediateCode.functions).forEach(func => resolveAliases(func))
+    }
 
     if (showIntermediate) {
       if (printThese && printThese.length !== 0) {
