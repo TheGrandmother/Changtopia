@@ -165,21 +165,20 @@ class BaseIO {
   }
 
   async [h('get_input_stream')](worker, message) {
-    if (!this.registeredInputListener) {
-      this.registeredInputListener = true
-      this.inputListener = (d) => {
-        if (!this.inputStreamOwner) {
-          return
-        }
-        const replyBro = {sender: Pid.ioPid(this.inputStreamOwner.host), recipient: this.inputStreamOwner, id: randomHash(), payload: [[h('input_data'), d.charCodeAt(0)]]}
-        worker.postMessage(replyBro)
+    this.registeredInputListener = true
+    this.inputListener = (d) => {
+      if (!this.inputStreamOwner) {
+        return
       }
+      const replyBro = {sender: Pid.ioPid(this.inputStreamOwner.host), recipient: this.inputStreamOwner, id: randomHash(), payload: [[h('input_data'), d.charCodeAt(0)]]}
+      worker.postMessage(replyBro)
     }
     this.inputStreamOwner = message.sender
   }
 
   async [h('release_input_stream')]() {
     this.inputStreamOwner = null
+    this.inputListener = () => {}
   }
 
   async [h('load_module')](worker, message) {
