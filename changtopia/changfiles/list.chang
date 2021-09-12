@@ -85,7 +85,8 @@ def repeat(x, length)
 end
 
 def flatten(lists)
-  return _flatten(lists, [])
+  --return _flatten(lists, [])
+  return core:flatten(lists)
 end
 
 def _flatten(lists, acc)

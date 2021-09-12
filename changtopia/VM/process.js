@@ -30,6 +30,14 @@ class Process {
     this.handlingRequest = null
     this.timeout = null
     this.abandonedRequests = []
+    this.metrics = {
+      core: {
+      },
+      calls: {
+      }
+    }
+    this.coreCallsSinceLastReport = 0
+    this.callsSinceLastReport = 0
   }
 
   getStateDescriptor() {
@@ -66,21 +74,63 @@ class Process {
   }
 
   bindFunction (module, functionId, returnLocation, args, bindings) {
+    const {enableMetrics, metricsSampleRate} = this.vm
+    let start
     const func = this.getFunction(module, functionId)
     if (module === 'core') {
+
+      if (enableMetrics) {
+        start = performance.now()
+      }
+
       const retval = func.exec(this, returnLocation, ...args)
       if (retval !== h('__ignore_return')) {
         retval !== undefined && this.frame.write(returnLocation, retval)
         this.incrementLine()
       }
+
+      if (enableMetrics) {
+        const current = this.metrics.core[functionId] = {
+          calls: 0,
+          time: 0,
+          ...this.metrics.core[functionId]
+        }
+        this.metrics.core[functionId] = {
+          calls: current.calls + 1,
+          time: current.time + (performance.now() - start),
+        }
+        this.coreCallsSinceLastReport += 1
+        if(this.coreCallsSinceLastReport >= 5000 / metricsSampleRate) {
+          this.coreCallsSinceLastReport  = 0
+          this.vm.postMetrics('core', this.metrics.core)
+          this.metrics.core = {}
+        }
+      }
+
     } else {
       this.bindNormalFunction(func, returnLocation, args, bindings)
     }
 
   }
 
-  bindNormalFunction(func, returnLocation, args, bindings) {
+  // The detached parameter is horrible.
+  // It is used when doing recursive listeners which doesn't use the return value
+  // to prevent a memory leak when all previous messages recived remains on the stack.
+  bindNormalFunction(func, returnLocation, args, bindings, detached) {
+    const {enableMetrics} = this.vm
+
     const argData = {}
+
+    if (enableMetrics) {
+      const metricKey = `${func.moduleName}:${func.functionId}`
+      this.metrics.calls[metricKey] = {
+        calls: 0,
+        time: 0,
+        ...this.metrics.calls[metricKey]
+      }
+      this.callsSinceLastReport += 1
+      this.metrics.calls[metricKey].calls += 1
+    }
 
     if (func.matchyBoi) {
       const [loc] = func.argLocations
@@ -251,6 +301,8 @@ class Process {
   }
 
   returnFromFunction() {
+    const {enableMetrics, metricsSampleRate} = this.vm
+
     const currentFrame = this.stack.frames.pop() // Returning from frame
     const oldFrame = this.stack.frames.pop()     // To frame
 
@@ -272,13 +324,34 @@ class Process {
     if ( !currentFrame.omittIncrement) {
       this.incrementLine()
     }
+
+    if (enableMetrics) {
+      if (this.callsSinceLastReport > 5000 / metricsSampleRate) {
+        this.callsSinceLastReport = 0
+        this.vm.postMetrics('calls', this.metrics.calls)
+        this.metrics.calls = {}
+      }
+    }
   }
 
   executeInstruction() {
     let instruction
+    const {enableMetrics} = this.vm
     try {
+      const start = performance.now()
       instruction = this.getCurrentInstruction()
       evaluateInstruction(this, instruction)
+      if (enableMetrics) {
+        const metricsKey = `${this.frame.func.moduleName}:${this.frame.func.functionId}`
+        if (this.metrics.calls[metricsKey]) {
+          this.metrics.calls[metricsKey].time += performance.now() - start
+        } else {
+          this.metrics.calls[metricsKey] = {
+            calls: 1,
+            time: performance.now() - start
+          }
+        }
+      }
     } catch (err) {
       if (err instanceof RuntimeError) {
         let errorMessage

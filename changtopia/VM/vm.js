@@ -11,7 +11,7 @@ const postToParent = (msg) => postMessage(msg)
 
 class Vm {
 
-  constructor(instance, host) {
+  constructor(instance, host, options) {
     this.modules = {core: builtins}
     this.processes = {}
     this.waitingProcesses = []
@@ -23,11 +23,42 @@ class Vm {
     this.instance = instance
     this.host = host
     this.chattyThreshold = 5
+    this.metricsSampleRate = options.metricsSampleRate
+    this.enableMetrics = options.enableMetrics
     onmessage = (e) => this.handleExternalMessage(e.data)
+  }
+
+  buildDebugInfo() {
+    const processes = Object.values(this.processes)
+    const processCount = processes.length
+    const waitingCount = this.waitingProcesses.length
+    const processesInfo = processes.map(p => ({
+      inboxLength: p.inbox.length,
+      inboxSize: p.inbox.map(m => sizeof(m)).reduce((a,b) => a + b, 0),
+      functions: p.stack.frames.map(f => `${f.func.moduleName}:${f.func.functionId}`),
+      frameSizes: p.stack.frames.map(f => sizeof(f.data)),
+      totalSize: p.stack.frames.map(f => sizeof(f.data)).reduce((a,b) => a+b, 0),
+      frameCount: p.stack.frames.length
+    }))
+    const totalMem = processesInfo.map(i => i.totalSize).reduce((a,b) => a+b, 0)
+    const totalInboxSize = processesInfo.map(i => i.inboxSize).reduce((a,b) => a+b, 0)
+    const totalInboxLength = processesInfo.map(i => i.inboxLength).reduce((a,b) => a+b, 0)
+    return {
+      totalMem,
+      totalInboxSize,
+      totalInboxLength,
+      processCount,
+      waitingCount,
+      processesInfo
+    }
   }
 
   log(...args) {
     postToParent({internal: 'log', args})
+  }
+
+  postMetrics(...args) {
+    postToParent({internal: 'metrics', args})
   }
 
   pidExists(pid) {
@@ -86,7 +117,7 @@ class Vm {
     const recipient = this.processes[Pid.toPid(message.recipient)]
     if (!recipient) {
       this.logError()
-      throw new NoSuchPidError(`There is no process ${Pid.toPid(message.recipient)} to read the message ${formatMessage(message)}`)
+      throw new NoSuchPidError(`There is no process ${Pid.toPid(message.recipient)} to read the message \n${formatMessage(message)} ${this.instance}`)
     }
     recipient.addMessage(message)
   }
@@ -238,8 +269,8 @@ const whyIsLifeSoHacky = (message) => {
     onmessage = whyIsLifeSoHacky
     return
   }
-  const {modules, host, instance} = message.data
-  const vm = new Vm(instance, host)
+  const {modules, host, instance, options} = message.data
+  const vm = new Vm(instance, host, options)
   vm.loadModule(modules)
 }
 onmessage = whyIsLifeSoHacky

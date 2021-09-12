@@ -82,6 +82,8 @@ class BaseFileHandle {
 class BaseIO {
   constructor(FileHandleInterface) {
     this.FileHandleInterface = FileHandleInterface
+    this.metrics = {}
+    this.messagesSinceLastCall = 0
   }
 
   async changpile(input, options) {
@@ -115,7 +117,6 @@ class BaseIO {
       const result = await this.changpile(toJsString(input), options)
       worker.postMessage(makeReply(message, result))
     } catch (err) {
-      console.log(err)
       if (err instanceof CompilerError) {
         worker.postMessage(makeReply(message, [h('error'), fromJsString(`${err.message}\n${err.preview ? err.preview + '\n' : ''}`)]))
       } else {
@@ -251,7 +252,23 @@ class BaseIO {
       const [kind, ...payload] = message.payload
       message.payload = payload
       try {
+        // const start = performance.now()
         await this[kind](worker, message)
+        // this.messagesSinceLastCall += 1
+        // const current = {
+        //   calls: 0,
+        //   time: 0,
+        //   ...this.metrics[kind]
+        // }
+        // this.metrics[kind] = {
+        //   calls: current.calls + 1,
+        //   time: current.time + performance.now() - start
+        // }
+        // if (this.messagesSinceLastCall > 100) {
+        //   this.messagesSinceLastCall = 0
+        //   //Call
+        //   this.coordinator.handleMetrics(null, 'io', this.metrics)
+        // }
       } catch(err) {
         console.error(`Chaos happened when trying to process IO message:\n ${kind}, ${payload}`)
         throw err

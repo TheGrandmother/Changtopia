@@ -31,6 +31,7 @@
     "nearley": "^2.19.3",
     "process": "^0.11.10",
     "setimmediate": "^1.0.5",
+    "sizeof": "^1.0.0",
     "strip-ansi": "^6.0.0",
     "util": "^0.12.3",
     "ws": "^7.3.1",

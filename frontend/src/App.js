@@ -62,6 +62,7 @@ const MyComponent = () => {
 
   useEffect(() => {
     async function loadStuff() {
+      window.DEBUG_LOAD_FACTOR = 1
       if (!loaded && term) {
         setupTerminal(term)
         term.write('Fetching the chang sauce...')

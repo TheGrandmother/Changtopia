@@ -43,6 +43,29 @@ class Coordinator {
     this.ioHandler = ioHandler
     this.workers = {}
     this.showStats = false
+    this.debugInfo = {}
+    this.metrics = {
+      instructions: {
+        totalTime: 0,
+        totalInstructions: 0,
+        breakdown: {}
+      },
+      io: {
+        totalTime: 0,
+        totalMessages: 0,
+        breakdown: {}
+      },
+      core: {
+        totalTime: 0,
+        totalCalls: 0,
+        breakdown: {}
+      },
+      calls: {
+        totalTime: 0,
+        totalCalls: 0,
+        breakdown: {}
+      }
+    }
 
     this.pendingRemoteMessages = {}
     this.ws = new ws(mediatorHost)
@@ -111,6 +134,82 @@ class Coordinator {
     this.workers[sender].load = summary.topQueue + summary.bottomQueue
   }
 
+  handleMetrics(sender, type, data) {
+    if (type === 'instructions') {
+      Object.values(data).forEach((e) => {
+        this.metrics.instructions.totalTime += e.time
+        this.metrics.instructions.totalInstructions += e.calls
+      })
+      Object.keys(data).forEach((id) => {
+        const payload = data[id]
+        const current = {
+          calls: 0,
+          time: 0,
+          ...this.metrics.instructions.breakdown[id]
+        }
+        this.metrics.instructions.breakdown[id] = {
+          calls: current.calls + payload.calls,
+          time: current.time + payload.time
+        }
+      })
+    }
+    if (type === 'io') {
+      Object.values(data).forEach((e) => {
+        this.metrics.io.totalTime += e.time
+        this.metrics.io.totalMessages += e.calls
+      })
+      Object.keys(data).forEach((id) => {
+        const payload = data[id]
+        const current = {
+          calls: 0,
+          time: 0,
+          ...this.metrics.io.breakdown[id]
+        }
+        this.metrics.io.breakdown[id] = {
+          calls: current.calls + payload.calls,
+          time: current.time + payload.time
+        }
+      })
+    }
+    if (type === 'core') {
+      Object.values(data).forEach((e) => {
+        this.metrics.core.totalTime += e.time
+        this.metrics.core.totalCalls += e.calls
+      })
+      Object.keys(data).forEach((id) => {
+        const payload = data[id]
+        const current = {
+          calls: 0,
+          time: 0,
+          ...this.metrics.core.breakdown[id]
+        }
+        this.metrics.core.breakdown[id] = {
+          calls: current.calls + payload.calls,
+          time: current.time + payload.time
+        }
+      })
+    }
+    if (type === 'calls') {
+      Object.values(data).forEach((e) => {
+        this.metrics.calls.totalTime += e.time
+        this.metrics.calls.totalCalls += e.calls
+      })
+      Object.keys(data).forEach((id) => {
+        const payload = data[id]
+        const current = {
+          calls: 0,
+          time: 0,
+          ...this.metrics.calls.breakdown[id]
+        }
+        this.metrics.calls.breakdown[id] = {
+          calls: current.calls + payload.calls,
+          time: current.time + payload.time
+        }
+      })
+    }
+    console.log(this.metrics)
+  }
+
   handleRemoteMessage(_message) {
     const message = JSON.parse(_message)
     if (message.recipient.host !== this.host) {
@@ -131,6 +230,10 @@ class Coordinator {
       if (internal === 'info') {
         this.updateInfo(sender, message.summary)
       }
+      if (internal === 'metrics') {
+        const [type, data] = message.args
+        this.handleMetrics(sender, type, data)
+      }
     } else {
       if (recipient.host !== this.host) {
         this.ws.send(JSON.stringify(message))
@@ -149,14 +252,17 @@ class Coordinator {
 
   spawnVm() {
     const instance = randomHash()
-    const worker = new Worker('vm.js', {workerData: {modules: this.modules, host: this.host, instance}})
+    const options = {
+      enableMetrics: JSON.parse(localStorage['DEBUG_METRICS_ENABLE'] || 'false'),
+      metricsSampleRate: JSON.parse(localStorage['DEBUG_METRICS_SAMPLE_RATE'] || '1'),
+    }
+    const worker = new Worker('vm.js', {workerData: {modules: this.modules, host: this.host, instance, options}})
     worker.instance = instance
     worker.host = this.host
     worker.workers = this.workers
     worker.load = 0
     worker.stats = {topQueue: 0, bottomQueue: 0}
     this.workers[instance] = worker
-    console.log(`Instance ${instance.toString(16)} started`)
     worker.on('error', (err) => {
       throw err
     })
@@ -171,6 +277,7 @@ function crazyCoolStarter(initModules, term, mediatorHost) {
   const {BrowserIO} = require('./Io/BrowserIO.js')
   const browserIO = new BrowserIO(term)
   window.coordinator = new Coordinator(cpuCount, initModules, browserIO, mediatorHost)
+  browserIO.coordinator = window.coordinator
 
   return browserIO
 }

@@ -851,6 +851,11 @@ side-channel@^1.0.2:
     es-abstract "^1.17.0-next.1"
     object-inspect "^1.7.0"
 
+sizeof@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/sizeof/-/sizeof-1.0.0.tgz#41ade1a9b65d29e93a43eccf4a63f0d5818f200e"
+  integrity sha1-Qa3hqbZdKek6Q+zPSmPw1YGPIA4=
+
 slice-ansi@^2.1.0:
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/slice-ansi/-/slice-ansi-2.1.0.tgz#cacd7693461a637a5788d92a7dd4fba068e81636"
