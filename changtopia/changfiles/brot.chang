@@ -50,17 +50,17 @@ end
 
 def worker(x, y, width, height, max, controler)
   result = iterate([0, 0], [y / height / 2, (x / width)], max)
-  color = core:ansi_color(0,125,125)
+  color = core:ansi_bg_color(0,125,125)
   match result
     $contained ->
-      color = core:ansi_color(0,0,0)
+      color = core:ansi_bg_color(0,0,0)
     end
     whatever ->
       color = color_ramp(result, max)
     end
   end
   core:send(controler, [result, x, y])
-  io:print_strings([core:ansi_cursor_to(x, y), color,'█'])
+  io:print_strings([core:ansi_cursor_to(x, y), color,' '])
 end
 
 def plot(width, height, max)
@@ -69,7 +69,7 @@ def plot(width, height, max)
 end
 
 def _plot_line(x, y, width, height, max, parent)
-  io:print_strings([core:ansi_cursor_to(x, y), core:ansi_color(125,225,125), '█'])
+  io:print_strings([core:ansi_cursor_to(x, y), core:ansi_bg_color(125,225,125), ' '])
   match x == width
     false ->
       core:spawn(['brot', 'worker'], x, y, width, height, max, parent)
@@ -107,17 +107,17 @@ def color_ramp(m, max)
   match n < max / 3
     true ->
       fac = (n * 3 / max)
-      return core:ansi_color(fac * 255, 0, 0)
+      return core:ansi_bg_color(fac * 255, 0, 0)
     end
   end
   match n < 2*max / 3
     true ->
       fac = (n * 3 / max - 1)
-      return core:ansi_color(255,  0, fac * 255)
+      return core:ansi_bg_color(255,  0, fac * 255)
     end
   end
   fac = ((n*3)/(2*max) - 1)
-  return core:ansi_color(255, fac * 255, 255)
+  return core:ansi_bg_color(255, fac * 255, 255)
 end
 
 def _entry(_)
@@ -125,5 +125,6 @@ def _entry(_)
   start = core:time()
   [width, height] = core:request(core:io_pid(), $get_console_size)
   plot(width, height, 150)
+  io:print_string(core:ansi_bg_color_reset())
   return $ok
 end
