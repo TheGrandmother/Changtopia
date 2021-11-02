@@ -65,7 +65,7 @@ end
 
 def plot(width, height, max)
   core:spawn(['brot', '_plot'], 0, 0, width, height, max, core:my_pid())
-  core:listen(['brot', 'listener'], width, height, max, 0)
+  listener(width, height, max, 0)
 end
 
 def _plot_line(x, y, width, height, max, parent)
@@ -90,16 +90,17 @@ def _plot(x, y, width, height, max, parent)
   end
 end
 
-def listener(width, height, max, count, sender, payload)
+def otto(width, height, max, count, sender, payload)
   [result, x, y] = payload
-  count = count + 1
   io:print_strings([core:ansi_cursor_to(0, height), core:ansi_color(255,255,255), core:cast(count, 'string'), '/', core:cast(width*(height-1), 'string')])
-  match count == width * (height - 1)
-    true ->
-      return $ok
-    end
+  return count >= width * (height - 1)
+end
+
+def listener(width, height, max, count)
+  match core:listen(['brot', 'otto'], width, height, max, count + 1)
+    true -> return $ok end
+    false -> return listener(width, height, max, count + 1) end
   end
-  return core:listen(['brot', 'listener'], width, height, max, count)
 end
 
 def color_ramp(m, max)
@@ -124,7 +125,7 @@ def _entry(_)
   io:print_string(core:ansi_clear_screen())
   start = core:time()
   [width, height] = core:request(core:io_pid(), $get_console_size)
-  plot(width, height, 150)
+  plot(width, height, 100)
   io:print_string(core:ansi_bg_color_reset())
   return $ok
 end
