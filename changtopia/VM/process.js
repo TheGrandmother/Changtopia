@@ -100,7 +100,7 @@ class Process {
           time: current.time + (performance.now() - start),
         }
         this.coreCallsSinceLastReport += 1
-        if(this.coreCallsSinceLastReport >= 5000 / metricsSampleRate) {
+        if(this.coreCallsSinceLastReport >= 1000 / metricsSampleRate) {
           this.coreCallsSinceLastReport  = 0
           this.vm.postMetrics('core', this.metrics.core)
           this.metrics.core = {}
@@ -319,7 +319,7 @@ class Process {
     }
 
     if (enableMetrics) {
-      if (this.callsSinceLastReport > 5000 / metricsSampleRate) {
+      if (this.callsSinceLastReport > 1000 / metricsSampleRate) {
         this.callsSinceLastReport = 0
         this.vm.postMetrics('calls', this.metrics.calls)
         this.metrics.calls = {}

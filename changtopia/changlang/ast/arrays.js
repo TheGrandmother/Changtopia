@@ -12,6 +12,22 @@ function makeArrayLitteralNode(entries, pos) {
   }
 }
 
+function makeIsArrayNode(arr, pos) {
+  return {
+    type: 'isArray',
+    arr,
+    pos
+  }
+}
+
+function makeArrayLengthNode(arr, pos) {
+  return {
+    type: 'arrayLength',
+    arr,
+    pos
+  }
+}
+
 function makeArrayLitteral(d) {
   const pos = helpers.findPositionOfToken(d, 'BRACKET')
   d = helpers.flattenAndStrip(d)
@@ -101,5 +117,7 @@ module.exports = {
   makeUnpack,
   makeUnpackNode,
   makeString,
-  makeStringNode
+  makeStringNode,
+  makeIsArrayNode,
+  makeArrayLengthNode
 }

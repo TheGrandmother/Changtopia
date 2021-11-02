@@ -170,7 +170,7 @@ def _find_command(name, commands)
     end
     [command, <<rest>>] ->
       [command_name, <<_>>] = command
-      if core:array_compare(name, command_name)
+      if name == command_name
         return command
       end
       return _find_command(name, rest)

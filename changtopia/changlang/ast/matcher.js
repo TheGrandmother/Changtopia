@@ -2,10 +2,9 @@ const helpers = require('./helpers')
 const {randomHash} = require('../../util/hash.js')
 const {CompilerError} = require('../../errors.js')
 const {makeBasicAssignmentNode, makeUnpackingAssignmentNode} = require('./assign')
-const {makeUnpackNode} = require('./arrays')
+const {makeUnpackNode, makeIsArrayNode, makeArrayLengthNode} = require('./arrays')
 const {makeBlockNode, makeIfNode, chainStatements, makeJumpNode, makeJumpIfFalseNode} = require('./control')
 const {makeExprNode} = require('./expr')
-const {makeFunctionCallNode} = require('./functions')
 const basic = require('./basics')
 const {inspect} = require('util')
 console._log = (...args) => console.log(args.map(arg => inspect(arg, false,null,true)).join(' '))
@@ -19,11 +18,11 @@ function makeConstantClause(clause, resultName, doneLabel) {
 function makeImmediateClause(clause, resultName, doneLabel) {
   const clauseIdentifier = basic.makeIdentifierNode(`array_${randomHash()}`, false, clause.pos)
   const assignArray = makeBasicAssignmentNode(clauseIdentifier.name, clause.pattern, clause.pos)
-  const isArrayCall = makeFunctionCallNode('is_array', [resultName], 'core', clause.pos)
-  const arrayCompareCall = makeFunctionCallNode('array_compare', [resultName, clauseIdentifier], 'core', clause.pos)
-  return makeIfNode(isArrayCall,
+  const isArrayNode = makeIsArrayNode(resultName, clause.pos)
+  const compareNode = makeExprNode('==', clauseIdentifier, resultName, clause.pos)
+  return makeIfNode(isArrayNode,
     makeBlockNode(assignArray,
-      makeIfNode(arrayCompareCall,
+      makeIfNode(compareNode,
         makeBlockNode(clause.body,
           makeJumpNode(doneLabel, clause.pos))
         ,clause.pos)
@@ -61,8 +60,8 @@ function generateChecks(clauseIdentifier, pattern, patternIdent, skipLabel) {
 
   const targetLength = pattern.entries.length - (hasBlob ? 1 : 0)
 
-  const isArrayCall = makeFunctionCallNode('is_array', [patternIdent], 'core', pos)
-  const lengthCall = makeFunctionCallNode('length', [patternIdent], 'core', pos)
+  const isArrayCall = makeIsArrayNode(patternIdent, pos)
+  const lengthCall = makeArrayLengthNode(patternIdent, pos)
   const compareLength = makeExprNode(hasBlob ? '>=' : '==', lengthCall, {type: 'constant', value: targetLength, pos}, pos)
 
   const conditionals = []

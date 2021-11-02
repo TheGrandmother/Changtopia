@@ -96,6 +96,27 @@ const arrayInstructions = {
     }
   },
 
+  'arrayLength' : {
+    name: 'arrayLength',
+    evaluate: (process, resLocation, location) => {
+      const array = process.frame.read(location)
+      if (!Array.isArray(array)) {
+        throw new Errors.ArrayTypeError(`Data at location ${location} is not an array, it is ${array} of type ${typeof array}`)
+      }
+      process.frame.write(resLocation, array.length)
+      process.incrementLine()
+    }
+  },
+
+  'isArray' : {
+    name: 'isArray',
+    evaluate: (process, resLocation, location) => {
+      const array = process.frame.read(location)
+      process.frame.write(resLocation, Array.isArray(array))
+      process.incrementLine()
+    }
+  },
+
   'arrayUnpack' : {
     name: 'arrayUnpack',
     evaluate: (process, location, hasBody, leadingCount, trailingCount, ...args ) => {

@@ -195,6 +195,20 @@ const _generators = {
     return myCode
   },
 
+  'arrayLength': (state, node, res) => {
+    const {arr} = node
+    const [arrRef, arrCode] = generateNodeAndRef(state, arr)
+    const myCode = [...arrCode, makeInstruction('arrayLength', [res, arrRef], node.pos)]
+    return myCode
+  },
+
+  'isArray': (state, node, res) => {
+    const {arr} = node
+    const [arrRef, arrCode] = generateNodeAndRef(state, arr)
+    const myCode = [...arrCode, makeInstruction('isArray', [res, arrRef], node.pos)]
+    return myCode
+  },
+
   'arrayIndexing': (state, node, res) => {
     const {name, index} = node
     const arrayRef = state.refs[name.name]

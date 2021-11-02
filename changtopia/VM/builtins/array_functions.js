@@ -6,6 +6,7 @@ const arrayFunctions = [
     functionId: 'array_compare',
     core: true,
     exec: (process, resultLocation, a1Location, a2Location) => {
+      process.vm.log('USING DEPRECATED ARRAY COMPARE')
       const a1 = a1Location
       const a2 = a2Location
       if (!Array.isArray(a1)) {

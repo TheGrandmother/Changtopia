@@ -225,7 +225,6 @@ def worker()
     end
   end
   worker_listener = def (content, sender, payload)
-    io:debug('listening')
     match payload
       [$render, lines, x] ->
         string = @make_string(x, lines, [])
@@ -245,7 +244,6 @@ def worker()
   end
 
   worker_handler = def (content)
-    io:debug('Hanling')
     new_content = core:listen(worker_listener, content)
     if new_content == false
       return $ok
