@@ -123,8 +123,13 @@ def gray_scale(color)
   -- return ' .:-=+*%#@'
 end
 
+-- def make_pixel(x, y, color)
+--   return [<<core:ansi_cursor_to(x, y)>>, gray_scale(color)]
+-- end
 def make_pixel(x, y, color)
-  return [<<core:ansi_cursor_to(x, y)>>, gray_scale(color)]
+  color = color+1
+  derp = core:cast((255 * color)/10, 'integer')
+  return list:flatten([core:ansi_cursor_to(x, y), core:ansi_color(0, derp, derp), 'X', core:ansi_color_reset()])
 end
 
 def sort(walls, position)
@@ -304,7 +309,7 @@ def loop(direction, pos, walls, workers)
 
 
   quit = false
-  turn_rate = 50
+  turn_rate = 20
   speed = 0.7
   r = [core:cos(direction), core:sin(direction)]
   match io:get_char()
