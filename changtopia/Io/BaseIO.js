@@ -139,10 +139,6 @@ class BaseIO {
     worker.postMessage(makeReply(message, window.navigator.hardwareConcurrency))
   }
 
-  async [h('print_raw')](worker, message) {
-    this.writeOut(`Printing: From ${message.sender}: ${message.payload}`)
-  }
-
   async [h('print_string')](worker, message) {
     this.writeOut(String.fromCharCode(...message.payload[0]))
   }
