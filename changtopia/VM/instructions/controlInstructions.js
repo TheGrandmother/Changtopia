@@ -55,7 +55,11 @@ const controlInstructions = {
       args.forEach(a => {
         const val = process.frame.read(a)
         if (val.shared) {
+          // This pretty much never happens.
+          // Could totally remove this i think
+          console.log('Needs to slice')
           _args.push(val.slice())
+          val.shared = false
         } else {
           _args.push(val)
         }

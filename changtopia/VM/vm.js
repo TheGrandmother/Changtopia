@@ -1,3 +1,4 @@
+const {sizeof} = require('sizeof')
 const {Process} = require('./process.js')
 const {h, randomHash} = require('../util/hash.js')
 const builtins = require('./builtins/builtins.js')
@@ -25,7 +26,10 @@ class Vm {
     this.chattyThreshold = 5
     this.metricsSampleRate = options.metricsSampleRate
     this.enableMetrics = options.enableMetrics
+    this.messagesSent = 0
     onmessage = (e) => this.handleExternalMessage(e.data)
+    // setInterval(() => console.log(this.buildDebugInfo()), 10000)
+
   }
 
   buildDebugInfo() {
@@ -49,7 +53,8 @@ class Vm {
       totalInboxLength,
       processCount,
       waitingCount,
-      processesInfo
+      processesInfo,
+      messagesSent: this.messagesSent
     }
   }
 
@@ -103,6 +108,7 @@ class Vm {
   }
 
   dispatchMessage(message, skipCount) {
+    this.messagesSent += 1
     if (message.recipient && message.recipient.instance === this.instance) {
       this.handleMessage(message)
     } else {
@@ -263,6 +269,8 @@ class Vm {
 
 }
 
+// So to make a comment litterally a year later... If this is a remnant from times passed.
+// Why the fokk is it still here...
 // This is a remnant from when shit was both node and browser compatible
 const whyIsLifeSoHacky = (message) => {
   if (!message || !message.data || message.data.type !== 'init') {

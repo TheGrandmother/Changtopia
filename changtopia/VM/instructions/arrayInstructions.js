@@ -37,14 +37,15 @@ function quickPush(process, location, values) {
   for (let i = 0; i < values.length; i++ ) {
     const val = process.frame.read(values[i])
     if (val.shared) {
-      // If we are trying to nest a previously shared array.
-      // We will have a bad time.
+      // This pretty much never happens
+      // Can possibly be droppen
       arr[arr.length + i] = val.slice()
+      val.shared = false
     } else {
       arr[arr.length + i] = val
     }
   }
-  arr.__proto__.shared = true
+  //arr.shared = true
   process.frame.write(location, arr)
 }
 
@@ -68,6 +69,7 @@ const arrayInstructions = {
           }
           if (arr.shared) {
             array = array.concat(arr.slice())
+            arr.shared = false
           } else {
             array = array.concat(arr)
           }
@@ -75,6 +77,7 @@ const arrayInstructions = {
           const stuff = process.frame.read(entry)
           if (stuff.shared) {
             array.push(stuff.slice())
+            array.sahred = false
           } else {
             array.push(stuff)
           }

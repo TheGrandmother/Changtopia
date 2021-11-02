@@ -113,10 +113,7 @@ class Process {
 
   }
 
-  // The detached parameter is horrible.
-  // It is used when doing recursive listeners which doesn't use the return value
-  // to prevent a memory leak when all previous messages recived remains on the stack.
-  bindNormalFunction(func, returnLocation, args, bindings, detached) {
+  bindNormalFunction(func, returnLocation, args, bindings) {
     const {enableMetrics} = this.vm
 
     const argData = {}
@@ -242,10 +239,6 @@ class Process {
       this.waiting = true
     }
 
-    // // TODO: Speeed this up
-    // if (typeof message.payload === 'object') {
-    //   message.payload = JSON.parse(JSON.stringify(message.payload))
-    // }
     this.vm.dispatchMessage(message)
   }
 
@@ -425,6 +418,11 @@ class Stack {
   }
 
   addFrame (frame) {
+    this.frames.push(frame)
+  }
+
+  replaceFrame (frame) {
+    this.frames.pop()
     this.frames.push(frame)
   }
 
