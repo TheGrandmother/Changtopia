@@ -83,18 +83,24 @@ class Coordinator {
       })
       this.ws.send(JSON.stringify({type: 'register', host: this.host}))
     })
+    // setInterval(() => console.log(Object.values(this.workers).map(w => w.load)), 100)
+    this.nextProccessTo = 0
   }
 
   findAvaliableInstance() {
     const arr = Object.values(this.workers)
-    let best = arr[0]
+    const scheduleTo = arr[this.nextProccessTo]
+    this.nextProccessTo = this.nextProccessTo === arr.length - 1 ? 0 : this.nextProccessTo + 1
+    return scheduleTo
+    // let best = arr[0]
 
-    for (let i = 1; i < arr.length; i ++) {
-      const candidate = arr[i]
-      best = candidate.load < best.load ? candidate : best
-    }
+    // for (let i = 1; i < arr.length; i ++) {
+    //   const candidate = arr[i]
+    //   best = candidate.load < best.load ? candidate : best
+    // }
 
-    return best
+
+    // return best
   }
 
   spawnProcess(worker, message) {
