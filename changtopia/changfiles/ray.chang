@@ -194,7 +194,7 @@ def worker()
   [width, height] = core:request(core:io_pid(), $get_console_size)
   height = height - 1
   scale_factor = 1
-  base_height = 2/3 --height at distaxce 1
+  base_height = 2/3 --height at distance 1
   full_range = list:range(0,height)
   column_renderer = def (line, x)
     match line
@@ -225,23 +225,35 @@ def worker()
     end
   end
   worker_listener = def (content, sender, payload)
+    io:debug('listening')
     match payload
       [$render, lines, x] ->
         string = @make_string(x, lines, [])
         io:print_string(core:flatten(string))
         core:send(sender, $render_complete)
-        core:listen(worker_listener, string)
+        return string
       end
       [$display] ->
         io:print_string(content)
-        core:listen(worker_listener, content)
+        return ''
       end
       [$die] ->
-        return $ok
+        -- Don't wanna compare large ass strings
+        return false
       end
     end
   end
-  core:listen(worker_listener, '')
+
+  worker_handler = def (content)
+    io:debug('Hanling')
+    new_content = core:listen(worker_listener, content)
+    if new_content == false
+      return $ok
+    end
+    return @worker_handler(new_content)
+  end
+  @worker_handler('')
+
 end
 
 def render(world_line, workers)
@@ -326,6 +338,7 @@ def _entry(_)
     return core:spawn(['ray', 'worker'])
   end
   cpu_count = core:send(core:io_pid(), $cpu_count)
+  -- cpu_count = 1
   workers = list:map(list:range(0, 8), spawn_worker)
   loop(0, [0,0], walls, workers)
   return $ok
