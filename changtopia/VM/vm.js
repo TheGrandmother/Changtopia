@@ -221,7 +221,6 @@ class Vm {
       if (this.hasQueuedProcesses()) {
         this.runProcess()
       }
-      this.sendExternal({sender: this.instance, internal: 'info', summary: this.getSummary()})
       if (this.hasProcesses()) {
         setImmediate(() => runner()) // eslint-disable-line
       } else {
