@@ -81,6 +81,10 @@ function identifyUnbound(argNames, body) {
       }
     }
 
+    if (node.type === 'blob') {
+      traverse(node.value)
+    }
+
     if (node.type === 'closure') {
       node.args.forEach(a => boundByMe.push(a.name))
     }
