@@ -49,12 +49,21 @@ function quickPush(process, location, values) {
   process.frame.write(location, arr)
 }
 
+function quickCreate(process, location, blobs) {
+  return process.frame.write(location, blobs.map((b) => process.frame.read(b)).flat())
+}
+
 const arrayInstructions = {
   'arrayCreate' : {
     name: 'arrayCreate',
     evaluate: (process, location, blobCount, ...things) => {
       if (blobCount === 1 && things[0] === 0 && things[1] === location) {
         quickPush(process, location, things.slice(2))
+        process.incrementLine()
+        return
+      }
+      if (blobCount === things.length) {
+        quickCreate(process, location, things)
         process.incrementLine()
         return
       }
