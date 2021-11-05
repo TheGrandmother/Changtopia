@@ -19,11 +19,11 @@ class Vm {
     this.topQueue = []
     this.bottomQueue = []
     this.skipTop = false
-    this.topQuantum = 2000
-    this.bottomQuantum = 10000
+    this.topQuantum = 1000
+    this.bottomQuantum = 75000
     this.instance = instance
     this.host = host
-    this.chattyThreshold = 5
+    this.chattyThreshold = 10
     this.metricsSampleRate = options.metricsSampleRate
     this.enableMetrics = options.enableMetrics
     this.messagesSent = 0

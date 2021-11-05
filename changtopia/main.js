@@ -113,9 +113,6 @@ class Coordinator {
     }
   }
 
-  debugStatus () {
-  }
-
   start() {
     for (let i = 0; i < this.instanceCount; i = i + 1) {
       this.spawnVm()
@@ -146,6 +143,8 @@ class Coordinator {
         this.metrics.instructions.totalTime += e.time
         this.metrics.instructions.totalInstructions += e.calls
       })
+      this.metrics.instructions.avgTime = this.metrics.instructions.totalTime / this.metrics.instructions.totalInstructions
+      this.metrics.instructions.ops = Math.floor(1/this.metrics.instructions.avgTime) + 'kI/s'
       Object.keys(data).forEach((id) => {
         const payload = data[id]
         const current = {
@@ -155,7 +154,8 @@ class Coordinator {
         }
         this.metrics.instructions.breakdown[id] = {
           calls: current.calls + payload.calls,
-          time: current.time + payload.time
+          time: Math.floor(current.time + payload.time),
+          'avg(ms)': ((current.time + payload.time) / (current.calls + payload.calls))*1000
         }
       })
     }
@@ -197,7 +197,7 @@ class Coordinator {
     }
     if (type === 'calls') {
       Object.values(data).forEach((e) => {
-        this.metrics.calls.totalTime += e.time
+        this.metrics.calls.totalTime += Math.floor(e.time)
         this.metrics.calls.totalCalls += e.calls
       })
       Object.keys(data).forEach((id) => {
@@ -209,7 +209,7 @@ class Coordinator {
         }
         this.metrics.calls.breakdown[id] = {
           calls: current.calls + payload.calls,
-          time: current.time + payload.time
+          time: Math.floor(current.time + payload.time)
         }
       })
     }

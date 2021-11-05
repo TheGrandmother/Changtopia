@@ -31,7 +31,7 @@ const terminalOptions = {
   fontFamily:'Share Tech Mono',
   fontSize:'16',
   fontWeight:'200',
-  renderType: 'webGl',
+  rendererType: 'canvas',
   theme: {
     foreground: '#c0c0c0',
     background: '#454545',

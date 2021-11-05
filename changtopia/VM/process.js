@@ -330,8 +330,12 @@ class Process {
   executeInstruction() {
     let instruction
     const {enableMetrics} = this.vm
+    let start
     try {
-      const start = performance.now()
+      if (enableMetrics) {
+        start = performance.now()
+      }
+
       instruction = this.getCurrentInstruction()
       evaluateInstruction(this, instruction)
       if (enableMetrics) {

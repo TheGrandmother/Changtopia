@@ -47,9 +47,9 @@ def find_intersection(origin, angle, wall)
 
   dot = v2_x * v3_x + v2_y * v3_y
 
-  if core:abs(dot) <= 0
-    return $miss
-  end
+  -- if core:abs(dot) <= 0
+  --   return $miss
+  -- end
 
   t1 = (v2_x * v1_y - v2_y * v1_x) / dot
   t2 = (v1_x * v3_x + v1_y * v3_y) / dot
@@ -123,15 +123,6 @@ def gray_scale(color)
   -- return ' .:-=+*%#@'
 end
 
--- def make_pixel(x, y, color)
---   return [<<core:ansi_cursor_to(x, y)>>, gray_scale(color)]
--- end
-def make_pixel(x, y, color)
-  color = color+1
-  derp = core:cast((255 * color)/10, 'integer')
-  return list:flatten([core:ansi_cursor_to(x, y), core:ansi_color(0, derp, derp), 'X', core:ansi_color_reset()])
-end
-
 def sort(walls, position)
   return sort(walls, [], true, position)
 end
@@ -201,19 +192,33 @@ def worker()
   scale_factor = 1
   base_height = 2/3 --height at distance 1
   full_range = list:range(0,height)
+  ansi_color_reset = core:ansi_color_reset()
   column_renderer = def (line, x)
     match line
       $miss -> return [] end
       distance ->
-        draw_wall = def (y)
-          return list:flatten(make_pixel(x, y, core:cast(min(9/distance, 9), 'integer')))
+        color = core:cast(254/distance, 'integer')
+        if 255 < color
+          color = 255
         end
+        ansi_color = core:ansi_color(0, color, color)
         segment_height = core:cast((height * base_height) / distance, 'integer')
+        map = def (list, res)
+          match list
+            [] ->
+              return res
+            end
+            [y, <<rest>>] ->
+              thing = [<<core:ansi_cursor_to(x, y)>>, <<ansi_color>>, <<'█'>>, <<ansi_color_reset>>]
+              return @map(rest, [<<res>>, <<thing>>])
+            end
+          end
+        end
         if segment_height > height
-          return list:flatten(list:map(full_range, draw_wall))
+          return @map(full_range, [])
         end
         padding = core:cast((height - segment_height) / 2, 'integer')
-        return list:flatten(list:map(list:range(padding, padding + segment_height), draw_wall))
+        return @map(list:range(padding, padding + segment_height), [])
       end
       whatever ->
         return []
@@ -286,7 +291,7 @@ def render(world_line, workers)
   return core:time() - start
 end
 
-def loop(direction, pos, walls, workers)
+def loop(direction, pos, walls, workers, times)
   io:print_string(core:ansi_cursor_to(0,0))
   [width, height] = core:request(core:io_pid(), $get_console_size)
   fov = core:pi()/2
@@ -300,6 +305,7 @@ def loop(direction, pos, walls, workers)
   line_time = core:time() - start
   io:print_string(core:ansi_clear_screen())
   render_time = render(world_line, workers)
+  times = [<<times>>, render_time]
   total_time = line_time + render_time
   io:print_string(core:ansi_cursor_to(0,height - 1))
   io:print_strings(['Total time: ', core:cast(total_time, 'string'), ' '])
@@ -323,9 +329,9 @@ def loop(direction, pos, walls, workers)
     kill = def (pid) core:send(pid, [$die]) end
     list:map(workers, kill)
     io:print_string('\n')
-    return $ok
+    return times
   end
-  return loop(direction, pos, sorted_walls, workers)
+  return loop(direction, pos, sorted_walls, workers, times)
 end
 
 def _entry(_)
@@ -343,6 +349,7 @@ def _entry(_)
   cpu_count = core:send(core:io_pid(), $cpu_count)
   -- cpu_count = 1
   workers = list:map(list:range(0, 8), spawn_worker)
-  loop(0, [0,0], walls, workers)
+  bob = loop(0, [0,0], walls, workers, [])
+  io:debug_raw(bob)
   return $ok
 end
