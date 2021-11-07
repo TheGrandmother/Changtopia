@@ -297,7 +297,14 @@ def color_tokens([token, <<tokens>>], bracket_depth, res)
 end
 
 def format(code)
-  return color_tokens(tokenize(code))
+  start = core:time()
+  lines = list:split_by(code,  "\n")
+  thing = def (line)
+    return color_tokens(tokenize([<<line>>, "\n"]))
+  end
+  formatted = list:flatten(list:pmap(lines, thing))
+  io:debug_raw(core:time() - start)
+  return formatted
 end
 
 def _entry(_)

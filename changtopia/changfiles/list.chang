@@ -269,3 +269,26 @@ def tail(l)
   [_, <<t>>] = l
   return t
 end
+
+def pmap(list, fn)
+  cpu_count = core:send(core:io_pid(), $cpu_count)
+  segments = partition(list, cpu_count)
+  spawner = def (segment)
+    pid =  core:spawn(['list', 'pmap_worker'], segment, fn)
+    core:link(pid)
+    return pid
+  end
+  workers = map(segments, spawner)
+  return core:flatten(map(workers, def (worker) return core:send(worker, $ok) end))
+end
+
+def pmap_worker(list, fn)
+  result = map(list, fn)
+  listener = def (sender, payload)
+    return result
+  end
+  core:listen(listener)
+  -- Something is wrong here. this return is completely unncessary
+  -- but without it just gets stuck.
+  return $ok
+end
