@@ -9,10 +9,10 @@ end
 
 def build_input(input_string, input)
   match input
-    13 ->
+    [$key_down, _, $enter, _] ->
       return [$done, input_string]
     end
-    127 ->
+    [$key_down, _, $backspace, _] ->
       match input_string
         [s, <<head>>, _] ->
           erase()
@@ -31,10 +31,11 @@ def build_input(input_string, input)
         end
       end
     end
-    whatever ->
-      core:send(core:io_pid(), $print_string, [input])
-      return [<<input_string>>, input]
+    [$key_down, d, _, true] ->
+      core:send(core:io_pid(), $print_string, [d])
+      return [<<input_string>>, d]
     end
+    whatever -> return input_string end
   end
   return $whatever
 end
@@ -42,21 +43,13 @@ end
 def _get_line(input_string, sender, payload)
   match utils:pid_compare(sender, core:io_pid())
     true ->
-      match payload
-        [$input_data, d] ->
-          thing = build_input(input_string, d)
-          match thing
-            [$done, stuff] ->
-              return stuff
-            end
-            whatever ->
-              input_string = thing
-            end
-          end
+      thing = build_input(input_string, payload)
+      match thing
+        [$done, stuff] ->
+          return stuff
         end
         whatever ->
-          core:send(core:io_pid(), $print_string, 'Got some starnge shit')
-          core:send(core:io_pid(), $print_raw, payload)
+          input_string = thing
         end
       end
     end
@@ -79,7 +72,8 @@ end
 def get_char()
   _get_char = def (sender, payload)
     match payload
-      [$input_data, d] -> return d end
+      [$key_down, d, _, true] -> return d end
+      whatever -> return core:listen(_get_char) end
     end
   end
   core:send(core:io_pid(), $get_input_stream)

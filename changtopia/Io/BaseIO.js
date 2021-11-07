@@ -4,6 +4,7 @@ const Pid = require('../VM/pid.js')
 const fileHandles = {}
 const {changpile} = require('../changlang/compiler.js')
 const {CompilerError, RuntimeError} = require('../errors.js')
+const decamelize = require('decamelize')
 
 function makeReply(message, payload, secret) {
   return {sender: message.recipient, recipient: message.sender, id: randomHash(), payload, requestId: message.id, secret}
@@ -147,10 +148,6 @@ class BaseIO {
     this.debugPrint(String.fromCharCode(...message.payload[0]))
   }
 
-  async [h('move_cursor')]() {
-    throw new Error('the io operation move_cursor has been grevely deprecated')
-  }
-
   async [h('random')](worker, message) {
     const val = (Math.random() * Number.MAX_SAFE_INTEGER)
     worker.postMessage(makeReply(message, val))
@@ -160,13 +157,19 @@ class BaseIO {
     worker.postMessage(makeReply(message, await this.getTerminalSize()))
   }
 
+
   async [h('get_input_stream')](worker, message) {
+
+    function formatKeyEvent(e) {
+      return [h(e.type === 'keyup' ? 'key_up' : 'key_down'), e.key.charCodeAt(0), h(decamelize(e.code)), e.key.length === 1]
+    }
+
     this.registeredInputListener = true
     this.inputListener = (d) => {
       if (!this.inputStreamOwner) {
         return
       }
-      const replyBro = {sender: Pid.ioPid(this.inputStreamOwner.host), recipient: this.inputStreamOwner, id: randomHash(), payload: [[h('input_data'), d.charCodeAt(0)]]}
+      const replyBro = {sender: Pid.ioPid(this.inputStreamOwner.host), recipient: this.inputStreamOwner, id: randomHash(), payload: [formatKeyEvent(d)]}
       worker.postMessage(replyBro)
     }
     this.inputStreamOwner = message.sender
@@ -247,26 +250,11 @@ class BaseIO {
       const [kind, ...payload] = message.payload
       message.payload = payload
       try {
-        // const start = performance.now()
         await this[kind](worker, message)
-        // this.messagesSinceLastCall += 1
-        // const current = {
-        //   calls: 0,
-        //   time: 0,
-        //   ...this.metrics[kind]
-        // }
-        // this.metrics[kind] = {
-        //   calls: current.calls + 1,
-        //   time: current.time + performance.now() - start
-        // }
-        // if (this.messagesSinceLastCall > 100) {
-        //   this.messagesSinceLastCall = 0
-        //   //Call
-        //   this.coordinator.handleMetrics(null, 'io', this.metrics)
-        // }
       } catch(err) {
-        console.error(`Chaos happened when trying to process IO message:\n ${kind}, ${payload}`)
-        throw err
+        console.error(`Chaos happened when trying to process IO message:\n KIND: ${kind}\nPAYLOAD: ${payload}`)
+        console.error(err)
+        worker.postMessage(makeReply(message, [h('error'), h('io_chaos'), fromJsString(err.message)]))
       }
     }
   }

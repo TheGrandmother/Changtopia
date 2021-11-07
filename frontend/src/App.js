@@ -54,9 +54,10 @@ const MyComponent = () => {
   const [loaded, setLoaded] = useState(false)
 
   function inputTraps(d, listener) {
-    if (d === '[15~') {
+    if (d.key === 'F5') {
       window.reload()
     }
+    if (d.type === 'keypress') {return}
     listener(d)
   }
 
@@ -97,8 +98,8 @@ const MyComponent = () => {
         ioDude.getTerminalSize = async () => [term.cols, term.rows]
         ioDude.importFile = async () => importFile()
         ioDude.saveFile = async (name) => await saveFile(name)
-        thing = (d) => inputTraps(d.key, ioDude.inputListener)
-        term.onKey(thing)
+        thing = (d) => inputTraps(d, ioDude.inputListener)
+        term.attachCustomKeyEventHandler(thing)
         setLoaded(true)
       }
     }
