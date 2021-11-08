@@ -33,19 +33,16 @@ function quickUnpack(process, location, array, hasBody, leadingCount, trailingCo
 }
 
 function quickPush(process, location, values) {
-  const arr = process.frame.read(location)
+  let arr = process.frame.read(location)
+  if (!arr.shared) {
+    // The array must be copied before we can start to quickpush
+    arr = arr.slice(0)
+  }
   for (let i = 0; i < values.length; i++ ) {
     const val = process.frame.read(values[i])
-    if (val.shared) {
-      // This pretty much never happens
-      // Can possibly be droppen
-      arr[arr.length + i] = val.slice()
-      val.shared = false
-    } else {
-      arr[arr.length + i] = val
-    }
+    arr[arr.length + i] = val
   }
-  //arr.shared = true
+  arr.shared = true
   process.frame.write(location, arr)
 }
 

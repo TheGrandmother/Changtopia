@@ -37,8 +37,9 @@ def _message_listener(messages, nick, sender, message)
     [$error, message] ->
       new_messages = render([<<messages>>, ['error', message]])
       return [$continue, new_messages] end
-    whatever ->
+    x ->
       new_messages = render([<<messages>>, ['error', 'dumb_message']])
+      io:debug_raw(x)
       return [$continue, new_messages] end
   end
 end

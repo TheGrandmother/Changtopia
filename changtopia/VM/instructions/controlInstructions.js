@@ -41,7 +41,8 @@ const controlInstructions = {
   'return' : {
     name: 'return',
     evaluate: (process, returnValue) => {
-      process.frame.write('__return__', process.frame.read(returnValue))
+      const val = process.frame.read(returnValue)
+      process.frame.write('__return__', val)
       process.returnFromFunction()
     }
   },
@@ -49,22 +50,7 @@ const controlInstructions = {
   'call' : {
     name: 'call',
     evaluate: (process, module, functionId, returnLocation, ...args) => {
-      const _args = []
-      // ENSURE PASS BY VALUE
-      // Could be faster
-      args.forEach(a => {
-        const val = process.frame.read(a)
-        if (val.shared) {
-          // This pretty much never happens.
-          // Could totally remove this i think
-          console.log('Needs to slice')
-          _args.push(val.slice())
-          val.shared = false
-        } else {
-          _args.push(val)
-        }
-      })
-      process.bindFunction(module, functionId, returnLocation, _args)
+      process.bindFunction(module, functionId, returnLocation, args.map(loc => process.frame.read(loc)))
     }
   }
 }
