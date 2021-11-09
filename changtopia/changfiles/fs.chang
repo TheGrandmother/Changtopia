@@ -28,7 +28,7 @@ def commit(source, path, options)
   match core:request(core:io_pid(), $open_file, source)
     [_, file_pid] ->
       content = core:request(file_pid, $read_all)
-      split_path = list:split_by(path, ',')
+      split_path = list:split_by(path, ",")
       user = '' -- handling the user needs to be fixed
       match core:send(core:mediator_pid(), $commit_a_file, split_path, user, content, options)
         [$error, message] ->
@@ -43,7 +43,7 @@ def commit(source, path, options)
 end
 
 def fetch(path, destination)
-  split_path = list:split_by(path, ',')
+  split_path = list:split_by(path, ",")
   match core:send(core:mediator_pid(), $fetch_a_file, split_path)
     [$error, message] ->
       io:print_strings([message, '\n'])
@@ -63,7 +63,7 @@ def fetch(path, destination)
 end
 
 def read_remote(path)
-  split_path = list:split_by(path, ',')
+  split_path = list:split_by(path, ",")
   match core:send(core:mediator_pid(), $fetch_a_file, split_path)
     [$error, <<err>>] ->
       return [$error, <<err>>]
@@ -107,7 +107,7 @@ def ls(args)
       return $ok
     end
     ['remote', <<path>>] ->
-      split_path = list:split_by(path, ',')
+      split_path = list:split_by(path, ",")
       match core:send(core:mediator_pid(), $find_a_file, split_path)
         [$error, message] ->
           io:print_strings([message, '\n'])

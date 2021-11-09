@@ -34,7 +34,7 @@ const binops = {
     if (Array.isArray(a) && Array.isArray(b)) {
       return equal(a, b)
     } else {
-      return a == b
+      return a === b
     }
   },
   '!=': (a ,b) => a > b,

@@ -67,7 +67,7 @@ end
 def lex(content, $directive, value_acc, output)
   match content
     ["[", "[", <<_>>] -> return [$error, $unexpected_open, 'Unexpected brackets', value_acc] end
-    ["]", "]", <<rest>>] -> return lex(rest, $void, [], [<<output>>, [$directive, list:split_by(value_acc, ' ')]]) end
+    ["]", "]", <<rest>>] -> return lex(rest, $void, [], [<<output>>, [$directive, list:split_by(value_acc, " ")]]) end
     [x, <<rest>>] -> return lex(rest, $directive, [<<value_acc>>, x], output) end
     [] -> return [$error, $missing_close, 'Missing closing bracekts', value_acc] end
   end

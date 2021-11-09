@@ -24,7 +24,7 @@ def display(content, origin, bound)
   end
   text_width = x1 - x0
   text_height = y1 - y0
-  divided_content = list:split_by(content, '\n')
+  divided_content = list:split_by(content, "\n")
 
   render = def (content, line_no)
     match content
@@ -81,7 +81,7 @@ def display_lines(lines, origin, bound)
 end
 
 def split_into_display_lines(content, line_width)
-  divided_content = list:split_by(content, '\n')
+  divided_content = list:split_by(content, "\n")
   thing = def (content, acc)
     match content
       [line, <<rest>>] ->
@@ -106,7 +106,7 @@ def fits_on_screen(content, size)
       [width, height] = size
     end
   end
-  divided_content = list:split_by(content, '\n')
+  divided_content = list:split_by(content, "\n")
   thing = def (content, x)
     if (x > height)
       return false
