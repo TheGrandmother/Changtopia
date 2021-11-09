@@ -148,17 +148,17 @@ def scrolling(content, origin, size)
     core:send(core:io_pid(), $release_input_stream)
     quit = false
     match payload
-      [$input_data, "k"] ->
+      [$key_down, "k", _, _] ->
         if current_line > 0
           current_line = current_line - 1
         end
       end
-      [$input_data, "j"] ->
+      [$key_down, "j", _, _] ->
         if current_line < line_count - text_height
           current_line = current_line + 1
         end
       end
-      [$input_data, "q"] ->
+      [$key_down, "q", _, _] ->
         quit = true
       end
     end

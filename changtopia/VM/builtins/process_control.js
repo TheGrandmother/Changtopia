@@ -75,7 +75,6 @@ const processControlFunctions = [
     core: true,
     exec: (process, returnLocation, duration) => {
       process.setTimeout(duration)
-      return 0
     }
   },
   {

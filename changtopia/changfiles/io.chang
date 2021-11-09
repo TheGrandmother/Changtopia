@@ -12,6 +12,9 @@ def build_input(input_string, input)
     [$key_down, _, $enter, _] ->
       return [$done, input_string]
     end
+    [$key_down, _, $numpad_enter, _] ->
+      return [$done, input_string]
+    end
     [$key_down, _, $backspace, _] ->
       match input_string
         [s, <<head>>, _] ->

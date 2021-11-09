@@ -136,6 +136,13 @@ def run_command(input)
   return $ok
 end
 
+def load_and_run(arg)
+  if load_module(arg) == $ok
+    return run_module(arg)
+  end
+  return $fail
+end
+
 def commands()
   -- Commands ar an array on the form:
   -- name, noArgs, [module, function], help_text
@@ -143,6 +150,7 @@ def commands()
     ['q', 0, ['shell', 'quit'], 'Quits the VM'],
     ['run', 1, ['shell', 'run_module'], 'Runs the specified module'],
     ['load', 1, ['shell', 'load_module'], 'Loads the specified module'],
+    ['lar', 1, ['shell', 'load_and_run'], 'Load and run a module'],
     ['help', 0, ['shell', 'help'], 'Prints this.. duh'],
     ['chat', 0, ['chat', '_entry'], 'Chat with other people on changtopia, I.e, nobody'],
     ['clear', 0, ['shell', 'clear'], 'Clears the screen'],
