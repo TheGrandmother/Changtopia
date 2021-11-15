@@ -29,15 +29,17 @@ const basicInstructions = {
   },
 }
 
+const eq = (a ,b) => {
+  if (Array.isArray(a) && Array.isArray(b)) {
+    return equal(a, b)
+  } else {
+    return a === b
+  }
+}
+
 const binops = {
-  '==': (a ,b) => {
-    if (Array.isArray(a) && Array.isArray(b)) {
-      return equal(a, b)
-    } else {
-      return a === b
-    }
-  },
-  '!=': (a ,b) => a > b,
+  '==': eq,
+  '!=': (a ,b) => !eq(a, b),
   '>': (a ,b) => a > b,
   '>=': (a ,b) => a >= b,
   '<=': (a ,b) => a <= b,

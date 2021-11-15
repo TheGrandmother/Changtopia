@@ -92,15 +92,6 @@ class Coordinator {
     const scheduleTo = arr[this.nextProccessTo]
     this.nextProccessTo = this.nextProccessTo === arr.length - 1 ? 0 : this.nextProccessTo + 1
     return scheduleTo
-    // let best = arr[0]
-
-    // for (let i = 1; i < arr.length; i ++) {
-    //   const candidate = arr[i]
-    //   best = candidate.load < best.load ? candidate : best
-    // }
-
-
-    // return best
   }
 
   spawnProcess(worker, message) {
