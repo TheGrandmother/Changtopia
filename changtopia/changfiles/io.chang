@@ -85,6 +85,20 @@ def get_char()
   return input
 end
 
+def get_key_down()
+  _get_char = def (sender, payload)
+    match payload
+      [$key_down, d, _, true] -> return d end
+      [$key_down, _, d, false] -> return d end
+      whatever -> return core:listen(_get_char) end
+    end
+  end
+  core:send(core:io_pid(), $get_input_stream)
+  input = core:listen(_get_char)
+  core:send(core:io_pid(), $release_input_stream)
+  return input
+end
+
 def print_tabs(n)
   if n > 0
     core:send(core:io_pid(), $print_string, '  ')

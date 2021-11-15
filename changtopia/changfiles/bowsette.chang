@@ -83,8 +83,8 @@ def link_search(links, input, selected)
     end
   end
 
-  match io:get_char()
-    127 ->
+  match io:get_key_down()
+    $backspace ->
       match input
         [<<meh>>, _] ->
           return link_search(links, meh, selected)
@@ -94,14 +94,14 @@ def link_search(links, input, selected)
         end
       end
     end
-    9 ->
+    $tab ->
       return link_search(links, input, (selected + 1) % core:length(candidates))
     end
-    13 ->
+    $enter ->
       plz = @get_selected(candidates, 0)
       return plz
     end
-    39 ->
+    $escape ->
       return $nothing
     end
     x ->
@@ -144,7 +144,7 @@ def display(content, sections, links, origin)
   scroller = def (current_line)
     core:send(core:io_pid(), $release_input_stream)
     quit = false
-    match io:get_char()
+    match io:get_key_down()
       "k" ->
         if current_line > 0
           current_line = current_line - 1
