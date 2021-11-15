@@ -7,7 +7,6 @@ const Pid = require('./pid.js')
 const {prettyInst} = require('./instructions/pretty.js')
 const {toJsString} = require('../util/strings.js')
 const {formatMessage, makeReply} = require('../util/messages.js')
-require('setimmediate')
 const postToParent = (msg) => postMessage(msg)
 
 class Vm {
@@ -23,7 +22,6 @@ class Vm {
     this.bottomQuantum = 75000
     this.instance = instance
     this.host = host
-    this.chattyThreshold = 10
     this.metricsSampleRate = options.metricsSampleRate
     this.enableMetrics = options.enableMetrics
     this.messagesSent = 0
@@ -170,11 +168,7 @@ class Vm {
       process.executeInstruction()
     }
     if (!process.finished && !process.waiting) {
-      if (process.messagesSent > this.chattyThreshold) {
-        this.topQueue.push(processPid)
-      } else {
-        this.bottomQueue.push(processPid)
-      }
+      this.bottomQueue.push(processPid)
     } else if (process.waiting) {
       this.waitingProcesses.push(processPid)
     } else if (process.finished) {
@@ -214,6 +208,9 @@ class Vm {
       this.spawnProcess(undefined, 'main', '_entry', args)
     }
 
+
+    const channel = new MessageChannel()
+
     const runner = () => {
       if (this.waitingProcesses.length !== 0){
         this.processWaitingTasks()
@@ -222,10 +219,14 @@ class Vm {
         this.runProcess()
       }
       if (this.hasProcesses()) {
-        setImmediate(() => runner()) // eslint-disable-line
+        channel.port2.postMessage(0)
       } else {
         setTimeout(() => runner(), 100) // eslint-disable-line
       }
+    }
+
+    channel.port1.onmessage = function() {
+      runner()
     }
 
     runner()
