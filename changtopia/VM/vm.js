@@ -25,8 +25,11 @@ class Vm {
     this.metricsSampleRate = options.metricsSampleRate
     this.enableMetrics = options.enableMetrics
     this.messagesSent = 0
+    this.internalChannel = new MessageChannel()
     onmessage = (e) => this.handleExternalMessage(e.data)
-    // setInterval(() => console.log(this.buildDebugInfo()), 10000)
+    this.internalChannel.port1.onmessage = () => {
+      this.runner()
+    }
 
   }
 
@@ -138,6 +141,7 @@ class Vm {
     process.bindFunction(module, entryPoint, 'program_result', args, bindings)
     this.processes[pid] = process
     this.topQueue.push(pid)
+    this.internalChannel.port2.postMessage(0)
     return pid
   }
 
@@ -208,28 +212,19 @@ class Vm {
       this.spawnProcess(undefined, 'main', '_entry', args)
     }
 
+    this.internalChannel.port2.postMessage(0)
+  }
 
-    const channel = new MessageChannel()
-
-    const runner = () => {
-      if (this.waitingProcesses.length !== 0){
-        this.processWaitingTasks()
-      }
-      if (this.hasQueuedProcesses()) {
-        this.runProcess()
-      }
-      if (this.hasProcesses()) {
-        channel.port2.postMessage(0)
-      } else {
-        setTimeout(() => runner(), 100) // eslint-disable-line
-      }
+  runner() {
+    if (this.waitingProcesses.length !== 0){
+      this.processWaitingTasks()
     }
-
-    channel.port1.onmessage = function() {
-      runner()
+    if (this.hasQueuedProcesses()) {
+      this.runProcess()
     }
-
-    runner()
+    if (this.hasProcesses()) {
+      this.internalChannel.port2.postMessage(0)
+    }
   }
 
   logError() {
