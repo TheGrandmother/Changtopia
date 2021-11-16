@@ -105,6 +105,7 @@ def link_search(links, input, selected)
       return $nothing
     end
     x ->
+      if core:is_atom(x) return link_search(links, input, selected) end
       return link_search(links, [<<input>>, x], selected)
     end
   end

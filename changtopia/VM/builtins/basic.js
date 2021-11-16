@@ -21,6 +21,13 @@ const basics = [
     }
   },
   {
+    functionId: 'is_atom',
+    core: true,
+    exec: (process, _, value) => {
+      return typeof value === 'string'
+    }
+  },
+  {
     functionId: 'time',
     core: true,
     exec: () => {

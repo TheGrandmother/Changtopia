@@ -304,6 +304,7 @@ def format(code)
   end
   formatted = list:flatten(list:pmap(lines, thing))
   io:debug_raw(core:time() - start)
+  [<<formatted>>, _] = formatted --Last dude is a newline that we appended
   return formatted
 end
 
