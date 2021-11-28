@@ -30,11 +30,7 @@ const basicInstructions = {
 }
 
 const eq = (a ,b) => {
-  if (Array.isArray(a) && Array.isArray(b)) {
-    return equal(a, b)
-  } else {
-    return a === b
-  }
+  return equal(a, b)
 }
 
 const binops = {

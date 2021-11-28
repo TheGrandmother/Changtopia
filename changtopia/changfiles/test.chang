@@ -1,0 +1,8 @@
+module test
+
+def _entry(_)
+  otto = [1,5,4,56,4,8,7,4,5,8,6,5,2,5,41,45,4,7,5,8,9,5,54,4,5,7,85,58,5,4,5,4,5,7,5,57,57,57,57,57,54,54,5,27,245,2485,245,4252,45,5]
+  sorted = list:sort(otto, def (a,b) return a - b end)
+  io:debug_raw(otto)
+  io:debug_raw(sorted)
+end

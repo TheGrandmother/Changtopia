@@ -1,0 +1,37 @@
+module set
+
+def contains(set, element)
+  _contains = def (set)
+    match set
+      [] -> return false end
+      [x, <<rest>>] ->
+        if x == element
+          return true
+        end
+        return @_contains(rest)
+      end
+    end
+  end
+  return @_contains(set)
+end
+
+def add_element(set, element)
+  if contains(set, element) return set end
+  return [<<set>>, element]
+end
+
+def remove_element(set, element)
+  if contains(set, element) != true return set end
+  remove = def (set, acc)
+    match set
+      [] -> return acc end
+      [x, <<rest>>] ->
+        if x == element
+          return [<<acc>>, <<rest>>]
+        end
+        return @remove(rest, [<<acc>>, x])
+      end
+    end
+  end
+  return @remove(set, [])
+end

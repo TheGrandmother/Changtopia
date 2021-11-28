@@ -292,3 +292,30 @@ def pmap_worker(list, fn)
   -- but without it just gets stuck.
   return $ok
 end
+
+
+-- Basic merge sort for now
+def sort(list, fn)
+  if core:length(list) <= 1 return list end
+  [left, right] = list:partition(list, 2)
+
+  left = sort(left, fn)
+  right = sort(right, fn)
+
+  merge = def (l, r, res)
+    match [core:length(l) == 0, core:length(r) == 0]
+      [false, false] ->
+        [l_head, <<l_rest>>] = l
+        [r_head, <<r_rest>>] = r
+        comp = @fn(l_head, r_head)
+        if comp <= 0
+          return @merge(l_rest, r, [<<res>>, l_head])
+        end
+        return @merge(l, r_rest, [<<res>>, r_head])
+      end
+      whatever -> return [<<res>>, <<l>>, <<r>>] end
+    end
+  end
+
+  return @merge(left, right, [])
+end
