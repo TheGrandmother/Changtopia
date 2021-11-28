@@ -34,6 +34,27 @@ const math = [
       return Math.PI
     }
   },
+  {
+    functionId: 'floor',
+    core: true,
+    exec: (_, __, x) => {
+      return Math.floor(x)
+    }
+  },
+  {
+    functionId: 'random',
+    core: true,
+    exec: () => {
+      return Math.random()
+    }
+  },
+  {
+    functionId: 'rand_range',
+    core: true,
+    exec: (_, __, min, max) => {
+      return min + (Math.random() * (max-min))
+    }
+  },
 ]
 
 module.exports = {math}

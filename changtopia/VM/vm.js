@@ -30,7 +30,10 @@ class Vm {
     this.internalChannel.port1.onmessage = () => {
       this.runner()
     }
+  }
 
+  sceduleExecution() {
+    this.internalChannel.port2.postMessage(0)
   }
 
   buildDebugInfo() {
@@ -127,6 +130,7 @@ class Vm {
       throw new NoSuchPidError(`There is no process ${Pid.toPid(message.recipient)} to read the message \n${formatMessage(message)} ${this.instance}`)
     }
     recipient.addMessage(message)
+    this.sceduleExecution()
   }
 
   loadModule(module) {
@@ -141,7 +145,7 @@ class Vm {
     process.bindFunction(module, entryPoint, 'program_result', args, bindings)
     this.processes[pid] = process
     this.topQueue.push(pid)
-    this.internalChannel.port2.postMessage(0)
+    this.sceduleExecution()
     return pid
   }
 
@@ -199,7 +203,11 @@ class Vm {
   }
 
   hasProcesses() {
-    return  this.hasQueuedProcesses() || this.waitingProcesses.length !== 0
+    return this.hasQueuedProcesses() || this.waitingProcesses.length !== 0
+  }
+
+  hasMessages() {
+    return Object.values(this.processes).some(p => p.inbox.length !== 0)
   }
 
 
@@ -222,8 +230,14 @@ class Vm {
     if (this.hasQueuedProcesses()) {
       this.runProcess()
     }
-    if (this.hasProcesses()) {
-      this.internalChannel.port2.postMessage(0)
+    if (this.hasQueuedProcesses()) {
+      // We still have queued processes run asap
+      this.sceduleExecution()
+    }
+
+    if (this.hasMessages()) {
+      // Some kids might still have stuff in their inboxes
+      this.sceduleExecution()
     }
   }
 
