@@ -68,7 +68,7 @@ class Process {
     }
     const func = this.vm.modules[module].functions[functionId]
     if (!func) {
-      throw new UnknownFunctionError(`Bro we the module ${module} has litterally no function called ${functionId}`)
+      throw new UnknownFunctionError(`Bro we, the module ${module}, have litterally no function called ${functionId}`)
     }
     return func
   }

@@ -11,7 +11,7 @@ const basics = [
         throw new ArgumentCountError('core:cast called with more than 2 arguments you fucking idiot')
       }
       const casters = {
-        'string': (v) => fromJsString(v.toString()),
+        'string': (v) => fromJsString(JSON.stringify(v)),
         'integer': (v) => {
           const res = parseInt(Array.isArray(v) ? toJsString(v) : v)
           return isNaN(res) ? h('nan') : res
