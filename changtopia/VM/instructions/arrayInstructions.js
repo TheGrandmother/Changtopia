@@ -18,6 +18,10 @@ function quickUnpack(process, location, array, hasBody, leadingCount, trailingCo
     for (let i = 0; i < leadingCount; i++) {
       process.frame.write(args[i], array[i])
     }
+    if (args[args.length[-1]] == '__IGNORE__') {
+      // If the blob is unused, there's no need to copy it
+      return true
+    }
     process.frame.write(args[args.length - 1], array.slice(leadingCount))
     return true
   }
@@ -25,6 +29,10 @@ function quickUnpack(process, location, array, hasBody, leadingCount, trailingCo
     // [<<blob>>, a, b, ...x] tail unpack
     for (let i = 0; i < trailingCount; i++) {
       process.frame.write(args[i], array[array.length - i - 1])
+    }
+    if (args[args.length[-1]] == '__IGNORE__') {
+      // If the blob is unused, there's no need to copy it
+      return true
     }
     process.frame.write(args[args.length - 1], array.slice(0, -trailingCount))
     return true

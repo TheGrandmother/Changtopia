@@ -16,7 +16,11 @@ function makeInterRef() {
 
 function makeAssignRef(name) {
   __currentIndex += 1
-  return {ref: `${name}_a${__currentIndex}`, name: name}
+  if (name === '_') {
+    return {ref: '__IGNORE__', name: '__IGNORE__'}
+  } else {
+    return {ref: `${name}_a${__currentIndex}`, name: name}
+  }
 }
 
 function makeArgumentRef(name, order) {
