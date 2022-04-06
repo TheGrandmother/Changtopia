@@ -1,0 +1,93 @@
+module testing
+
+-- A horrible little testing framework
+
+def assert(superv, message, condition)
+  if condition == false
+    core:send(superv, [$condition_failure, message])
+  end
+end
+
+def assert(superv, message, expected, actual)
+  if expected != actual
+    core:send(superv, [$equality_failure, message, expected, actual])
+  end
+end
+
+def run_suite(title, tests)
+  utils:load_module('colors')
+  io:print_strings(['Testing ', title, ':\n'])
+  test_count = core:length(tests)
+  failed_tests = 0
+  finished_tests = 0
+
+  make_test_worker = def (superv, clause)
+    [title, thing] = clause
+    hack = def (proxy)
+      core:link(proxy)
+      @thing(proxy)
+      core:send(proxy, [$completed])
+    end
+    core:spawn(hack, core:my_pid())
+    listener = def (sender, payload)
+      core:send(superv, [title, <<payload>>])
+      match payload
+         $completed -> return $ok end
+         [$error, <<rest>>] -> return $ok end
+         whatever ->
+            core:listen(listener)
+         end
+      end
+    end
+    core:listen(listener)
+  end
+
+  list:map(tests, def (case) core:spawn(make_test_worker, core:my_pid(), case) end)
+
+  listener = def (sender, payload)
+    -- [title, _] = payload
+    match payload
+      [title, $completed] ->
+        -- io:print_strings(['\t', title, ': ',colors:wrap('green', 'Ok!'), '\n'])
+        return $finished
+      end
+      [title, $error, <<rest>>] ->
+        [type_atom, message, stack] = rest
+        io:print_strings(['\t', title, ': ' ,colors:wrap('rose', 'Unhandled error: '), core:cast(type_atom, 'string'), '\n'])
+        return $errored
+      end
+      [title, $condition_failure, message] ->
+        io:print_strings(['\t', title, ': ' ,colors:wrap('rose', 'Test failed: '), message, '\n'])
+        return $failed
+      end
+      [title, $equality_failure, message, expected, actual] ->
+        io:print_strings(['\t', title, ': ' ,colors:wrap('rose', 'Test failed: '), message, '\n', '\tExpected:\t\t', core:cast(expected, 'string'), '\n\tActual:\t\t', core:cast(actual, 'string'), '\n'])
+        return $errored
+      end
+    end
+  end
+
+  wait_for_compelteion = def (completed, failed, succeded)
+    if completed == test_count
+      return [failed, succeded]
+    end
+    res = core:listen(listener)
+    match res
+      $finished -> return @wait_for_compelteion(completed + 1, failed, succeded + 1) end
+      $errored -> return @wait_for_compelteion(completed + 1, failed + 1, succeded) end
+      $failed -> return @wait_for_compelteion(completed, failed + 1, succeded) end
+      x ->
+        io:debug_raw(x)
+        return @wait_for_compelteion(completed + 1, failed + 1, succeded)
+      end
+    end
+  end
+
+  [failed, succeded] = @wait_for_compelteion(0, 0, 0)
+  if failed > 0
+    io:print_strings([colors:wrap('amber', '\tCompleted: '), core:cast(succeded, 'string'), ' passed , ', core:cast(failed, 'string'), ' failed\n'])
+    return $ok
+  end
+  io:print_strings([colors:wrap('green', '\tCompleted: '), core:cast(succeded, 'string'), ' passed , ', core:cast(failed, 'string'), ' failed\n'])
+  return $ok
+end

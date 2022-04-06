@@ -1,0 +1,137 @@
+module map
+
+-- This is a module for a shitty implemenbtation of an associative map :)
+-- Only feasible for maps with few keys
+-- order is not preserved due to anaive assumption of temporal proximity
+
+def new()
+  return []
+end
+
+def insert(map, new_key, new_value)
+  update = def (map, acc)
+    match map
+      [] -> return [<<acc>>, [new_key, new_value]] end
+      [[key , value], <<rest>>] ->
+        if key == new_key
+          return [[key, new_value], <<map>>, <<acc>>]
+        end
+        return @update(rest, [[key, value], <<acc>>])
+      end
+    end
+  end
+  return @update(map, [])
+end
+
+def get(map, key)
+  match map
+    [] -> return $fuckall end
+    [[k , v], <<rest>>] ->
+      if k == key
+        return v
+      end
+      return get(rest, key)
+    end
+  end
+end
+
+def exists(map, key)
+  match map
+    [] -> return false end
+    [[k , _], <<rest>>] ->
+      if k == key
+        return true
+      end
+      return exists(rest, key)
+    end
+  end
+end
+
+def delete(map, key)
+  _delete = def (map, acc)
+    match map
+      [] -> return map end
+      [[k , v], <<rest>>] ->
+        if key == k
+          [<<new_map>>, _] = map
+          return [<<new_map>>, <<acc>>]
+        end
+        return @_delete(rest, [[k, v], <<acc>>])
+      end
+    end
+  end
+  return @_delete(map, [])
+end
+
+
+def __tests()
+  utils:load_module('testing')
+  suite = [
+    ['intial map is empty',
+      def (superv)
+        map = new()
+        testing:assert(superv, 'new map was not empty', [], map)
+      end
+    ],
+    ['simple insert',
+      def (superv)
+        map = insert(new(), 'a', 420)
+        testing:assert(superv, 'value was not inserted', [['a', 420]], map)
+      end
+    ],
+    ['simple get',
+      def (superv)
+        map = insert(new(), 'a', 420)
+        testing:assert(superv, 'Wrong value returned', 420, get(map, 'a'))
+      end
+    ],
+    ['simple exists',
+      def (superv)
+        map = insert(new(), 'a', 420)
+        testing:assert(superv, 'Did not think inserted key existed', exists(map, 'a'))
+      end
+    ],
+    ['simple delete',
+      def (superv)
+        map = delete(insert(new(), 'a', 420), 'a')
+        testing:assert(superv, 'Entry not deleted', [], map)
+      end
+    ],
+    ['Multiple inserts',
+      def (superv)
+        map = insert(insert(new(), 'a', 420), 'b', 69)
+        testing:assert(superv, 'Wrong value returned for key a', 420, get(map, 'a'))
+        testing:assert(superv, 'Wrong value returned for key b', 69, get(map, 'b'))
+      end
+    ],
+    ['Multiple inserts and delete',
+      def (superv)
+        map = insert(insert(new(), 'a', 420), 'b', 69)
+        map = delete(map, 'b')
+        io:debug_raw(get(map, 'b'))
+        testing:assert(superv, 'Key b not deleted', exists(map, 'b') == false)
+        map = delete(map, 'a')
+        testing:assert(superv, 'Key a not deleted', exists(map, 'a') == false)
+        testing:assert(superv, 'Map is empty', [], map)
+      end
+    ],
+    --['failing',
+    --  def (superv)
+    --    map = delete(insert(new(), 'a', 420), 'a')
+    --    testing:assert(superv, 'Im a failure :\ ', false)
+    --  end
+    --],
+    --['erroring',
+    --  def (superv)
+    --    map = otto:bob()
+    --    testing:assert(superv, 'Im a failure :\ ', false)
+    --  end
+    --],
+  ]
+  testing:run_suite('Map', suite)
+end
+
+def _entry([])
+  __tests()
+  return $ok
+end

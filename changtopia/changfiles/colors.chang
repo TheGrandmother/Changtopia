@@ -106,6 +106,10 @@ def close_bg_color()
   return core:ansi_bg_color_reset()
 end
 
+def wrap(color, text)
+  return [<<get_color(color)>>, <<text>>, <<close_color()>>]
+end
+
 def _make_test_row(n, acc)
   if n <= 15
     return _make_test_row(n + 1, [<<acc>>, <<get_color(n)>>, "■", "■", <<close_color()>>])

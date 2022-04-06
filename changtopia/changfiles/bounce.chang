@@ -1,0 +1,314 @@
+module bounce
+
+def min(a,b)
+  if a < b
+    return a
+  end
+  return b
+end
+
+def max(a,b)
+  if a > b
+    return a
+  end
+  return b
+end
+
+def make_player(dim, id)
+  -- [[x, y], [v_x, v_y], is_jumping]
+  [width, height] = dim
+  x = core:floor(core:rand_range(0, width))
+  y = core:floor(core:rand_range(0, height))
+  return [[x,y], [0,0], false, id]
+end
+
+def draw_player(height, player, is_main)
+  [[x,y], <<_>>] = player
+  color = colors:get_color('amber')
+  if is_main
+    color = colors:get_color('magenta')
+  end
+  io:print_strings([core:ansi_cursor_to(core:cast(x, 'integer'),core:cast(height - y, 'integer')), <<color>>, <<'█'>>, <<colors:close_color()>>])
+end
+
+def move_player(dim, player, dt)
+  [width, height] = dim
+  [[px, py], [vx, vy], in_air, <<rest>>] = player
+  grav_acc = -20 * dt
+  if in_air
+    vy = vy + grav_acc
+  end
+  new_px = max(min(px + vx * dt, width), 0)
+  new_py = max(min(py + vy * dt, height), 0)
+  if new_py == 0
+    in_air = false
+    vy = 0
+  end
+  if new_py > 0
+    in_air = true
+  end
+  if new_px >= width
+    vx = 0
+  end
+  if new_px <= 0
+    vx = 0
+  end
+  return [[new_px, new_py], [vx, vy], in_air, <<rest>>]
+end
+
+def max_vel()
+  return 50
+end
+
+def accelerate_player(player, acc, dt)
+  [ax, ay] = acc
+  [p, [vx, vy], <<rest>>] = player
+  mx = 50
+  my = 200
+  return [p, [max(min(vx + ax * dt, mx),-1 * mx), max(min(vy + ay * dt, my),-1 * my)], <<rest>>]
+end
+
+def render(dim, player, is_player)
+  [_, height] = dim
+  draw_player(height, player, is_player)
+end
+
+
+def process_input([], player, dt)
+  return player
+end
+
+def process_input([input, <<rest>>], player, dt)
+  [_,_, in_air, <<_>>] = player
+  match input
+    $left -> return process_input(rest, accelerate_player(player,[-50,0], dt), dt) end
+    $right -> return process_input(rest, accelerate_player(player,[50,0], dt), dt) end
+    $up ->
+      if in_air return process_input(rest, player, dt) end
+      return process_input(rest, accelerate_player(player,[0, 1000], dt), dt)
+    end
+    $down ->
+      if in_air == false return process_input(rest, player, dt) end
+      return process_input(rest, accelerate_player(player,[0, -250], dt), dt)
+    end
+  end
+end
+
+def compute_hit(dim, player, [opponent, <<rest>>], ds)
+  [[player_px, player_py], [player_vx, player_vy], player_in_air, <<_>>] = player
+  [[opponent_px, opponent_py], [opponent_vx, opponent_vy], opponent_in_air, opponent_id, <<_>>] = opponent
+
+  check_death = def (attacker, target)
+    [[attacker_px, attacker_py], [attacker_vx, attacker_vy], attacker_in_air, <<_>>] = attacker
+    [[target_px, target_py], [target_vx, target_vy], target_in_air, <<_>>] = target
+    if attacker_py > target_py && attacker_vy < 0
+      -- attacker is above target attacker could kill
+      kuken = move_player(dim, attacker, ds)
+      [[attacker_new_x, attacker_new_y], <<_>>] = kuken
+      i_just_fucking_love_bugs = move_player(dim, target, ds)
+      [[target_new_x, target_new_y], <<_>>] = i_just_fucking_love_bugs
+      if core:floor(attacker_new_x) == core:floor(target_new_x) && core:floor(attacker_new_y) == core:floor(target_new_y)
+        -- KILL!!!!!
+        return opponent_id
+      end
+      return false
+    end
+    return false
+  end
+
+  -- Each player is only concerned with their own survival
+  match @check_death(opponent, player)
+    false -> return compute_hit(dim, player, rest, ds) end
+    id -> return id end
+  end
+end
+
+def compute_hit(_, _, [], _)
+  return false
+end
+
+def loop(dim, handler, player, t)
+  -- We need a little bit of sleep due to bad timing accuracy :'(
+  [input_set, opponents, _, points, <<rest>>] = core:send(handler, $get_state)
+  render(dim, player, true)
+  list:map(opponents, def (opp) render(dim, opp, false) end)
+  _ = core:send(core:io_pid(), $chillax, 20)
+  if set:contains(input_set, $quit)
+    core:send(handler, $quit)
+    return $ok
+  end
+  dt = (core:time() - t)
+  ds = dt/1000
+
+  match compute_hit(dim, player, opponents, ds)
+    false ->
+      player = move_player(dim, player, ds)
+      new_player = process_input(input_set, player, ds)
+    end
+    id ->
+      core:send(handler, [$award_point, id])
+      [_, _, _, nick] = player
+      new_player = make_player(dim, nick)
+    end
+  end
+
+  core:send(handler, [$broadcast, new_player])
+  io:print_string(core:ansi_clear_screen())
+  print_scores(player, points)
+  return loop(dim, handler, new_player, core:time())
+end
+
+def print_scores(player, scores)
+  [_,_,_, player_nick] = player
+  sorter = def (a, b)
+    [_, a_score] = a
+    [_, b_score] = b
+    return b_score - a_score
+  end
+  sorted_scores = list:sort(scores, sorter)
+  [width, height] = dimensions()
+  display_string = [<<core:ansi_cursor_to(0, height + 1)>>, <<'\n=========SCORES==========\n'>>]
+  add_scores = def (scores, display_string)
+    match scores
+      [] -> return display_string end
+      [score, <<rest>>] ->
+        [nick, points] = score
+        color = colors:get_color('amber')
+        if nick == player_nick
+          color = colors:get_color('magenta')
+        end
+        return @add_scores(rest, [<<display_string>>, <<color>>, <<nick>>, <<' : '>>, <<core:cast(points, 'string')>>, <<colors:close_color()>>, <<'\n'>>])
+      end
+    end
+  end
+  io:print_string(@add_scores(sorted_scores, display_string))
+end
+
+def dimensions()
+  return [100,20]
+end
+
+def _entry([_])
+  io:print_string('Enter your nickname:\n')
+  nick = io:get_line()
+  io:print_string(core:ansi_clear_screen())
+  io:print_string(core:ansi_cursor_hide())
+  handler = core:spawn(['bounce', 'io_handler'])
+  dim = dimensions()
+  loop(dim, handler, make_player(dim, nick), core:time())
+  io:print_string(core:ansi_cursor_show())
+  _ = core:send(core:mediator_pid(), $unpublish, 'bounce')
+  return $ok
+end
+
+def io_handler()
+
+  listener = def (state, sender, payload)
+    [input_set, <<rest>>] = state
+    match payload
+      [$key_down, "q", _, _] ->
+        return [set:add_element(input_set, $quit), <<rest>>]
+      end
+      [$key_down, _, $arrow_right, _] ->
+        return [set:add_element(input_set, $right), <<rest>>]
+      end
+      [$key_up, _, $arrow_right, _] ->
+        return [set:remove_element(input_set, $right), <<rest>>]
+      end
+      [$key_down, _, $arrow_left, _] ->
+        return [set:add_element(input_set, $left), <<rest>>]
+      end
+      [$key_up, _, $arrow_left, _] ->
+        return [set:remove_element(input_set, $left), <<rest>>]
+      end
+      [$key_down, _, $arrow_up, _] ->
+        return [set:add_element(input_set, $up), <<rest>>]
+      end
+      [$key_up, _, $arrow_up, _] ->
+        return [set:remove_element(input_set, $up), <<rest>>]
+      end
+      [$key_down, _, $arrow_down, _] ->
+        return [set:add_element(input_set, $down), <<rest>>]
+      end
+      [$key_up, _, $arrow_down, _] ->
+        return [set:remove_element(input_set, $down), <<rest>>]
+      end
+      [$opponent_update, opponent] ->
+        [opponents, dudes, <<rest>>] = rest
+        return [input_set, update_opponent(opponents, opponent, []), set:add_element(dudes, sender) ,<<rest>>]
+      end
+      [$broadcast, player] ->
+        [_, dudes, <<rest>>] = rest
+        list:map(dudes, def (dude) core:send(dude, [$opponent_update, player]) end)
+        return state
+      end
+      [$award_point, id] ->
+        [opponents, dudes, points, <<rest>>] = rest
+        list:map(dudes, def (dude) core:send(dude, [$point_awarded, id]) end)
+        return [input_set, opponents, dudes, update_points(points, id, []), <<rest>>]
+        --return state
+      end
+      [$point_awarded, id] ->
+        [opponents, dudes, points, <<rest>>] = rest
+        return [input_set, opponents, dudes, update_points(points, id, []), <<rest>>]
+      end
+      $get_state ->
+        return state
+      end
+      $quit ->
+        return $quit
+      end
+      $published ->
+        return state
+      end
+      $unpublished ->
+        return state
+      end
+      whatever ->
+        return state
+      end
+    end
+  end
+
+  handler = def (state)
+    state = core:listen(listener, state)
+    if state == $quit
+      io:debug('I quitted')
+      core:send(core:io_pid(), $release_input_stream)
+      return $ok
+    end
+    return @handler(state)
+  end
+
+  io:debug_raw(core:my_pid())
+  core:send(core:mediator_pid(), $publish, 'bounce', core:my_pid())
+  core:send(core:io_pid(), $get_input_stream)
+  [dudes] = core:send(core:mediator_pid(), $fetch_dem_dudes, 'bounce')
+  io:debug_raw(dudes)
+  return @handler([[], [], dudes, []])
+end
+
+def update_points([player, <<rest>>], target_id, acc)
+  [id, points] = player
+  if id == target_id
+    return [<<rest>>, [id, points + 1], <<acc>>]
+  end
+  return update_points(rest, target_id, [<<acc>>, player])
+end
+
+def update_points([], target, acc)
+  return [<<acc>>, [target, 1]]
+end
+
+def update_opponent([opponent, <<rest>>], updated, acc)
+  [_,_,_, updated_id] = updated
+  [_,_,_, opponent_id] = opponent
+  if updated_id == opponent_id
+    return [<<rest>>, updated, <<acc>>]
+  end
+  return update_opponent(rest, updated, [<<acc>>, opponent])
+end
+
+def update_opponent([], updated, acc)
+  return [<<acc>>, updated]
+end

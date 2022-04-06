@@ -146,3 +146,18 @@ def debug_raw(payload)
   core:send(core:io_pid(), $raw_debug, payload)
   return $ok
 end
+
+-- def anything_to_string(x)
+--   match x
+--     [] -> return '[]' end
+--     [x, <<anyhting>>] ->
+--       if anything == []
+--         return ["[", <<anything_to_string(x)>>, "]"]
+--       end
+--       return ["[", <<anything_to_string(x)>>, ",", <<anything_to_string(anything)>>, "]"]
+--     end
+--     x ->
+--       return core:cast(x, 'string')
+--     end
+--   end
+-- end

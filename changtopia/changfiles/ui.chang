@@ -1,0 +1,34 @@
+module ui
+
+-- So this is the soon to be horrible react clone :/
+
+-- test component
+
+--component signature:
+-- opressor_pid, store, params, state
+-- component receives messages:
+--  store_updated
+--  params_updated
+--  on_focus
+--  leave_focus
+--  on_hide
+--  on_close
+-- component sends messages:
+--  content
+--  store_update
+
+
+
+def test_component(opressor_pid, store, params, state, is_focused)
+  listener = def (sender, payload)
+    match payload
+      [$store_update, <<new_store>>] -> return $ok end
+      [$params_update, <<partial_store>>] -> return $ok end
+      [$on_focus] -> return $ok end
+      [$leave_focus] -> return $ok end
+      [$on_hide] -> return $ok end
+      [$on_close] -> return $ok end
+    end
+  end
+end
+
