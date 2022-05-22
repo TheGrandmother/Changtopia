@@ -8,7 +8,9 @@ def core_modules()
     'utils',
     'colors',
     'fs',
-    'set'
+    'set',
+    'testing',
+    'map'
   ]
 end
 
@@ -44,6 +46,10 @@ def _entry()
       core:send(core:io_pid(), $print_string, 'Ok\n')
     end
   end
+
+  -- Run applicable tests
+  list:_test()
+  map:_test()
 
   shell_pid = core:spawn(['shell', '_entry'], core:my_pid())
   core:listen(['main', 'listener'])

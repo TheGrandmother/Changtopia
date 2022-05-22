@@ -5,18 +5,24 @@ module testing
 def assert(superv, message, condition)
   if condition == false
     core:send(superv, [$condition_failure, message])
+    return $ok
   end
+  core:send(superv, [$pass])
+  return $ok
 end
 
 def assert(superv, message, expected, actual)
   if expected != actual
     core:send(superv, [$equality_failure, message, expected, actual])
+    return $ok
   end
+  core:send(superv, [$pass])
+  return $ok
 end
 
 def run_suite(title, tests)
   utils:load_module('colors')
-  io:print_strings(['Testing ', title, ':\n'])
+  io:print_strings(['Testing ', title, ': '])
   test_count = core:length(tests)
   failed_tests = 0
   finished_tests = 0
@@ -30,9 +36,10 @@ def run_suite(title, tests)
     end
     core:spawn(hack, core:my_pid())
     listener = def (sender, payload)
+      [otto, <<_>>] = payload
       core:send(superv, [title, <<payload>>])
       match payload
-         $completed -> return $ok end
+         [$completed] -> return $ok end
          [$error, <<rest>>] -> return $ok end
          whatever ->
             core:listen(listener)
@@ -45,49 +52,52 @@ def run_suite(title, tests)
   list:map(tests, def (case) core:spawn(make_test_worker, core:my_pid(), case) end)
 
   listener = def (sender, payload)
-    -- [title, _] = payload
     match payload
       [title, $completed] ->
-        -- io:print_strings(['\t', title, ': ',colors:wrap('green', 'Ok!'), '\n'])
         return $finished
+      end
+      [title, $pass] ->
+        io:print_strings([colors:wrap('green', '.')])
+        return $pass
       end
       [title, $error, <<rest>>] ->
         [type_atom, message, stack] = rest
-        io:print_strings(['\t', title, ': ' ,colors:wrap('rose', 'Unhandled error: '), core:cast(type_atom, 'string'), '\n'])
-        return $errored
+        io:print_strings([colors:wrap('amber', '!')])
+        return [$errored, list:flatten(['\t', title, ': ' ,colors:wrap('rose', 'Unhandled error: '), core:cast(type_atom, 'string'), '\n', '\t\t', message, '\n'])]
       end
       [title, $condition_failure, message] ->
-        io:print_strings(['\t', title, ': ' ,colors:wrap('rose', 'Test failed: '), message, '\n'])
-        return $failed
+        io:print_strings([colors:wrap('amber', 'x')])
+        return [$failed, list:flatten(['\t', title, ': ' ,colors:wrap('rose', 'Test failed: '), message, '\n'])]
       end
       [title, $equality_failure, message, expected, actual] ->
-        io:print_strings(['\t', title, ': ' ,colors:wrap('rose', 'Test failed: '), message, '\n', '\tExpected:\t\t', core:cast(expected, 'string'), '\n\tActual:\t\t', core:cast(actual, 'string'), '\n'])
-        return $errored
+        io:print_strings([colors:wrap('amber', 'x')])
+        return [$errored, list:flatten(['\t', title, ': ' ,colors:wrap('rose', 'Test failed: '), message, '\n', '\t\tExpected: ', core:cast(expected, 'string'), '\n\t\tActual:   ', core:cast(actual, 'string'), '\n'])]
       end
     end
   end
 
-  wait_for_compelteion = def (completed, failed, succeded)
+  wait_for_compelteion = def (completed, failed, succeded, errors)
     if completed == test_count
-      return [failed, succeded]
+      return [failed, succeded, errors]
     end
     res = core:listen(listener)
     match res
-      $finished -> return @wait_for_compelteion(completed + 1, failed, succeded + 1) end
-      $errored -> return @wait_for_compelteion(completed + 1, failed + 1, succeded) end
-      $failed -> return @wait_for_compelteion(completed, failed + 1, succeded) end
+      $finished -> return @wait_for_compelteion(completed + 1, failed, succeded + 1, errors) end
+      [$errored, message] -> return @wait_for_compelteion(completed + 1, failed + 1, succeded, [<<errors>>, message]) end
+      [$failed, message] -> return @wait_for_compelteion(completed, failed + 1, succeded, [<<errors>>, message]) end
+      $pass -> return @wait_for_compelteion(completed, failed, succeded, errors) end
       x ->
-        io:debug_raw(x)
-        return @wait_for_compelteion(completed + 1, failed + 1, succeded)
+        return @wait_for_compelteion(completed + 1, failed + 1, succeded, errors)
       end
     end
   end
 
-  [failed, succeded] = @wait_for_compelteion(0, 0, 0)
+  [failed, succeded, errors] = @wait_for_compelteion(0, 0, 0, [])
+  io:print_string('\n')
   if failed > 0
-    io:print_strings([colors:wrap('amber', '\tCompleted: '), core:cast(succeded, 'string'), ' passed , ', core:cast(failed, 'string'), ' failed\n'])
-    return $ok
+    io:print_strings([list:flatten(errors), colors:wrap('amber', '\tCompleted: '), core:cast(succeded, 'string'), ' passed , ', core:cast(failed, 'string'), ' failed\n'])
+    return false
   end
   io:print_strings([colors:wrap('green', '\tCompleted: '), core:cast(succeded, 'string'), ' passed , ', core:cast(failed, 'string'), ' failed\n'])
-  return $ok
+  return true
 end

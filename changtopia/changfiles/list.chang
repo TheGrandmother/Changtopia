@@ -18,7 +18,7 @@ end
 
 def range(start, finish)
   _range = def (n, acc)
-    if n == finish
+    if n >= finish
       return acc
     end
     return @_range(n+1, [<<acc>>, n])
@@ -26,6 +26,22 @@ def range(start, finish)
   return @_range(start, [])
 end
 
+def _test_range()
+  return ['range',
+    def (superv)
+      range = range(0, 0)
+      testing:assert(superv, 'Range of length 0 is empty', [], range)
+      range = range(0, 5)
+      testing:assert(superv, 'range(0,5) == [0,1,2,3,4]', [0,1,2,3,4], range)
+      range = range(-2, 2)
+      testing:assert(superv, 'range(-2,2) == [-2, -1, 0, 1]', [-2, -1, 0, 1], range)
+      range = range(5, 0)
+      testing:assert(superv, 'Backwards range is empty list', [], range)
+    end
+  ]
+end
+
+-- Broken when length(l) < n
 def partition(l, n)
   segment_length = core:cast(core:length(l) / n, 'integer')
 
@@ -46,6 +62,23 @@ def partition(l, n)
   return @_partition(l, [], 0, n, [])
 end
 
+def _test_partition()
+  return ['partition',
+    def (superv)
+      p = partition([], 0)
+      testing:assert(superv, 'partition([], 0)', [[]], p)
+      p = partition([], 3)
+      testing:assert(superv, 'partition([], 3)', [[], [], []], p)
+      p = partition([1,2,3], 2)
+      testing:assert(superv, 'partition([1,2,3], 2)', [[1], [2,3]], p)
+      p = partition([1,2,3], 3)
+      testing:assert(superv, 'partition([1,2,3], 3)', [[1], [2],[3]], p)
+      -- p = partition([1,2,3], 4)
+      -- testing:assert(superv, 'partition([1,2,3], 4) == ', [[1], [2],[3],[]], p)
+    end
+  ]
+end
+
 def pad_left(list, pad, length)
   if core:length(list) >= length
     return list
@@ -60,6 +93,30 @@ def pad_right(list, pad, length)
   end
   padding = repeat(pad, length - core:length(list))
   return [<<list>>, <<padding>>]
+end
+
+def _test_pad()
+  return ['pad',
+    def (superv)
+      p = pad_left([1,1], 0, 3)
+      testing:assert(superv, 'pad_left([1,1], 0, 3)', [0,1,1], p)
+      p = pad_left([1,1], 0, 2)
+      testing:assert(superv, 'pad_left([1,1], 0, 2)', [1,1], p)
+      p = pad_left([1,1], 0, 1)
+      testing:assert(superv, 'pad_left([1,1], 0, 1)', [1,1], p)
+      p = pad_left([], 0, 2)
+      testing:assert(superv, 'pad_left([], 0, 2)', [0,0], p)
+
+      p = pad_right([1,1], 0, 3)
+      testing:assert(superv, 'pad_right([1,1], 0, 3)', [1,1,0], p)
+      p = pad_right([1,1], 0, 2)
+      testing:assert(superv, 'pad_right([1,1], 0, 2)', [1,1], p)
+      p = pad_right([1,1], 0, 1)
+      testing:assert(superv, 'pad_right([1,1], 0, 1)', [1,1], p)
+      p = pad_right([], 0, 2)
+      testing:assert(superv, 'pad_right([], 0, 2)', [0,0], p)
+    end
+  ]
 end
 
 def contains(list, element)
@@ -318,4 +375,18 @@ def sort(list, fn)
   end
 
   return @merge(left, right, [])
+end
+
+def _test()
+  utils:load_module('testing')
+  suite = [
+    _test_range(),
+    _test_partition(),
+    _test_pad(),
+  ]
+  testing:run_suite('List Module', suite)
+end
+
+def _entry([])
+  _test()
 end

@@ -64,7 +64,7 @@ def delete(map, key)
 end
 
 
-def __tests()
+def _test()
   utils:load_module('testing')
   suite = [
     ['intial map is empty',
@@ -108,30 +108,17 @@ def __tests()
       def (superv)
         map = insert(insert(new(), 'a', 420), 'b', 69)
         map = delete(map, 'b')
-        io:debug_raw(get(map, 'b'))
         testing:assert(superv, 'Key b not deleted', exists(map, 'b') == false)
         map = delete(map, 'a')
         testing:assert(superv, 'Key a not deleted', exists(map, 'a') == false)
         testing:assert(superv, 'Map is empty', [], map)
       end
     ],
-    --['failing',
-    --  def (superv)
-    --    map = delete(insert(new(), 'a', 420), 'a')
-    --    testing:assert(superv, 'Im a failure :\ ', false)
-    --  end
-    --],
-    --['erroring',
-    --  def (superv)
-    --    map = otto:bob()
-    --    testing:assert(superv, 'Im a failure :\ ', false)
-    --  end
-    --],
   ]
   testing:run_suite('Map', suite)
 end
 
 def _entry([])
-  __tests()
+  _test()
   return $ok
 end
