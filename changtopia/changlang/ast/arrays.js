@@ -5,6 +5,13 @@ const {randomHash} = require('../../util/hash.js')
 const {CompilerError} = require('../../errors.js')
 
 function makeArrayLitteralNode(entries, pos) {
+  if (entries.every(e => e.type === 'constant')) {
+    return {
+      type: 'arrayLitterallImmediate',
+      entries: {array: entries.map(e => e.value)},
+      pos
+    }
+  }
   return {
     type: 'arrayLitteral',
     entries,
