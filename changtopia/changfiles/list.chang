@@ -43,6 +43,9 @@ end
 
 -- Broken when length(l) < n
 def partition(l, n)
+  if n == 0
+    return [[]]
+  end
   segment_length = core:cast(core:length(l) / n, 'integer')
 
   _partition = def (l, current_segment, curr_length, segments_left, segments)

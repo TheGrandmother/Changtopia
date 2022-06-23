@@ -1,4 +1,5 @@
 const equal = require('fast-deep-equal')
+const {StupidMath} = require('../../errors.js')
 
 const basicInstructions = {
   'move' : {
@@ -45,7 +46,7 @@ const binops = {
   '+': (a ,b) => a + b,
   '-': (a ,b) => a - b,
   '*': (a ,b) => a * b,
-  '/': (a ,b) => a / b,
+  '/': (a ,b) => { if (b != 0) { return a / b } else { throw new StupidMath(`Tryna divide ${a} with zero`)} },
   '%': (a ,b) => a % b,
 }
 

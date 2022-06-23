@@ -10,7 +10,8 @@ def core_modules()
     'fs',
     'set',
     'testing',
-    'map'
+    'map',
+    'vec3'
   ]
 end
 
@@ -50,6 +51,7 @@ def _entry()
   -- Run applicable tests
   list:_test()
   map:_test()
+  vec3:_test()
 
   shell_pid = core:spawn(['shell', '_entry'], core:my_pid())
   core:listen(['main', 'listener'])

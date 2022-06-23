@@ -1,0 +1,209 @@
+module trace
+
+-- Lol on the fact that I am even attempting this.
+
+def min(a,b)
+  if a < b
+    return a
+  end
+  return b
+end
+
+-- Simplifications:
+--  Camera at [0, 0, -1] pointing [0, 0, 1]
+--  Viewport centered at origin and having width and height 1
+--  FOV = 90deg
+def get_pixel_ray(p_x, p_y, x_count, y_count)
+  pixel_vec = vec3:norm([
+    p_x/x_count - 1 / 2,
+    p_y/y_count - 1 / 2,
+    1
+  ])
+  return pixel_vec
+end
+
+def sphere_intersect_test(ray, sphere)
+  [start, direction] = ray
+  [center, radius] = sphere
+  l = vec3:sub(start, center) --thing from start to center
+  thing = vec3:dot(direction, l)
+  mag_l = vec3:mag(l)
+  disc = thing*thing - (mag_l * mag_l - radius * radius)
+  if disc < 0
+    return $miss
+  end
+  t = min((-1*thing) + core:sqrt(disc), (-1*thing) + core:sqrt(disc))
+  return t
+end
+
+def sphere_normal(sphere, point)
+  [center, radius] = sphere
+  return vec3:norm(vec3:sub(point, center))
+end
+
+def plot_pixel(x, y, color)
+  [r, g, b] = color
+  io:print_string([<<core:ansi_cursor_to(x, y)>>, <<core:ansi_color(r, g, b)>>, <<'█'>>, <<core:ansi_color_reset()>>])
+end
+
+def random_reflection(normal)
+  b3 = vec3:norm(normal)
+  [_x, _, __] = b3
+  match core:abs(_x) < .5
+    true -> diff = [1,0,0] end
+    false -> diff = [0,1,0] end
+  end
+  b1 = vec3:norm(vec3:cross(b3, diff))
+  b2 = vec3:cross(b1, b3)
+
+  -- z = core:rand_range(core:cos(core:pi()/2), 1)
+  z = core:rand_range(0.75, 1)
+  -- io:debug_raw(z)
+  r = core:sqrt(1-z*z)
+  theta = core:rand_range(-1*core:pi(), core:pi())
+  x = r * core:cos(theta)
+  y = r * core:sin(theta)
+  return vec3:norm(vec3:add(vec3:add(vec3:mul(b1, x), vec3:mul(b2, y)), vec3:mul(b3, z)))
+end
+
+def find_nearest([], ray, nearest)
+  return nearest
+end
+
+def find_nearest([obj, <<rest>>], ray, nearest)
+  [_sphere, sphere, mat] = obj
+  t = sphere_intersect_test(ray, sphere)
+  if t == $miss
+    return find_nearest(rest, ray, nearest)
+  end
+  if nearest == $miss
+    return find_nearest(rest, ray, [t, obj])
+  end
+  [old_t, _] = nearest
+  if t < old_t
+    return find_nearest(rest, ray, [t, obj])
+  end
+  return find_nearest(rest, ray, nearest)
+end
+
+def find_nearest(objects, ray)
+  return find_nearest(objects, ray, $miss)
+end
+
+def trace(objects, ray)
+  return trace(objects, ray, 5, true)
+end
+
+def trace(objects, ray, 0, _)
+  return [0,0,0]
+end
+
+def trace(objects, ray, bounce, first)
+  nearest = find_nearest(objects, ray)
+  if nearest == $miss
+    if first
+      return $miss
+    end
+    return [0, 0, 0]
+  end
+  [t, obj] = nearest
+  [_type, _meh, mat] = obj
+  [color, reflexivity, emittance] = mat
+
+  [origin, direction] = ray
+  point = vec3:add(origin, vec3:mul(direction, t))
+
+  -- palla tänka på inte sfär
+  normal = vec3:mul(sphere_normal(_meh, point), -1)
+  new_ray = random_reflection(normal)
+  -- io:debug_raw(new_ray)
+
+
+  incoming = trace(objects, [point , new_ray], bounce - 1, false)
+
+  thing = vec3:dot(new_ray, normal) * reflexivity
+
+
+  emitted_color = vec3:mul(color, emittance)
+  match incoming
+    [0,0,0] -> reflected_color = [0,0,0] end
+    _ -> reflected_color = vec3:mul(vec3:proj(color, incoming), thing) end
+  end
+  return vec3:add(emitted_color, reflected_color)
+end
+
+def render(width, height)
+  return render(width, height, width - 1, height - 1)
+end
+
+def render(w, h, -1, -1)
+  return $ok
+end
+
+def render(w, h, -1, y)
+  return render(w, h, w, y-1)
+end
+
+def render(w, h, x, y)
+  objects = [
+    [$sphere, [[0,2,3],.7], [[0.8,0.6,0.1], .3, .7]],
+    [$sphere, [[1,1,3],.3], [[0.2,0.8,0.5], .1, .9]],
+    [$sphere, [[0,0,3],1], [[1,1,1], 1, 0]]
+  ]
+  pixel_ray = get_pixel_ray(x, y, w, h)
+  ray = [[0,0,-1], pixel_ray]
+  [r,g,b] = average_trace(objects, ray, 5)
+  plot_pixel(x,y,[core:floor(core:abs(r)*255),core:floor(core:abs(g)*255),core:floor(core:abs(b)*255)])
+  return render(w,h,x-1,y)
+end
+
+def average_trace(objects, ray, samples)
+  return average_trace(objects, ray, samples, samples, [0,0,0])
+end
+
+def average_trace(objects, ray, 0, samples, col)
+  return col
+end
+
+def average_trace(objects, ray, n, s, [_r, _g, _b])
+  match trace(objects, ray)
+    $miss -> return [0,0,0] end
+    [r,g,b] -> return average_trace(objects, ray, n - 1, s, [_r + r/s, _g + g/s, _b + b/s]) end
+  end
+end
+
+
+
+def _entry([])
+  _test()
+  io:print_string(core:ansi_cursor_to(0,0))
+  io:print_string(core:ansi_clear_screen())
+  utils:load_module('colors')
+  render(100,50)
+  return $ok
+end
+
+def _test()
+  utils:load_module('testing')
+  utils:load_module('vec3')
+  suite = [
+    ['sphere_intersect_test hit',
+      def (superv)
+        sphere = [[5,0,0],1]
+        ray = [[0,0,0], [1,0,0]]
+        intersect = sphere_intersect_test(ray, sphere)
+        testing:assert(superv, 'does not miss', intersect != $miss)
+        testing:assert(superv, 'Hits at [1 0 0]', intersect, [1, 0, 0])
+      end
+    ],
+    ['sphere_intersect_test miss',
+      def (superv)
+        sphere = [[0,5,0],1]
+        ray = [[0,0,0], [1,0,0]]
+        intersect = sphere_intersect_test(ray, sphere)
+        testing:assert(superv, 'does not miss', intersect == $miss)
+      end
+    ],
+  ]
+  testing:run_suite('Trace', suite)
+end

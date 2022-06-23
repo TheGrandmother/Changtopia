@@ -120,6 +120,12 @@ class UndefinedWrite extends RuntimeError {
   }
 }
 
+class StupidMath extends RuntimeError {
+  constructor(msg) {
+    super(msg, h('stupid_math'))
+  }
+}
+
 module.exports = {
   CodegenError,
   RuntimeError,
@@ -139,5 +145,6 @@ module.exports = {
   MallformedPid,
   UndefinedWrite,
   StackOverflow,
-  IncorectClosureBindings
+  IncorectClosureBindings,
+  StupidMath
 }

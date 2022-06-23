@@ -1,0 +1,86 @@
+module vec3
+
+def add(p, q)
+  [px, py, pz] = p
+  [qx, qy, qz] = q
+  return [px + qx, py + qy, pz + qz]
+end
+
+def sub(p, q)
+  [px, py, pz] = p
+  [qx, qy, qz] = q
+  return [px - qx, py - qy, pz - qz]
+end
+
+def mul(p, s)
+  [px, py, pz] = p
+  return [px * s, py * s, pz * s]
+end
+
+def dot(p, q)
+  [px, py, pz] = p
+  [qx, qy, qz] = q
+  return px * qx + py * qy + pz * qz
+end
+
+-- Project p onto q
+def proj(p, q)
+  [px, py, pz] = p
+  [qx, qy, qz] = norm(q)
+  return [px * qx, py * qy, pz * qz]
+end
+
+def mag(p)
+  [px, py, pz] = p
+  return core:sqrt(px * px + py * py + pz * pz)
+end
+
+def norm(p)
+  [px, py, pz] = p
+  mag = core:sqrt(px * px + py * py + pz * pz)
+  return [px / mag, py / mag, pz / mag]
+end
+
+def eq(p, q)
+  [px, py, pz] = p
+  [qx, qy, qz] = q
+  return px == qx && py == qy && pz == qz
+end
+
+def cross(p, q)
+  [px, py, pz] = p
+  [qx, qy, qz] = q
+  return [
+    py * qz - pz * qy,
+    pz * qx - px * qz,
+    px * qy - py * qx
+  ]
+end
+
+def _test()
+  utils:load_module('testing')
+  suite = [
+    ['eq',
+      def (superv)
+        testing:assert(superv, 'equal', eq([1,2,3],[1,2,3]))
+        testing:assert(superv, 'not equal', eq([1,2,3],[2,3,4]) != true)
+      end
+    ],
+    ['dot',
+      def (superv)
+        testing:assert(superv, 'Simple cases', dot([1,3,-5],[4,-2,-1]), 3)
+      end
+    ],
+    ['cross',
+      def (superv)
+        a = [4,5,9]
+        b = [2,-7,-9]
+        res = cross(a, b)
+        testing:assert(superv, '(a×b)·a = 0', dot(res,a), 0)
+        testing:assert(superv, '(a×b)·b = 0', dot(res,b), 0)
+        testing:assert(superv, '(a×a) = [0 0 0]', eq(cross(a,a), [0, 0, 0]))
+      end
+    ],
+  ]
+  testing:run_suite('Vec3', suite)
+end
