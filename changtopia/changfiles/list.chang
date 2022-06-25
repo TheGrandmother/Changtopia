@@ -16,6 +16,10 @@ def length(list)
   return core:length(list)
 end
 
+def range(finish)
+  return range(0, finish)
+end
+
 def range(start, finish)
   _range = def (n, acc)
     if n >= finish

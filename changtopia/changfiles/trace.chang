@@ -22,6 +22,58 @@ def get_pixel_ray(p_x, p_y, x_count, y_count)
   return pixel_vec
 end
 
+-- ========= GEOMETRY =======
+
+-- https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/moller-trumbore-ray-triangle-intersection
+def triangle_intersect_test(ray, triangle)
+  [v0, v1, v2] = triangle
+  [start, direction] = ray
+
+  v0v1 = vec3:sub(v1, v0)
+  v0v2 = vec3:sub(v2, v0)
+  pvec = vec3:cross(direction, v0v2)
+  det = vec3:dot(v0v1, pvec)
+  if core:abs(det) < 0.001
+    return $miss
+  end
+
+  inv_det = 1 / det
+
+  tvec = vec3:sub(start, v0)
+  u = vec3:dot(pvec, tvec) * inv_det
+  if u < 0
+    return $miss
+  end
+
+  if u > 1
+    return $miss
+  end
+
+  qvec = vec3:cross(tvec, v0v1)
+  v = vec3:dot(direction, qvec) * inv_det
+
+  if v < 0
+    return $miss
+  end
+
+  if  u + v > 1
+    return $miss
+  end
+
+  t = vec3:dot(v0v2, qvec) * inv_det
+  if t < 0
+    return $miss
+  end
+  return t
+end
+
+def triangle_normal(triangle)
+  [v0, v1, v2] = triangle
+  v0v1 = vec3:sub(v1, v0)
+  v0v2 = vec3:sub(v2, v0)
+  return vec3:norm(vec3:cross(v0v1, v0v2))
+end
+
 def sphere_intersect_test(ray, sphere)
   [start, direction] = ray
   [center, radius] = sphere
@@ -33,6 +85,9 @@ def sphere_intersect_test(ray, sphere)
     return $miss
   end
   t = min((-1*thing) + core:sqrt(disc), (-1*thing) - core:sqrt(disc))
+  if t < 0
+    return $miss
+  end
   return t
 end
 
@@ -41,10 +96,14 @@ def sphere_normal(sphere, point)
   return vec3:norm(vec3:sub(point, center))
 end
 
-def plot_pixel(x, y, color)
-  [r, g, b] = color
-  io:print_string([<<core:ansi_cursor_to(x, y)>>, <<core:ansi_color(r, g, b)>>, <<'█'>>, <<core:ansi_color_reset()>>])
+def get_normal([$triangle, geo, _], _)
+  return triangle_normal(geo)
 end
+
+def get_normal([$sphere, geo, _], point)
+  return sphere_normal(geo, point)
+end
+
 
 def random_reflection(normal)
   b3 = vec3:norm(normal)
@@ -71,8 +130,11 @@ def find_nearest([], ray, nearest)
 end
 
 def find_nearest([obj, <<rest>>], ray, nearest)
-  [_sphere, sphere, mat] = obj
-  t = sphere_intersect_test(ray, sphere)
+  [type, geo, mat] = obj
+  match type
+    $sphere -> t = sphere_intersect_test(ray, geo) end
+    $triangle -> t = triangle_intersect_test(ray, geo) end
+  end
   if t == $miss
     return find_nearest(rest, ray, nearest)
   end
@@ -90,73 +152,217 @@ def find_nearest(objects, ray)
   return find_nearest(objects, ray, $miss)
 end
 
-def trace(objects, ray)
-  return trace(objects, ray, 7, true)
+def trace(objects, ray, nearest)
+  return trace(objects, ray, nearest, 15, true)
 end
 
-def trace(objects, ray, 0, _)
+def trace(objects, ray, _, 0, _)
   return [0,0,0]
 end
 
-def trace(objects, ray, bounce, first)
-  nearest = find_nearest(objects, ray)
-  if nearest == $miss
-    if first
-      return $miss
+def trace(objects, ray, nearest, bounce, first)
+  if nearest == $unkown
+    nearest = find_nearest(objects, ray)
+    if nearest == $miss
+      return [0, 0, 0]
     end
-    return [0, 0, 0]
   end
   [t, obj] = nearest
   [_type, _meh, mat] = obj
   [color, reflexivity, emittance] = mat
+  emitted_color = vec3:mul(color, emittance)
 
   [origin, direction] = ray
   point = vec3:add(origin, vec3:mul(direction, t))
 
   -- palla tänka på inte sfär
-  normal = vec3:mul(sphere_normal(_meh, point), -1)
+  normal = get_normal(obj, point)
   new_ray = random_reflection(normal)
   -- io:debug_raw(new_ray)
 
 
-  incoming = trace(objects, [point , new_ray], bounce - 1, false)
+  incoming = trace(objects, [point , new_ray], $unkown, bounce - 1, false)
 
   thing = vec3:dot(new_ray, normal) * reflexivity
 
-
-  emitted_color = vec3:mul(color, emittance)
   match incoming
     [0,0,0] -> reflected_color = [0,0,0] end
     _ -> reflected_color = vec3:mul(vec3:proj(color, incoming), thing) end
   end
+
   return vec3:add(emitted_color, reflected_color)
 end
 
-def render(width, height)
-  return render(width, height, width - 1, height - 1)
+-- ============ RENDERING =================
+
+def plot_pixel(x, y, color)
+  f = def (c)
+    return min(core:floor(c*255), 255)
+  end
+  [r, g, b] = color
+  io:print_string([
+    <<core:ansi_cursor_to(x, y)>>,
+    <<core:ansi_color(@f(r), @f(g), @f(b))>>,
+    <<'█'>>,
+    <<core:ansi_color_reset()>>]
+    )
 end
 
-def render(w, h, -1, -1)
+def render_line(y, width, height, objects)
+  render_pixel = def (x)
+    if x == 0
+      return $ok
+    end
+    pixel_ray = get_pixel_ray(x, y, width, height)
+    ray = [[0,0,-1], pixel_ray]
+    match find_nearest(objects, ray)
+      $miss -> color = [0, 0, 0] end
+      nearest ->
+        color = adaptive_trace(objects, ray, 30 , 500, .05, nearest)
+      end
+    end
+    plot_pixel(x,y,color)
+    return @render_pixel(x - 1)
+  end
+  @render_pixel(width)
   return $ok
 end
 
-def render(w, h, -1, y)
-  return render(w, h, w, y-1)
-end
-
-def render(w, h, x, y)
+def render(width, height)
+  plain_wall = [[1,1,1],1, 1]
   objects = [
-    [$sphere, [[0,1.5,2],.7], [[0.8,0.6,0.1], .3, .7]],
-    [$sphere, [[1,1,3],.3], [[0.2,0.8,0.5], .1, .9]],
-    [$sphere, [[-.5,.75,2],.3], [[0.9,0.2,0.3], .1, .9]],
-    [$sphere, [[0,0,3],1], [[1,1,1], 1, 0]]
+      [-- Backwall 1
+        $triangle,
+        [
+          [-2, 2, 5],
+          [-2, -2, 5],
+          [2, -2, 5],
+        ],
+        [[1, 1, 1], 1, 0]
+      ],
+      [-- Backwall 2
+        $triangle,
+        [
+          [-2, 2, 5],
+          [2, 2, 5],
+          [2, -2, 5],
+        ],
+        [[1, 1, 1], 1, 0]
+      ],
+      [-- Left wall 1
+        $triangle,
+        [
+          [-2, 2, 5],
+          [-2, -2, 5],
+          [-2, -2, 2],
+        ],
+        [[.1, .9, .1], 1, 0]
+      ],
+      [-- Left wall 2
+        $triangle,
+        [
+          [-2, 2, 5],
+          [-2, 2, 2],
+          [-2, -2, 2],
+        ],
+        [[.1, .9, .1], 1, 0]
+      ],
+      [-- right wall 1
+        $triangle,
+        [
+          [2, 2, 5],
+          [2, -2, 5],
+          [2, -2, 2],
+        ],
+        [[.9, .1, .1], 1, 0]
+      ],
+      [-- right wall 2
+        $triangle,
+        [
+          [2, 2, 5],
+          [2, 2, 2],
+          [2, -2, 2],
+        ],
+        [[.9, .1, .1], 1, 0]
+      ],
+      [-- bottom wall 1
+        $triangle,
+        [
+          [2, 2, 5],
+          [-2, 2, 5],
+          [-2, 2, 2],
+        ],
+        [[1, 1, 1], 1, 0]
+      ],
+      [-- bottom wall 2
+        $triangle,
+        [
+          [2, 2, 5],
+          [2, 2, 2],
+          [-2, 2, 2],
+        ],
+        [[1, 1, 1], 1, 0]
+      ],
+      [-- top wall 1
+        $triangle,
+        [
+          [2, -2, 5],
+          [-2, -2, 5],
+          [-2, -2, 2],
+        ],
+        [[1, 1, 1], 1, 0]
+      ],
+      [-- top wall 2
+        $triangle,
+        [
+          [2, -2, 5],
+          [2, -2, 2],
+          [-2, -2, 2],
+        ],
+        [[1, 1, 1], 1, 0]
+      ],
+      [-- Lamp 1
+        $triangle,
+        [
+          [1, -1.9, 4],
+          [-1, -1.9, 4],
+          [-1, -1.9, 3],
+        ],
+        [[1, 1, 1], 0, 1]
+      ],
+      [-- Lamp 2
+        $triangle,
+        [
+          [1, -1.9, 4],
+          [1, -1.9, 3],
+          [-1, -1.9, 3],
+        ],
+        [[1, 1, 1], 0, 1]
+      ],
+      [$sphere, [[-.5,.75,3],.3], [[0.9,0.9,0.9], 0, 1]],
   ]
-  pixel_ray = get_pixel_ray(x, y, w, h)
-  ray = [[0,0,-1], pixel_ray]
-  -- [r,g,b] = average_trace(objects, ray, 5)
-  [r,g,b] = adaptive_trace(objects, ray, 15, 200, .05)
-  plot_pixel(x,y,[core:floor(core:abs(r)*255),core:floor(core:abs(g)*255),core:floor(core:abs(b)*255)])
-  return render(w,h,x-1,y)
+  -- objects = [
+  --   [$sphere, [[0,1.5,2],.7], [[1, 1, 1], 1, .0]],
+  --   [$sphere, [[1,1,3],.3], [[0.2,0.8,0.5], .5, .5]],
+  --   [$sphere, [[0,0,3],1], [[1,1,1], 1, 0]],
+  --   [$triangle, [
+  --     [-1, -1, 2],
+  --     [0, 1, 3],
+  --     [1, -1, 4]
+  --   ], [[0,0,1], 1.5, 0]],
+  --   [$triangle, [
+  --     [0,-2, 4],
+  --     [-10, -2, 0],
+  --     [10, -2, 0]
+  --   ], [[1,1,1], 0, 1]]
+  -- ]
+
+  worker = def (y)
+    return render_line(y, width, height, objects)
+  end
+
+  return list:pmap(list:range(height), worker)
+
 end
 
 def average_trace(objects, ray, samples)
@@ -174,12 +380,13 @@ def average_trace(objects, ray, n, s, [_r, _g, _b])
   end
 end
 
-def adaptive_trace(objects, ray, set_size, max, threshold)
-  return adaptive_trace(objects, ray, set_size, max, threshold, trace_set(objects, ray, set_size))
+def adaptive_trace(objects, ray, set_size, max, threshold, nearest)
+  initial_set = trace_set(objects, ray, set_size, nearest)
+  return adaptive_trace(objects, ray, set_size, max, threshold, initial_set, nearest)
 end
 
-def adaptive_trace(objects, ray, set_size, max, threshold, old_set)
-  set = trace_set(objects, ray, set_size)
+def adaptive_trace(objects, ray, set_size, max, threshold, old_set, nearest)
+  set = trace_set(objects, ray, set_size, nearest)
   color = vec3:mul(vec3:add(set, old_set), 1/2)
   diff = vec3:mag(vec3:sub(set, old_set))
   if diff < threshold
@@ -188,21 +395,21 @@ def adaptive_trace(objects, ray, set_size, max, threshold, old_set)
   if set_size * 2 > max
     return color
   end
-  return adaptive_trace(objects, ray, set_size*2, max, threshold, color)
+  return adaptive_trace(objects, ray, set_size*2, max, threshold, color, nearest)
 end
 
-def trace_set(objects, ray, s)
-  return trace_set(objects, ray, s, s, [0,0,0])
+def trace_set(objects, ray, s, nearest)
+  return trace_set(objects, ray, s, s, [0,0,0], nearest)
 end
 
-def trace_set(objects, ray, s, 0, acc)
+def trace_set(objects, ray, s, 0, acc, nearest)
   return acc
 end
 
-def trace_set(objects, ray, s, n, [_r, _g, _b])
-  match trace(objects, ray)
+def trace_set(objects, ray, s, n, [_r, _g, _b], nearest)
+  match trace(objects, ray, nearest)
     $miss -> return [0,0,0] end
-    [r,g,b] -> return trace_set(objects, ray, s, n - 1, [_r + r/s, _g + g/s, _b + b/s]) end
+    [r,g,b] -> return trace_set(objects, ray, s, n - 1, [_r + r/s, _g + g/s, _b + b/s], nearest) end
   end
   return 1
 end
@@ -216,7 +423,8 @@ def _entry([])
   io:print_string(core:ansi_cursor_to(0,0))
   io:print_string(core:ansi_clear_screen())
   utils:load_module('colors')
-  render(100,50)
+  [width, height] = core:request(core:io_pid(), $get_console_size)
+  render(height*2,height)
   return $ok
 end
 
@@ -245,6 +453,19 @@ def _test()
       def (superv)
         norm = [core:rand_range(-1,1), core:rand_range(-1,1) , core:rand_range(-1,1)]
         testing:assert(superv, 'n·random(n) > 0', vec3:dot(random_reflection(norm),norm) > 0)
+      end
+    ],
+    ['triangle intersection test',
+      def (superv)
+        triangle = [
+          [-1, -1, 0],
+          [0, 1, 0],
+          [1, -1, 0]
+        ]
+        ray = [[0,0,-1], [0,0,1]]
+        testing:assert(superv, 'hits at 1', triangle_intersect_test(ray, triangle), 1)
+        ray = [[0,0,-1], [0,0,-1]]
+        testing:assert(superv, 'reversed misses', triangle_intersect_test(ray, triangle), $miss)
       end
     ],
   ]
