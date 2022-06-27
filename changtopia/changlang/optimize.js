@@ -157,7 +157,6 @@ function resolveAliases(func) {
   const coolAliases = Object.values(aliases).filter(checkUnsafeAlias).reduce((acc, alias) => ({...acc, [alias.name]: alias}), {})
 
   if (Object.keys(coolAliases).length === 0) {return}
-  console.log(`We could find ${Object.keys(coolAliases).length} quickpushes in ${func.name}`)
 
   function replaceAliases(aliases) {
     Object.values(aliases).forEach((alias) => {
