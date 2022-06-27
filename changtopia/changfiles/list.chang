@@ -12,6 +12,35 @@ def get(l, n)
   end
 end
 
+def set(l, n, item)
+  if n >= core:length(l)
+    return l
+  end
+  if n < 0
+    return l
+  end
+  return set(l, n, item, 0, [])
+end
+
+def set([x, <<rest>>], n, item, count, res)
+  if rest == []
+    return res
+  end
+  if count == n
+    return [<<res>>, item, <<rest>>]
+  end
+  return set(rest, n, item, count +1, [<<res>>, x])
+end
+
+def _test_set()
+  return ['set',
+    def (superv)
+      testing:assert(superv, 'set([1,2,3], 1, 1337) == [1, 1337, 3]', [set([1,2,3], 1, 1337)], [1, 1337, 3])
+      testing:assert(superv, 'set([1,2,3], 1024, 1337) == [1,2,3]', [set([1,2,3], 1, 1337)], [1, 1337, 3])
+    end
+  ]
+end
+
 def length(list)
   return core:length(list)
 end
@@ -234,32 +263,44 @@ def all(list)
   end
 end
 
-def map(list, fn)
-  return _map(list, fn, [])
+def for_each(list, fn)
+  match list
+    [] ->
+      return $ok
+    end
+    [x, <<rest>>] ->
+      core:run(fn, x)
+      return for_each(rest, fn)
+    end
+  end
 end
 
-def _map(list, fn, res)
+def map(list, fn)
+  return map(list, fn, [])
+end
+
+def map(list, fn, res)
   match list
     [] ->
       return res
     end
     [x, <<rest>>] ->
-      return _map(rest, fn, [<<res>>, core:run(fn, x)])
+      return map(rest, fn, [<<res>>, core:run(fn, x)])
     end
   end
 end
 
 def zip(list1, list2)
-  return _zip(list1, list2, [])
+  return zip(list1, list2, [])
 end
 
-def _zip(l1, l2, res)
+def zip(l1, l2, res)
   match l1
     [] ->
       return res
     end
     whatever ->
-      return _zip(tail(l1), tail(l2), [<<res>>, [head(l1), head(l2)]])
+      return zip(tail(l1), tail(l2), [<<res>>, [head(l1), head(l2)]])
     end
   end
 end
@@ -336,25 +377,50 @@ end
 
 def pmap(list, fn)
   cpu_count = core:send(core:io_pid(), $cpu_count)
-  segments = partition(list, cpu_count)
+  segments = zip(range(cpu_count), partition(list, cpu_count))
+  results = range(cpu_count)
   spawner = def (segment)
-    pid =  core:spawn(['list', 'pmap_worker'], segment, fn)
-    core:link(pid)
+    pid =  core:spawn(['list', 'pmap_worker'], segment, fn, core:my_pid())
     return pid
   end
+  listener = def (sender, payload)
+    match payload
+      [$error, <<_>>] ->
+        return [$fail, payload]
+      end
+      [n, res] -> return [$part, n, res] end
+    end
+  end
+  wait_for_complete = def (remaining, result)
+    if remaining == 0
+      return [$done, result]
+    end
+    match core:listen(listener)
+      [$fail, error] -> return error end
+      [$part, n, res] ->
+        return @wait_for_complete(remaining - 1, set(result, n, res))
+      end
+    end
+  end
+  kill_worker = def (pid) core:send(core:io_pid(), $kill, pid) end
   workers = map(segments, spawner)
-  return core:flatten(map(workers, def (worker) return core:send(worker, $ok) end))
+  match @wait_for_complete(cpu_count, range(cpu_count))
+    [$done, res] -> return flatten(res) end
+    [$fail, error] ->
+      for_each(workers, kill_worker)
+      return error
+    end
+    [$error, <<rest>>] ->
+      for_each(workers, kill_worker)
+      return [$error, <<rest>>]
+    end
+  end
 end
 
-def pmap_worker(list, fn)
-  result = map(list, fn)
-  listener = def (sender, payload)
-    return result
-  end
-  core:listen(listener)
-  -- Something is wrong here. this return is completely unncessary
-  -- but without it just gets stuck.
-  return $ok
+def pmap_worker(segment, fn, parent)
+  [n, list] = segment
+  core:link(parent)
+  core:send(parent, [n, map(list, fn)])
 end
 
 

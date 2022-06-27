@@ -2,11 +2,10 @@ const {sizeof} = require('sizeof')
 const {Process} = require('./process.js')
 const {h, randomHash} = require('../util/hash.js')
 const builtins = require('./builtins/builtins.js')
-const {NoSuchPidError} = require('../errors.js')
 const Pid = require('./pid.js')
 const {prettyInst} = require('./instructions/pretty.js')
-const {toJsString} = require('../util/strings.js')
-const {formatMessage, makeReply} = require('../util/messages.js')
+const {toJsString, fromJsString} = require('../util/strings.js')
+const {makeReply} = require('../util/messages.js')
 const postToParent = (msg) => postMessage(msg)
 
 class Vm {
@@ -104,6 +103,10 @@ class Vm {
         const [pid, module, entryPoint, bindings, ...args] = message.payload
         this.spawnProcess(Pid.toPid(pid), toJsString(module), toJsString(entryPoint), args, bindings)
         return
+      } else if (message.secret === 'kill') {
+        const [pid] = message.payload
+        this.killProcess(pid)
+        return
       } else {
         throw new Error(`I can't handle the secret: ${message.secret}`)
       }
@@ -119,22 +122,39 @@ class Vm {
       this.sendExternal(message)
     }
     if (!skipCount) {
-      this.processes[Pid.toPid(message.sender)].messagesSent += 1
+      // The sender might have died
+      if (this.processes[Pid.toPid(message.sender)]) {
+        this.processes[Pid.toPid(message.sender)].messagesSent += 1
+      }
     }
   }
 
   handleMessage(message) {
     const recipient = this.processes[Pid.toPid(message.recipient)]
     if (!recipient) {
-      this.logError()
-      throw new NoSuchPidError(`There is no process ${Pid.toPid(message.recipient)} to read the message \n${formatMessage(message)} ${this.instance}`)
+      console.log(`${message.recipient.id} has died and cant come to the queue`)
+      if (message.payload[0] === h('error') && message.payload[1] === h('no_recipient')) {
+        // The process that sen'tthis message is suprisingly likely also dead :P
+        return
+      }
+      this.dispatchMessage(makeReply(message, [h('error'), h('no_recipient'), fromJsString(`There is no process ${Pid.toPid(message.recipient)} to read the message on ${this.instance}`), []]))
+    } else {
+      recipient.addMessage(message)
+      this.sceduleExecution()
     }
-    recipient.addMessage(message)
-    this.sceduleExecution()
   }
 
   loadModule(module) {
     this.modules[module.moduleName] = module
+  }
+
+  killProcess(pid) {
+    if (this.processes[pid]) {
+      delete this.processes[pid]
+      this.topQueue = this.topQueue.filter((p) => p != pid)
+      this.bottomQueue = this.bottomQueue.filter((p) => p != pid)
+      this.waitingProcesses = this.waitingProcesses.filter((p) => p != pid)
+    }
   }
 
   spawnProcess(pid, module, entryPoint, args, bindings) {
@@ -242,6 +262,9 @@ class Vm {
   }
 
   logError() {
+    if (Object.values(this.processes).length == 0) {
+      return
+    }
     const stateLegend = '[W,F,A,B,H]'
     function makeStateDisplay(state) {
       const toMark = val => val ? '✓' : ' '
@@ -250,22 +273,23 @@ class Vm {
     let runningProc = null
     const runningInfo = Object.values(this.processes).map((proc) => {
       const functionId = proc.frame.functionId
+      const module = proc.frame.func.moduleName
       if (!proc.waiting && !proc.finished) {
         runningProc = proc
       }
       const neatString = `${proc.frame.line}: ${prettyInst(proc.getCurrentInstruction())}`
       const state = makeStateDisplay(proc.getStateDescriptor())
-      return `${proc.pid}  ${state}  ${functionId}:${neatString}`
+      return `${proc.pid}  ${state}  ${module}:${functionId}:${neatString}`
     }).join('\n')
 
 
-    const header = `                             ${stateLegend}`
-
-    this.log(header)
-    this.log(runningInfo)
+    let errorString = ''
+    errorString += `                             ${stateLegend}` + '\n'
+    errorString += runningInfo + '\n'
     if (runningProc) {
-      this.log(runningProc.stack.getStackTrace())
+      errorString += runningProc.stack.getStackTrace()
     }
+    this.log(errorString)
   }
 
   getSummary() {

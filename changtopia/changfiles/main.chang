@@ -55,6 +55,7 @@ def _entry()
 
   shell_pid = core:spawn(['shell', '_entry'], core:my_pid())
   core:listen(['main', 'listener'])
+  return $ok
 end
 
 def listener(sender, payload)
@@ -71,6 +72,7 @@ def listener(sender, payload)
     end
   end
   core:listen(['main', 'listener'])
+  return $ok
 end
 
 def quit_listener(sender, payload)

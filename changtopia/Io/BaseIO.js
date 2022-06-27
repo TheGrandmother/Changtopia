@@ -137,7 +137,7 @@ class BaseIO {
   }
 
   async [h('cpu_count')](worker, message) {
-    worker.postMessage(makeReply(message, window.navigator.hardwareConcurrency))
+    worker.postMessage(makeReply(message, JSON.parse(localStorage['DEBUG_OVERRIDE_CPU_COUNT'] || 'false') || window.navigator.hardwareConcurrency))
   }
 
   async [h('print_string')](worker, message) {
@@ -197,6 +197,10 @@ class BaseIO {
 
   async [h('has_module')](worker, message){
     return worker.postMessage({...message, secret: 'has_module'})
+  }
+
+  async [h('kill')](worker, message){
+    return worker.postMessage({...message, secret: 'kill'})
   }
 
   async [h('list_files')](worker, message) {

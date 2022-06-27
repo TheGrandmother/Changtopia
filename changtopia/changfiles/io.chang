@@ -161,3 +161,12 @@ end
 --     end
 --   end
 -- end
+
+def format_error(err)
+  [_, error_atom, message, trace] = err
+  return list:flatten([
+    'Error (', error_atom, '): ', '\n',
+    message, '\n',
+    trace
+  ])
+end

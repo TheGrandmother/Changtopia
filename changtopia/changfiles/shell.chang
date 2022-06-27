@@ -72,8 +72,10 @@ def spawn_module(name, args)
   core:link(pid)
   response = core:request(pid, $run)
   match response
-    [[$error, error_atom, msg, <<faff>>]] ->
-      io:print_strings(['Error running: ', name, '\n', msg, '\n'])
+    [[$error, error_atom, msg, trace]] ->
+      io:print_string(core:ansi_cursor_to(0,0))
+      io:print_string(core:ansi_clear_screen())
+      io:print_strings(['Error running: ', name, '\n', msg, ' (', error_atom,')', '\n', trace])
       return $error
     end
     $ok ->
