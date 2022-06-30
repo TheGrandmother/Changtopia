@@ -120,6 +120,12 @@ class UndefinedWrite extends RuntimeError {
   }
 }
 
+class NaNValue extends RuntimeError {
+  constructor(msg) {
+    super(msg, h('nan_value'))
+  }
+}
+
 class StupidMath extends RuntimeError {
   constructor(msg) {
     super(msg, h('stupid_math'))
@@ -146,5 +152,6 @@ module.exports = {
   UndefinedWrite,
   StackOverflow,
   IncorectClosureBindings,
-  StupidMath
+  StupidMath,
+  NaNValue
 }

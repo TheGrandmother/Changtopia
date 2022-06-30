@@ -133,8 +133,8 @@ class Vm {
     const recipient = this.processes[Pid.toPid(message.recipient)]
     if (!recipient) {
       console.log(`${message.recipient.id} has died and cant come to the queue`)
-      if (message.payload[0] === h('error') && message.payload[1] === h('no_recipient')) {
-        // The process that sen'tthis message is suprisingly likely also dead :P
+      if (message.payload[0] === h('error')) {
+        // It is incredibly likely that both processes are dead in this case
         return
       }
       this.dispatchMessage(makeReply(message, [h('error'), h('no_recipient'), fromJsString(`There is no process ${Pid.toPid(message.recipient)} to read the message on ${this.instance}`), []]))

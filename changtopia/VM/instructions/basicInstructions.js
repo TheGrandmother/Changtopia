@@ -23,7 +23,14 @@ const basicInstructions = {
     evaluate: (process, op, resLocation, a1, a2 ) => {
       const v1 = process.frame.read(a1)
       const v2 = process.frame.read(a2)
-      //const func = Function('v1', 'v2', `return v1 ${op} v2`)
+      if (mathyOps.includes(op)) {
+        if (isNaN(v1)) {
+          throw new StupidMath(`Can't do math with ${a1} it is ${v1}`)
+        }
+        if (isNaN(v2)) {
+          throw new StupidMath(`Can't do math with ${a2} it is ${v2}`)
+        }
+      }
       process.frame.write(resLocation, binops[op](v1, v2))
       process.incrementLine()
     }
@@ -33,6 +40,9 @@ const basicInstructions = {
 const eq = (a ,b) => {
   return equal(a, b)
 }
+
+const mathyOps = ['>', '<', '>=', '<=', '+', '-', '*', '/', '%']
+
 
 const binops = {
   '==': eq,

@@ -11,7 +11,8 @@ const {
   RuntimeError,
   UndefinedWrite,
   StackOverflow,
-  IncorectClosureBindings
+  IncorectClosureBindings,
+  NaNValue
 } = require('../errors.js')
 
 class Process {
@@ -431,13 +432,13 @@ class Stack {
   }
 
   getStackTrace(vm) {
-    let trace = this.frames.slice(-5).map((frame) => {
+    let trace = this.frames.slice(-10).map((frame) => {
       const line = frame.func.code[frame.line]?.sourcePos?.line || '??'
       const source = vm?.getModule(frame.func.moduleName)?.source[line - 1]?.trim() || 'Source not reachable'
       return `  ${frame.func.moduleName}:${frame.functionId}:${line}   ${source}`
     }).reverse().join('\n')
-    if (this.frames.length > 5) {
-      trace = `${trace}\n  (${this.frames.length - 5} frames hidden)`
+    if (this.frames.length > 10) {
+      trace = `${trace}\n  (${this.frames.length - 10} frames hidden)`
     }
     return trace
   }
@@ -456,6 +457,9 @@ class Frame {
   write (location, value) {
     if (value === undefined && location !== '__dump__') {
       throw new UndefinedWrite(`Tried to write an undefined value into ${location}`)
+    }
+    if (value !== value) { // NaN check hack <3
+      throw new NaNValue(`Tried to write a NaN value into ${location} ${value}`)
     }
     this.data[location] = value
     return location
