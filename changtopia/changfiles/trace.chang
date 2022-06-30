@@ -16,6 +16,9 @@ def max(a,b)
   return b
 end
 
+
+-- ========= VECTOR STUFF ============
+
 -- Simplifications:
 --  Camera at [0, 0, -1] pointing [0, 0, 1]
 --  Viewport centered at origin and having width and height 1
@@ -29,17 +32,35 @@ def get_pixel_ray(p_x, p_y, x_count, y_count)
   return pixel_vec
 end
 
+def random_reflection(normal)
+  return random_reflection(normal, .5)
+end
+
+def random_reflection(normal, spread)
+  b3 = normal
+  [_x, _, __] = b3
+  match core:abs(_x) < .5
+    true -> diff = [1,0,0] end
+    false -> diff = [0,1,0] end
+  end
+  b1 = vec3:norm(vec3:cross(b3, diff))
+  b2 = vec3:cross(b1, b3)
+
+  z = core:rand_range(core:cos(core:pi() * spread), 1)
+  r = core:sqrt(1-z*z)
+  theta = core:rand_range(-1*core:pi(), core:pi())
+  x = r * core:cos(theta)
+  y = r * core:sin(theta)
+  return vec3:norm(vec3:add(vec3:add(vec3:mul(b1, x), vec3:mul(b2, y)), vec3:mul(b3, z)))
+end
+
+def reflect(normal, direction)
+  -- r = d -2(n.d)n
+  return vec3:sub(direction, vec3:mul(normal, vec3:dot(normal, direction) * 2))
+end
+
+
 -- ========= GEOMETRY =======
-
-def precompute([$triangle, shape, _mat])
-  [v0, v1, v2] = shape
-  v0v1 = vec3:sub(v1, v0)
-  v0v2 = vec3:sub(v2, v0)
-end
-
-def precompute(x)
-  return x
-end
 
 -- https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/moller-trumbore-ray-triangle-intersection
 def triangle_intersect_test(ray, triangle)
@@ -50,7 +71,7 @@ def triangle_intersect_test(ray, triangle)
   v0v2 = vec3:sub(v2, v0)
   pvec = vec3:cross(direction, v0v2)
   det = vec3:dot(v0v1, pvec)
-  if core:abs(det) <= 0
+  if core:abs(det) <= 0.0000001
     return $miss
   end
 
@@ -78,7 +99,7 @@ def triangle_intersect_test(ray, triangle)
   end
 
   t = vec3:dot(v0v2, qvec) * inv_det
-  if t <= 0
+  if t <= 0.00000001
     return $miss
   end
   return t
@@ -113,62 +134,50 @@ def sphere_normal(sphere, point)
   return vec3:norm(vec3:sub(point, center))
 end
 
-def get_normal([$triangle, geo, _], _)
+def get_normal([$triangle, geo, <<_>>], _)
   return triangle_normal(geo)
 end
 
-def get_normal([$sphere, geo, _], point)
+def get_normal([$sphere, geo, <<_>>], point)
   return sphere_normal(geo, point)
 end
 
-
-def random_reflection(normal)
-  b3 = normal
-  [_x, _, __] = b3
-  match core:abs(_x) < .5
-    true -> diff = [1,0,0] end
-    false -> diff = [0,1,0] end
-  end
-  b1 = vec3:norm(vec3:cross(b3, diff))
-  b2 = vec3:cross(b1, b3)
-
-  z = core:rand_range(core:cos(core:pi()/2), 1)
-  r = core:sqrt(1-z*z)
-  theta = core:rand_range(-1*core:pi(), core:pi())
-  x = r * core:cos(theta)
-  y = r * core:sin(theta)
-  return vec3:norm(vec3:add(vec3:add(vec3:mul(b1, x), vec3:mul(b2, y)), vec3:mul(b3, z)))
-end
-
-def find_nearest([], ray, nearest)
+def find_nearest([], ray, nearest, _)
   return nearest
 end
 
-def find_nearest([obj, <<rest>>], ray, nearest)
-  [type, geo, mat] = obj
+def find_nearest([obj, <<rest>>], ray, nearest, id)
+  [type, geo, mat, <<meta>>] = obj
+  match meta
+    [hint_id] ->
+      if id != $none && hint_id == id
+        return find_nearest(rest, ray, nearest, id)
+      end
+    end
+  end
   match type
     $sphere -> t = sphere_intersect_test(ray, geo) end
     $triangle -> t = triangle_intersect_test(ray, geo) end
   end
   if t == $miss
-    return find_nearest(rest, ray, nearest)
+    return find_nearest(rest, ray, nearest, id)
   end
   if nearest == $miss
-    return find_nearest(rest, ray, [t, obj])
+    return find_nearest(rest, ray, [t, obj], id)
   end
   [old_t, _] = nearest
   if t < old_t
-    return find_nearest(rest, ray, [t, obj])
+    return find_nearest(rest, ray, [t, obj], id)
   end
-  return find_nearest(rest, ray, nearest)
+  return find_nearest(rest, ray, nearest, id)
 end
 
 def find_nearest(objects, ray)
-  return find_nearest(objects, ray, $miss)
+  return find_nearest(objects, ray, $miss, $none)
 end
 
 def trace(objects, ray, nearest)
-  return trace(objects, ray, nearest, 14, true)
+  return trace(objects, ray, nearest, 2, true)
 end
 
 def trace(objects, ray, _, 0, _)
@@ -176,15 +185,16 @@ def trace(objects, ray, _, 0, _)
 end
 
 def trace(objects, ray, nearest, bounce, first)
+  [solids, hints] = objects
   if nearest == $unkown
-    nearest = find_nearest(objects, ray)
+    nearest = find_nearest(solids, ray)
     if nearest == $miss
       return [0, 0, 0]
     end
   end
   [t, obj] = nearest
-  [_type, _meh, mat] = obj
-  [color, reflexivity, emittance] = mat
+  [_type, _meh, mat, <<_>>] = obj
+  [color, diffuse_reflexivity, emittance, direct_reflexivity] = mat
   emitted_color = vec3:mul(color, emittance)
 
   if emittance > 0.95
@@ -195,8 +205,83 @@ def trace(objects, ray, nearest, bounce, first)
   [origin, direction] = ray
   point = vec3:add(origin, vec3:mul(direction, t))
 
-  -- palla tänka på inte sfär
   normal = get_normal(obj, point)
+
+  -- HINT STEP
+
+  [x, <<_>>] = direction
+
+  find_light_paths = def (hints, rays)
+    match hints
+      [] -> return rays end
+      [hint, <<rest>>] ->
+        [pos, id] = hint
+        light_dir = vec3:sub(pos, point)
+        if vec3:dot(light_dir, normal) < 0
+          return @find_light_paths(rest, rays)
+        end
+        if light_dir == [0,0,0]
+          return @find_light_paths(rest, rays)
+        end
+        distance_to_light = vec3:mag(light_dir)
+        light_dir = vec3:norm(light_dir)
+        match find_nearest(solids, [point, light_dir], $miss, id)
+          $miss ->
+            return @find_light_paths(rest, [<<rays>>, [light_dir, id]])
+          end
+          [t, obj] ->
+            point_of_intersection = vec3:add(point, vec3:mul(light_dir, t))
+            distance_to_intersection = vec3:mag(vec3:sub(point_of_intersection, point))
+            if distance_to_intersection > distance_to_light
+              return @find_light_paths(rest, [<<rays>>, [light_dir, id]])
+            end
+            return @find_light_paths(rest, rays)
+          end
+        end
+      end
+    end
+  end
+
+  hint_vectors = @find_light_paths(hints, [])
+
+  drop_by_id = def(obj, id)
+    match obj
+      [_, __, ___] -> return false end
+      [_, __, ___, obj_id] -> return obj_id == id end
+      _ -> return false end
+    end
+  end
+
+  hint_count = core:length(hint_vectors)
+
+  trace_hints = def (hint_vectors, light)
+    match hint_vectors
+      [] -> return light end
+      [hint, <<rest>>] ->
+        [vector, id] = hint
+        new_ray = random_reflection(vector, 0.05)
+        if vec3:dot(new_ray, normal) < 0
+          -- Casting ray behind object
+          return @trace_hints(rest, light)
+        end
+        match find_nearest(list:filter(solids, def (obj) return @drop_by_id(obj, id) end), [point, vector])
+          $miss -> return @trace_hints(rest, light) end
+          [t, obj] ->
+            [_, __, mat, <<_>>] = obj
+            [light_color, _, hint_emittance, _hint_reflextivity] = mat
+            thing = vec3:dot(new_ray, normal) * diffuse_reflexivity
+            emitted_hint_light = vec3:mul(light_color, hint_emittance)
+            return @trace_hints(rest, vec3:add(light, vec3:mul(emitted_hint_light, thing)))
+          end
+        end
+      end
+    end
+  end
+
+  hint_color = vec3:mul(@trace_hints(hint_vectors, [0,0,0]),1)
+
+  -- DIFUSE STEP
+
   new_ray = random_reflection(normal)
 
   incoming = trace(objects, [point , new_ray], $unkown, bounce - 1, false)
@@ -204,12 +289,32 @@ def trace(objects, ray, nearest, bounce, first)
   match incoming
     [0,0,0] -> reflected_color = [0,0,0] end
     _ ->
-      thing = vec3:dot(new_ray, normal) * reflexivity
-      reflected_color = vec3:mul(vec3:proj(color, incoming), thing)
+      thing = vec3:dot(new_ray, normal) * diffuse_reflexivity
+      reflected_color = vec3:mul(incoming, thing)
     end
   end
 
-  return vec3:add(emitted_color, reflected_color)
+  -- DIRECT STEP
+
+  direct_color = [0, 0, 0]
+  if direct_reflexivity > 0
+    new_ray = reflect(normal, direction)
+    otto = vec3:add(new_ray, [0,0,0])
+    incoming = trace(objects, [point , new_ray], $unkown, bounce - 1, false)
+    match incoming
+      [0,0,0] -> direct_color = [0,0,0] end
+      _ ->
+        direct_color = vec3:mul(incoming, direct_reflexivity)
+      end
+    end
+  end
+
+  total_traced_color = vec3:add(vec3:add(hint_color, reflected_color), direct_color)
+  if total_traced_color == [0,0,0]
+    return [0,0,0]
+  end
+
+  return vec3:mul(vec3:proj(color, total_traced_color), vec3:mag(total_traced_color))
 end
 
 -- ============ RENDERING =================
@@ -234,10 +339,11 @@ def render_line(y, width, height, objects)
     end
     pixel_ray = get_pixel_ray(x, y, width, height)
     ray = [[0,0,-1], pixel_ray]
-    match find_nearest(objects, ray)
+    [solids, _] = objects
+    match find_nearest(solids, ray)
       $miss -> color = [0, 0, 0] end
       nearest ->
-        color = adaptive_trace(objects, ray, 200 , 5000, .05, nearest)
+        color = adaptive_trace(objects, ray, 10 , 1, .03, nearest)
       end
     end
     plot_pixel(x,y,color)
@@ -247,17 +353,6 @@ def render_line(y, width, height, objects)
   return $ok
 end
 
-def render(width, height)
-  plain_wall = [[1,1,1],1, 1]
-  objects = make_room()
-
-  worker = def (y)
-    return render_line(y, width, height, objects)
-  end
-
-  return list:pmap(list:range(height), worker)
-
-end
 
 def average_trace(objects, ray, samples)
   return average_trace(objects, ray, samples, samples, [0,0,0])
@@ -311,6 +406,43 @@ def trace_set(objects, ray, s, n, [_r, _g, _b], nearest)
   end
   return 1
 end
+
+def render(width, height)
+  plain_wall = [[1,1,1],1, 1]
+  -- objects = [
+  --   [--solids [type, geometry, [color, diffuse, emittance, reflection], <hint_id>]
+  --     [$sphere, [[0, 1, 4], 1], [[1,1,1], 1, 0]],
+  --     [$sphere, [[0, -2, 4], 1], [[1,1,1], 1, 0]],
+  --     [$sphere, [[0, -.5, 4], .3], [[1,1,1], 0, 1], 0]
+  --   ],
+  --   [--light hints
+  --     [[0, -.5, 4], 0]
+  --   ]
+  -- ]
+  objects = make_room()
+
+  worker = def (y)
+    return render_line(y, width, height, objects)
+  end
+
+  res = list:pmap(list:range(height), worker)
+  match res
+    [$error, <<_>>] ->
+      io:print_strings([
+        core:ansi_cursor_to(0,0),
+        core:ansi_clear_screen(),
+        io:format_error(res)
+      ])
+    end
+    res -> return $ok end
+  end
+
+  return $ok
+
+end
+
+
+
 
 
 
@@ -366,138 +498,198 @@ def _test()
         testing:assert(superv, 'reversed misses', triangle_intersect_test(ray, triangle), $miss)
       end
     ],
+    ['reflect',
+      def (superv)
+        testing:assert(superv, 'headon is same but backwards', reflect([0,1,0], [0,-1,0]), [0,1,0])
+        testing:assert(superv, 'orthog remains the same', reflect([0,1,0], [1,0,0]), [1,0,0])
+        testing:assert(superv, 'basic dude', reflect([0,1,0], [1,-1,0]), [1,1,0])
+      end
+    ],
   ]
   return testing:run_suite('Trace', suite)
 end
 
 def make_room()
-   return [
-       [-- Backwall 1
-         $triangle,
-         [
-           [2, -2, 5],
-           [-2, -2, 5],
-           [-2, 2, 5],
-         ],
-         [[1, 1, 1], 1, 0]
+  max_depth = 5
+  min_depth = -1.1
+  return [
+     [
+      [-- Backwall 1
+        $triangle,
+        [
+          [2, -2, max_depth],
+          [-2, -2, max_depth],
+          [-2, 2, max_depth],
+        ],
+        [[1, 1, 1], 1, 0, 0]
+      ],
+      [-- Backwall 2
+        $triangle,
+        [
+          [2, 2, max_depth],
+          [2, -2, max_depth],
+          [-2, 2, max_depth],
+        ],
+        [[1, 1, 1], 1, 0, 0]
+      ],
+      [-- front wall 1
+        $triangle,
+        [
+          [-2, 2, min_depth],
+          [-2, -2, min_depth],
+          [2, -2, min_depth],
+        ],
+        [[1, 1, 1], 1, 0, 0]
+      ],
+      [-- front wall 2
+        $triangle,
+        [
+          [-2, 2, min_depth],
+          [2, -2, min_depth],
+          [2, 2, min_depth],
+        ],
+        [[1, 1, 1], 1, 0, 0]
+      ],
+      [-- Left wall 1
+        $triangle,
+        [
+          [-2, 2, max_depth],
+          [-2, -2, max_depth],
+          [-2, -2, min_depth],
+        ],
+        [[.1, .9, .1], 1, 0, 0]
+      ],
+      [-- Left wall 2
+        $triangle,
+        [
+          [-2, -2, min_depth],
+          [-2, 2, min_depth],
+          [-2, 2, max_depth],
+        ],
+        [[.1, .9, .1], 1, 0, 0]
+      ],
+      [-- right wall 1
+        $triangle,
+        [
+          [2, -2, min_depth],
+          [2, -2, max_depth],
+          [2, 2, max_depth],
+        ],
+        [[.9, .1, .1], 1, 0, 0]
+      ],
+      [-- right wall 2
+        $triangle,
+        [
+          [2, 2, max_depth],
+          [2, 2, min_depth],
+          [2, -2, min_depth],
+        ],
+        [[.9, .1, .1], 1, 0, 0]
+      ],
+      [-- bottom wall 1
+        $triangle,
+        [
+          [2, 2, max_depth],
+          [-2, 2, max_depth],
+          [-2, 2, min_depth],
+        ],
+        [[1, 1, 1], 1, 0, 0]
+      ],
+      [-- bottom wall 2
+        $triangle,
+        [
+          [-2, 2, min_depth],
+          [2, 2, min_depth],
+          [2, 2, max_depth],
+        ],
+        [[1, 1, 1], 1, 0, 0]
+      ],
+      [-- top wall 1
+        $triangle,
+        [
+          [-2, -2, max_depth],
+          [2, -2, max_depth],
+          [-2, -2, min_depth],
+        ],
+        [[1, 1, 1], 1, 0, 0]
+      ],
+      [-- top wall 2
+        $triangle,
+        [
+          [-2, -2, min_depth],
+          [2, -2, max_depth],
+          [2, -2, min_depth],
+        ],
+        [[1, 1, 1], 1, 0, 0]
+      ],
+      [-- Lamp 1
+        $triangle,
+        [
+          [1, -1.9, 4],
+          [-1, -1.9, 4],
+          [-1, -1.9, 1],
+        ],
+        [[1, 1, 1], 0, 1, 0],
+        0
+      ],
+      [-- Lamp 2
+        $triangle,
+        [
+          [1, -1.9, 4],
+          [1, -1.9, 1],
+          [-1, -1.9, 1],
+        ],
+        [[1, 1, 1], 0, 1, 0],
+        0
+      ],
+      [-- Lamp 1
+        $triangle,
+        [
+          [-1, -1.85, 1],
+          [-1, -1.85, 4],
+          [1, -1.85, 4],
+        ],
+        [[1, 1, 1], 0, 1, 0],
+        0
+      ],
+      [-- Lamp 2
+        $triangle,
+        [
+          [-1, -1.85, 1],
+          [1, -1.85, 1],
+          [1, -1.85, 4],
+        ],
+        [[1, 1, 1], 0, 1, 0],
+        0
+      ],
+      [
+       $sphere,
+       [
+         [-.5,0,4],
+         .3
        ],
-       [-- Backwall 2
-         $triangle,
-         [
-           [2, 2, 5],
-           [2, -2, 5],
-           [-2, 2, 5],
-         ],
-         [[1, 1, 1], 1, 0]
+       [[1, 0, .5], .3, .5, 0],
+       1
+      ],
+      [
+       $sphere,
+       [
+         [1.3,1.5,4.3],
+         .7
        ],
-       [-- Left wall 1
-         $triangle,
-         [
-           [-2, 2, 5],
-           [-2, -2, 5],
-           [-2, -2, 2],
-         ],
-         [[.1, .9, .1], 1, 0]
+       [[0, 0, 1], .8, 0, 0]
+      ],
+      [
+       $sphere,
+       [
+         [-1.2,1.4,4.3],
+         .8
        ],
-       [-- Left wall 2
-         $triangle,
-         [
-           [-2, -2, 2],
-           [-2, 2, 2],
-           [-2, 2, 5],
-         ],
-         [[.1, .9, .1], 1, 0]
-       ],
-       [-- right wall 1
-         $triangle,
-         [
-           [2, -2, 2],
-           [2, -2, 5],
-           [2, 2, 5],
-         ],
-         [[.9, .1, .1], 1, 0]
-       ],
-       [-- right wall 2
-         $triangle,
-         [
-           [2, 2, 5],
-           [2, 2, 2],
-           [2, -2, 2],
-         ],
-         [[.9, .1, .1], 1, 0]
-       ],
-       [-- bottom wall 1
-         $triangle,
-         [
-           [2, 2, 5],
-           [-2, 2, 5],
-           [-2, 2, 2],
-         ],
-         [[1, 1, 1], 1, 0]
-       ],
-       [-- bottom wall 2
-         $triangle,
-         [
-           [-2, 2, 2],
-           [2, 2, 2],
-           [2, 2, 5],
-         ],
-         [[1, 1, 1], 1, 0]
-       ],
-       [-- top wall 1
-         $triangle,
-         [
-           [-2, -2, 5],
-           [2, -2, 5],
-           [-2, -2, 2],
-         ],
-         [[1, 1, 1], 1, 0]
-       ],
-       [-- top wall 2
-         $triangle,
-         [
-           [-2, -2, 2],
-           [2, -2, 5],
-           [2, -2, 2],
-         ],
-         [[1, 1, 1], 1, 0]
-       ],
-       [-- Lamp 1
-         $triangle,
-         [
-           [1, -1.9, 4],
-           [-1, -1.9, 4],
-           [-1, -1.9, 3],
-         ],
-         [[1, 1, 1], 0, 1]
-       ],
-       [-- Lamp 2
-         $triangle,
-         [
-           [1, -1.9, 4],
-           [1, -1.9, 3],
-           [-1, -1.9, 3],
-         ],
-         [[1, 1, 1], 0, 1]
-       ],
-       [-- Lamp 1
-         $triangle,
-         [
-           [-1, -1.85, 3],
-           [-1, -1.85, 4],
-           [1, -1.85, 4],
-         ],
-         [[1, 1, 1], 0, 1]
-       ],
-       [-- Lamp 2
-         $triangle,
-         [
-           [-1, -1.85, 3],
-           [1, -1.85, 3],
-           [1, -1.85, 4],
-         ],
-         [[1, 1, 1], 0, 1]
-       ],
-       [$sphere, [[-.5,.75,3],.3], [[0.9,0.9,0.9], 0, 1]],
-   ]
+       [[1, .7, .5], .3, 0, .9]
+      ],
+    ],
+    [
+      [[0, -1.9, 3.5], 0],
+    ]
+  ]
 end

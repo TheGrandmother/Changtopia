@@ -275,6 +275,24 @@ def for_each(list, fn)
   end
 end
 
+def filter(list, fn)
+  return filter(list, fn, [])
+end
+
+def filter(list, fn, res)
+  match list
+    [] ->
+      return res
+    end
+    [x, <<rest>>] ->
+      if core:run(fn, x)
+        return filter(rest, fn, [<<res>>, x])
+      end
+      return filter(rest, fn, res)
+    end
+  end
+end
+
 def map(list, fn)
   return map(list, fn, [])
 end
