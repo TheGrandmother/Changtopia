@@ -134,11 +134,11 @@ def sphere_normal(sphere, point)
   return vec3:norm(vec3:sub(point, center))
 end
 
-def get_normal([$triangle, geo, <<_>>], _)
+def get_normal([_, $triangle, geo, <<_>>], _)
   return triangle_normal(geo)
 end
 
-def get_normal([$sphere, geo, <<_>>], point)
+def get_normal([_, $sphere, geo, <<_>>], point)
   return sphere_normal(geo, point)
 end
 
@@ -147,7 +147,7 @@ def find_nearest([], ray, nearest, _)
 end
 
 def find_nearest([obj, <<rest>>], ray, nearest, id)
-  [type, geo, mat, <<meta>>] = obj
+  [_, type, geo, mat, <<meta>>] = obj
   match meta
     [hint_id] ->
       if id != $none && hint_id == id
@@ -177,7 +177,7 @@ def find_nearest(objects, ray)
 end
 
 def trace(objects, ray, nearest)
-  return trace(objects, ray, nearest, 2, true)
+  return trace(objects, ray, nearest, 20, true)
 end
 
 def trace(objects, ray, _, 0, _)
@@ -193,13 +193,13 @@ def trace(objects, ray, nearest, bounce, first)
     end
   end
   [t, obj] = nearest
-  [_type, _meh, mat, <<_>>] = obj
+  [_id, _type, _meh, mat, <<_>>] = obj
   [color, diffuse_reflexivity, emittance, direct_reflexivity] = mat
   emitted_color = vec3:mul(color, emittance)
 
   if emittance > 0.95
     --not affected by incoming light
-    return emitted_color
+    return vec3:mul(emitted_color, emittance)
   end
 
   [origin, direction] = ray
@@ -246,8 +246,8 @@ def trace(objects, ray, nearest, bounce, first)
 
   drop_by_id = def(obj, id)
     match obj
-      [_, __, ___] -> return false end
-      [_, __, ___, obj_id] -> return obj_id == id end
+      [_, _, _, _] -> return false end
+      [_, _, _, _, hint_id] -> return hint_id == id end
       _ -> return false end
     end
   end
@@ -259,7 +259,8 @@ def trace(objects, ray, nearest, bounce, first)
       [] -> return light end
       [hint, <<rest>>] ->
         [vector, id] = hint
-        new_ray = random_reflection(vector, 0.05)
+        --new_ray = random_reflection(vector, 0.0)
+        new_ray = vector
         if vec3:dot(new_ray, normal) < 0
           -- Casting ray behind object
           return @trace_hints(rest, light)
@@ -267,7 +268,7 @@ def trace(objects, ray, nearest, bounce, first)
         match find_nearest(list:filter(solids, def (obj) return @drop_by_id(obj, id) end), [point, vector])
           $miss -> return @trace_hints(rest, light) end
           [t, obj] ->
-            [_, __, mat, <<_>>] = obj
+            [_, _, _, mat, <<_>>] = obj
             [light_color, _, hint_emittance, _hint_reflextivity] = mat
             thing = vec3:dot(new_ray, normal) * diffuse_reflexivity
             emitted_hint_light = vec3:mul(light_color, hint_emittance)
@@ -282,15 +283,16 @@ def trace(objects, ray, nearest, bounce, first)
 
   -- DIFUSE STEP
 
-  new_ray = random_reflection(normal)
-
-  incoming = trace(objects, [point , new_ray], $unkown, bounce - 1, false)
-
-  match incoming
-    [0,0,0] -> reflected_color = [0,0,0] end
-    _ ->
-      thing = vec3:dot(new_ray, normal) * diffuse_reflexivity
-      reflected_color = vec3:mul(incoming, thing)
+  diffuse_color = [0, 0, 0]
+  if diffuse_reflexivity > 0.01
+    new_ray = random_reflection(normal)
+    incoming = trace(objects, [point , new_ray], $unkown, bounce - 1, false)
+    match incoming
+      [0,0,0] -> diffuse_color = [0,0,0] end
+      _ ->
+        thing = vec3:dot(new_ray, normal) * diffuse_reflexivity
+        diffuse_color = vec3:mul(incoming, thing)
+      end
     end
   end
 
@@ -299,7 +301,6 @@ def trace(objects, ray, nearest, bounce, first)
   direct_color = [0, 0, 0]
   if direct_reflexivity > 0
     new_ray = reflect(normal, direction)
-    otto = vec3:add(new_ray, [0,0,0])
     incoming = trace(objects, [point , new_ray], $unkown, bounce - 1, false)
     match incoming
       [0,0,0] -> direct_color = [0,0,0] end
@@ -309,7 +310,7 @@ def trace(objects, ray, nearest, bounce, first)
     end
   end
 
-  total_traced_color = vec3:add(vec3:add(hint_color, reflected_color), direct_color)
+  total_traced_color = vec3:add(vec3:add(hint_color, diffuse_color), direct_color)
   if total_traced_color == [0,0,0]
     return [0,0,0]
   end
@@ -332,119 +333,172 @@ def plot_pixel(x, y, color)
     )
 end
 
-def render_line(y, width, height, objects)
-  render_pixel = def (x)
-    if x == 0
-      return $ok
-    end
-    pixel_ray = get_pixel_ray(x, y, width, height)
-    ray = [[0,0,-1], pixel_ray]
-    [solids, _] = objects
-    match find_nearest(solids, ray)
-      $miss -> color = [0, 0, 0] end
-      nearest ->
-        color = adaptive_trace(objects, ray, 10 , 1, .03, nearest)
-      end
-    end
-    plot_pixel(x,y,color)
-    return @render_pixel(x - 1)
-  end
-  @render_pixel(width)
-  return $ok
+def tag_objects(objects)
+  return tag_objects(objects, 0,[])
 end
 
-
-def average_trace(objects, ray, samples)
-  return average_trace(objects, ray, samples, samples, [0,0,0])
-end
-
-def average_trace(objects, ray, 0, samples, col)
-  return col
-end
-
-def average_trace(objects, ray, n, s, [_r, _g, _b])
-  match trace(objects, ray)
-    $miss -> return [0,0,0] end
-    [r,g,b] -> return average_trace(objects, ray, n - 1, s, [_r + r/s, _g + g/s, _b + b/s]) end
-  end
-end
-
-def adaptive_trace(objects, ray, set_size, max, threshold, nearest)
-  initial_set = trace_set(objects, ray, set_size, nearest)
-  return adaptive_trace(objects, ray, set_size, max, threshold, initial_set, nearest)
-end
-
-def adaptive_trace(objects, ray, set_size, max, threshold, old_set, nearest)
-  cap = def (c) return min(c, 1) end
-  set = trace_set(objects, ray, set_size, nearest)
-  color = vec3:mul(vec3:add(set, old_set), 1/2)
-  if vec3:mag(color) < 0.01 && set_size > max / 4
-    return color
-  end
-  diff = vec3:mag(vec3:sub(list:map(set, cap), list:map(old_set, cap)))
-  if diff < threshold
-    return color
-  end
-  if set_size * 2 > max
-    return color
-  end
-  return adaptive_trace(objects, ray, set_size*2, max, threshold, color, nearest)
-end
-
-def trace_set(objects, ray, s, nearest)
-  return trace_set(objects, ray, s, s, [0,0,0], nearest)
-end
-
-def trace_set(objects, ray, s, 0, acc, nearest)
+def tag_objects([], _, acc)
   return acc
 end
 
-def trace_set(objects, ray, s, n, [_r, _g, _b], nearest)
-  match trace(objects, ray, nearest)
-    $miss -> return [0,0,0] end
-    [r,g,b] -> return trace_set(objects, ray, s, n - 1, [_r + r/s, _g + g/s, _b + b/s], nearest) end
-  end
-  return 1
+def tag_objects([obj, <<rest>>], n, acc)
+  return tag_objects(rest, n + 1, [<<acc>>, [n, <<obj>>]])
 end
 
-def render(width, height)
-  plain_wall = [[1,1,1],1, 1]
-  -- objects = [
-  --   [--solids [type, geometry, [color, diffuse, emittance, reflection], <hint_id>]
-  --     [$sphere, [[0, 1, 4], 1], [[1,1,1], 1, 0]],
-  --     [$sphere, [[0, -2, 4], 1], [[1,1,1], 1, 0]],
-  --     [$sphere, [[0, -.5, 4], .3], [[1,1,1], 0, 1], 0]
-  --   ],
-  --   [--light hints
-  --     [[0, -.5, 4], 0]
-  --   ]
-  -- ]
-  objects = make_room()
+def render(width, height, _scene)
+  [_objects, hints] = _scene
+  objects = tag_objects(_objects)
+  scene = [objects, hints]
 
-  worker = def (y)
-    return render_line(y, width, height, objects)
-  end
+  io:debug_raw([width, height])
+  io:print_string('Performing precalculations...\n')
+  [ids, data, sample_counts] = [
+    <<pre_compute(width, height, scene)>>,
+    list:map(list:range(height),
+    def (_) return list:repeat(width) end)
+  ]
 
-  res = list:pmap(list:range(height), worker)
-  match res
-    [$error, <<_>>] ->
-      io:print_strings([
-        core:ansi_cursor_to(0,0),
-        core:ansi_clear_screen(),
-        io:format_error(res)
-      ])
+  io:print_string('Starting workers...\n')
+
+  sampels_per_pass = 5
+
+  workers = list:map(list:range(core:send(core:io_pid(), $cpu_count)), def (_)
+    return core:spawn(['trace', 'worker'], width, height, core:my_pid(), scene, data, sampels_per_pass)
+  end)
+
+  listener = def (pixels, n, sender, payload)
+    match payload
+      [$render_results, y, samples] ->
+        core:send(sender, [$render, select_next_row(n, height)])
+        match list:get(pixels, y)
+          [_, []] ->
+            prev_samples = 0
+            new_row = list:map(samples, def (s) return vec3:mul(s, 1 / sampels_per_pass) end)
+          end
+          [prev_samples, row] ->
+            new_row = list:map(list:zip(samples, row), def (meh)
+              [new, old] = meh
+              return vec3:mul(vec3:add(vec3:mul(old, prev_samples), new), 1/(prev_samples+sampels_per_pass))
+            end)
+          end
+        end
+        draw_line(y, width, new_row, prev_samples + sampels_per_pass)
+        new_pixels = list:set(pixels, y, [prev_samples + sampels_per_pass, new_row])
+        return [$rendered, new_pixels, n + 1]
+      end
+      [$error, <<_>>] ->
+        io:debug_raw(payload)
+        io:print_string(io:format_error(payload))
+        return $quit
+      end
     end
-    res -> return $ok end
   end
+
+  handler = def (pixels, n)
+    match core:listen(listener, pixels, n)
+      [$rendered, new_pixels, n] -> return @handler(new_pixels, n) end
+      $quit -> return $ok end
+    end
+  end
+
+  list:for_each(workers, def (pid) core:send(pid, [$render, core:floor(core:rand_range(0, height-1))]) end)
+  @handler(list:repeat([0,[]], height), 0)
 
   return $ok
+end
 
+def select_next_row(n, height)
+  return n % (height - 1)
+  -- return core:floor(core:rand_range(0, height-1))
+  -- return core:floor(core:rand_range(10, 15))
+  -- return 10
 end
 
 
+def worker(width, height, parent, scene, data, sampels_per_pass)
+  core:link(parent)
+  io:print_string('Worker started\n')
+  listener = def (sender, payload)
+    match payload
+      [$render, y] ->
+        pixels = render_line(y, width, height, list:get(data, y), scene, sampels_per_pass)
+        core:send(sender,[$render_results, y, pixels])
+        return $ok
+      end
+      [$quit] -> return $quit end
+    end
+    return $ok
+  end
+  handler = def ()
+    match core:listen(listener)
+      $ok -> return @handler() end
+      $quit -> return $ok end
+    end
+  end
+  @handler()
+end
 
+def pre_compute(width, height, scene)
+  return pre_compute(width, height, height - 1, 0, scene, [], [])
+end
 
+def pre_compute(width, height, -1, _, scene, ids, data)
+  io:debug_raw(ids)
+  return [list:partition(ids, height), list:partition(data, height)]
+end
 
+def pre_compute(width, height, y, x, scene, ids, data)
+  if x == width
+    return pre_compute(width, height, y - 1, 0, scene, ids, data)
+  end
+  pixel_direction = get_pixel_ray(x, y, width, height)
+  origin = [0,0,-1]
+  ray = [origin, pixel_direction]
+  [solids, hints] = scene
+  match find_nearest(solids, ray)
+    $miss -> return  pre_compute(width, height, y, x + 1, scene, [<<ids>>, $void], [<<data>>, $void]) end
+    nearest ->
+      [t, obj] = nearest
+      [id, <<_>>] = obj
+      return pre_compute(width, height, y, x + 1, scene, [<<ids>>, id], [<<data>>, [nearest, ray]])
+    end
+  end
+end
+
+def draw_line(y, width, pixels, samples)
+  make_pixel = def (color)
+    [r,g,b] = color
+    f = def (c)
+      return min(core:floor(c*255), 255)
+    end
+    [r, g, b] = color
+    return([
+      <<core:ansi_color(@f(r), @f(g), @f(b))>>,
+      <<'█'>>
+      ])
+  end
+  string = [<<core:ansi_cursor_to(0, y)>>, <<core:flatten(list:map(pixels, make_pixel))>>, <<core:ansi_color_reset()>>, <<core:cast(samples, 'string')>>]
+  io:print_string(string)
+end
+
+def render_line(y, width, height, precomp, scene, samples)
+  render_pixel = def (meh)
+    [x, precomp] = meh
+    if precomp == $void
+      return [0,0,0]
+    end
+    [nearest, ray, <<meh>>] = precomp
+    take_samples = def (n, res)
+      if n == samples
+        return res
+      end
+      color = trace(scene, ray, nearest)
+      return @take_samples(n + 1, vec3:add(res, color))
+    end
+    return @take_samples(0, [0,0,0])
+  end
+  return list:map(list:zip(list:range(width), precomp), render_pixel)
+end
 
 def _entry([])
   if _test() == false
@@ -453,8 +507,12 @@ def _entry([])
   io:print_string(core:ansi_cursor_to(0,0))
   io:print_string(core:ansi_clear_screen())
   utils:load_module('colors')
+  utils:load_module('scenes')
   [width, height] = core:request(core:io_pid(), $get_console_size)
-  render(height*2,height)
+  scene = scenes:make_room()
+  --[meh, _] =scene
+  --render(height*2,height, [meh, []])
+  render(height*2,height, scene)
   return $ok
 end
 
@@ -509,187 +567,3 @@ def _test()
   return testing:run_suite('Trace', suite)
 end
 
-def make_room()
-  max_depth = 5
-  min_depth = -1.1
-  return [
-     [
-      [-- Backwall 1
-        $triangle,
-        [
-          [2, -2, max_depth],
-          [-2, -2, max_depth],
-          [-2, 2, max_depth],
-        ],
-        [[1, 1, 1], 1, 0, 0]
-      ],
-      [-- Backwall 2
-        $triangle,
-        [
-          [2, 2, max_depth],
-          [2, -2, max_depth],
-          [-2, 2, max_depth],
-        ],
-        [[1, 1, 1], 1, 0, 0]
-      ],
-      [-- front wall 1
-        $triangle,
-        [
-          [-2, 2, min_depth],
-          [-2, -2, min_depth],
-          [2, -2, min_depth],
-        ],
-        [[1, 1, 1], 1, 0, 0]
-      ],
-      [-- front wall 2
-        $triangle,
-        [
-          [-2, 2, min_depth],
-          [2, -2, min_depth],
-          [2, 2, min_depth],
-        ],
-        [[1, 1, 1], 1, 0, 0]
-      ],
-      [-- Left wall 1
-        $triangle,
-        [
-          [-2, 2, max_depth],
-          [-2, -2, max_depth],
-          [-2, -2, min_depth],
-        ],
-        [[.1, .9, .1], 1, 0, 0]
-      ],
-      [-- Left wall 2
-        $triangle,
-        [
-          [-2, -2, min_depth],
-          [-2, 2, min_depth],
-          [-2, 2, max_depth],
-        ],
-        [[.1, .9, .1], 1, 0, 0]
-      ],
-      [-- right wall 1
-        $triangle,
-        [
-          [2, -2, min_depth],
-          [2, -2, max_depth],
-          [2, 2, max_depth],
-        ],
-        [[.9, .1, .1], 1, 0, 0]
-      ],
-      [-- right wall 2
-        $triangle,
-        [
-          [2, 2, max_depth],
-          [2, 2, min_depth],
-          [2, -2, min_depth],
-        ],
-        [[.9, .1, .1], 1, 0, 0]
-      ],
-      [-- bottom wall 1
-        $triangle,
-        [
-          [2, 2, max_depth],
-          [-2, 2, max_depth],
-          [-2, 2, min_depth],
-        ],
-        [[1, 1, 1], 1, 0, 0]
-      ],
-      [-- bottom wall 2
-        $triangle,
-        [
-          [-2, 2, min_depth],
-          [2, 2, min_depth],
-          [2, 2, max_depth],
-        ],
-        [[1, 1, 1], 1, 0, 0]
-      ],
-      [-- top wall 1
-        $triangle,
-        [
-          [-2, -2, max_depth],
-          [2, -2, max_depth],
-          [-2, -2, min_depth],
-        ],
-        [[1, 1, 1], 1, 0, 0]
-      ],
-      [-- top wall 2
-        $triangle,
-        [
-          [-2, -2, min_depth],
-          [2, -2, max_depth],
-          [2, -2, min_depth],
-        ],
-        [[1, 1, 1], 1, 0, 0]
-      ],
-      [-- Lamp 1
-        $triangle,
-        [
-          [1, -1.9, 4],
-          [-1, -1.9, 4],
-          [-1, -1.9, 1],
-        ],
-        [[1, 1, 1], 0, 1, 0],
-        0
-      ],
-      [-- Lamp 2
-        $triangle,
-        [
-          [1, -1.9, 4],
-          [1, -1.9, 1],
-          [-1, -1.9, 1],
-        ],
-        [[1, 1, 1], 0, 1, 0],
-        0
-      ],
-      [-- Lamp 1
-        $triangle,
-        [
-          [-1, -1.85, 1],
-          [-1, -1.85, 4],
-          [1, -1.85, 4],
-        ],
-        [[1, 1, 1], 0, 1, 0],
-        0
-      ],
-      [-- Lamp 2
-        $triangle,
-        [
-          [-1, -1.85, 1],
-          [1, -1.85, 1],
-          [1, -1.85, 4],
-        ],
-        [[1, 1, 1], 0, 1, 0],
-        0
-      ],
-      [
-       $sphere,
-       [
-         [-.5,0,4],
-         .3
-       ],
-       [[1, 0, .5], .3, .5, 0],
-       1
-      ],
-      [
-       $sphere,
-       [
-         [1.3,1.5,4.3],
-         .7
-       ],
-       [[0, 0, 1], .8, 0, 0]
-      ],
-      [
-       $sphere,
-       [
-         [-1.2,1.4,4.3],
-         .8
-       ],
-       [[1, .7, .5], .3, 0, .9]
-      ],
-    ],
-    [
-      [[0, -1.9, 3.5], 0],
-    ]
-  ]
-end

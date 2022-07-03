@@ -1,5 +1,17 @@
 module list
 
+def reverse(l)
+  reverse(l, [])
+end
+
+def reverse([], acc)
+  return acc
+end
+
+def reverse([x, <<rest>>], acc)
+  return reverse(rest, [x, <<acc>>])
+end
+
 def get(l, n)
   match l
     [] -> return $nothing end
@@ -167,6 +179,11 @@ def contains(list, element)
   end
 end
 
+
+def repeat(length)
+  return repeat(0, length)
+end
+
 def repeat(x, length)
   _ = def (n, acc)
     if n >= length
@@ -309,6 +326,9 @@ def map(list, fn, res)
 end
 
 def zip(list1, list2)
+  if core:length(list1) != core:length(list2)
+    return [$error, $zip_length_missmatch, 'Zipping lists of different lengths is silly.', '']
+  end
   return zip(list1, list2, [])
 end
 
@@ -393,10 +413,15 @@ def tail(l)
   return t
 end
 
+
 def pmap(list, fn)
   cpu_count = core:send(core:io_pid(), $cpu_count)
-  segments = zip(range(cpu_count), partition(list, cpu_count))
-  results = range(cpu_count)
+  segment_count = cpu_count
+  if cpu_count > core:length(list)
+    segment_count = core:length(list)
+  end
+  segments = zip(range(segment_count), partition(list, segment_count))
+  results = range(segment_count)
   spawner = def (segment)
     pid =  core:spawn(['list', 'pmap_worker'], segment, fn, core:my_pid())
     return pid
@@ -422,7 +447,7 @@ def pmap(list, fn)
   end
   kill_worker = def (pid) core:send(core:io_pid(), $kill, pid) end
   workers = map(segments, spawner)
-  match @wait_for_complete(cpu_count, range(cpu_count))
+  match @wait_for_complete(segment_count, range(segment_count))
     [$done, res] -> return flatten(res) end
     [$fail, error] ->
       for_each(workers, kill_worker)
@@ -438,7 +463,8 @@ end
 def pmap_worker(segment, fn, parent)
   [n, list] = segment
   core:link(parent)
-  core:send(parent, [n, map(list, fn)])
+  kuken = [n, map(list, fn)]
+  core:send(parent, kuken)
 end
 
 
