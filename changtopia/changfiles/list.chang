@@ -343,6 +343,18 @@ def zip(l1, l2, res)
   end
 end
 
+def unzip(l)
+  return unzip(l, [], [])
+end
+
+def unzip([], la, lb)
+  return [la, lb]
+end
+
+def unzip([[a, b], <<rest>>], la, lb)
+  return unzip(rest, [<<la>>, a], [<<lb>>, b])
+end
+
 def split_at(arr, index)
   thing = def (n, tail, head)
     match tail

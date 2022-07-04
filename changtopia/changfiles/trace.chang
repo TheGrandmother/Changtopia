@@ -177,7 +177,7 @@ def find_nearest(objects, ray)
 end
 
 def trace(objects, ray, nearest)
-  return trace(objects, ray, nearest, 20, true)
+  return trace(objects, ray, nearest, 5, true)
 end
 
 def trace(objects, ray, _, 0, _)
@@ -259,8 +259,8 @@ def trace(objects, ray, nearest, bounce, first)
       [] -> return light end
       [hint, <<rest>>] ->
         [vector, id] = hint
-        --new_ray = random_reflection(vector, 0.0)
-        new_ray = vector
+        new_ray = random_reflection(vector, 0.1)
+        --new_ray = vector
         if vec3:dot(new_ray, normal) < 0
           -- Casting ray behind object
           return @trace_hints(rest, light)
@@ -360,7 +360,7 @@ def render(width, height, _scene)
 
   io:print_string('Starting workers...\n')
 
-  sampels_per_pass = 5
+  sampels_per_pass = 10
 
   workers = list:map(list:range(core:send(core:io_pid(), $cpu_count)), def (_)
     return core:spawn(['trace', 'worker'], width, height, core:my_pid(), scene, data, sampels_per_pass)
@@ -371,23 +371,37 @@ def render(width, height, _scene)
       [$render_results, y, samples] ->
         core:send(sender, [$render, select_next_row(n, height)])
         match list:get(pixels, y)
-          [_, []] ->
+          [] ->
             prev_samples = 0
-            new_row = list:map(samples, def (s) return vec3:mul(s, 1 / sampels_per_pass) end)
+            new_row = list:map(samples, def (s)
+              [samples, color] = s
+              if samples == 0
+                return [0, color]
+              end
+              return [samples, vec3:mul(color, 1 / samples)]
+            end)
           end
-          [prev_samples, row] ->
+          row ->
             new_row = list:map(list:zip(samples, row), def (meh)
               [new, old] = meh
-              return vec3:mul(vec3:add(vec3:mul(old, prev_samples), new), 1/(prev_samples+sampels_per_pass))
+              [new_samples, new_color] = new
+              [old_samples, old_color] = old
+              if new_samples == 0
+                return [old_samples, old_color]
+              end
+              return [
+                old_samples + (new_samples/2),
+                vec3:mul(vec3:add(vec3:mul(old_color, old_samples), new_color), 1/(old_samples+new_samples))
+              ]
             end)
           end
         end
-        draw_line(y, width, new_row, prev_samples + sampels_per_pass)
-        new_pixels = list:set(pixels, y, [prev_samples + sampels_per_pass, new_row])
+
+        draw_line(y, width, new_row)
+        new_pixels = list:set(pixels, y, new_row)
         return [$rendered, new_pixels, n + 1]
       end
       [$error, <<_>>] ->
-        io:debug_raw(payload)
         io:print_string(io:format_error(payload))
         return $quit
       end
@@ -402,13 +416,14 @@ def render(width, height, _scene)
   end
 
   list:for_each(workers, def (pid) core:send(pid, [$render, core:floor(core:rand_range(0, height-1))]) end)
-  @handler(list:repeat([0,[]], height), 0)
+  @handler(list:repeat([], height), 0)
 
   return $ok
 end
 
 def select_next_row(n, height)
   return n % (height - 1)
+  -- return core:floor(height / 2)
   -- return core:floor(core:rand_range(0, height-1))
   -- return core:floor(core:rand_range(10, 15))
   -- return 10
@@ -443,7 +458,6 @@ def pre_compute(width, height, scene)
 end
 
 def pre_compute(width, height, -1, _, scene, ids, data)
-  io:debug_raw(ids)
   return [list:partition(ids, height), list:partition(data, height)]
 end
 
@@ -459,25 +473,36 @@ def pre_compute(width, height, y, x, scene, ids, data)
     $miss -> return  pre_compute(width, height, y, x + 1, scene, [<<ids>>, $void], [<<data>>, $void]) end
     nearest ->
       [t, obj] = nearest
-      [id, <<_>>] = obj
-      return pre_compute(width, height, y, x + 1, scene, [<<ids>>, id], [<<data>>, [nearest, ray]])
+      [id, _, _, mat, <<_>>] = obj
+      [_, _, _, direct, <<_>>] = mat
+      if direct > 0.3
+        return pre_compute(width, height, y, x + 1, scene, [<<ids>>, [$mirror, id]], [<<data>>, [nearest, ray]])
+      end
+      return pre_compute(width, height, y, x + 1, scene, [<<ids>>, [$plain, id]], [<<data>>, [nearest, ray]])
     end
   end
 end
 
-def draw_line(y, width, pixels, samples)
-  make_pixel = def (color)
-    [r,g,b] = color
-    f = def (c)
-      return min(core:floor(c*255), 255)
+def draw_line(y, width, pixels)
+  make_pixel = def (pixels, count, res)
+    match pixels
+      [] -> return  [count, res] end
+      [meh, <<rest>>] ->
+        [samples, color] = meh
+        [r,g,b] = color
+        f = def (c)
+          return min(core:floor(c*255), 255)
+        end
+        [r, g, b] = color
+        return @make_pixel(rest, count + samples, [<<res>>,
+          <<core:ansi_color(@f(r), @f(g), @f(b))>>,
+          <<'█'>>
+          ])
+      end
     end
-    [r, g, b] = color
-    return([
-      <<core:ansi_color(@f(r), @f(g), @f(b))>>,
-      <<'█'>>
-      ])
   end
-  string = [<<core:ansi_cursor_to(0, y)>>, <<core:flatten(list:map(pixels, make_pixel))>>, <<core:ansi_color_reset()>>, <<core:cast(samples, 'string')>>]
+  [count, string] = @make_pixel(pixels, 0, [])
+  string = [<<core:ansi_cursor_to(0, y)>>, <<string>>, <<core:ansi_color_reset()>>, <<core:cast(count, 'string')>>]
   io:print_string(string)
 end
 
@@ -485,17 +510,27 @@ def render_line(y, width, height, precomp, scene, samples)
   render_pixel = def (meh)
     [x, precomp] = meh
     if precomp == $void
-      return [0,0,0]
+      return [0, [0,0,0]]
     end
     [nearest, ray, <<meh>>] = precomp
-    take_samples = def (n, res)
+    [_, obj] = nearest
+    [_, _, _, mat, <<_>>] = obj
+    [color, _, emittance, <<_>>] = mat
+    if emittance > 0.95
+      -- Blackbody
+      return [0, vec3:mul(color, emittance)]
+    end
+    take_samples = def (n, cool_bois ,res)
       if n == samples
-        return res
+        return [cool_bois, res]
       end
       color = trace(scene, ray, nearest)
-      return @take_samples(n + 1, vec3:add(res, color))
+      if color == [0,0,0]
+        return @take_samples(n + 1, cool_bois, res)
+      end
+      return @take_samples(n + 1, cool_bois + 1, vec3:add(res, color))
     end
-    return @take_samples(0, [0,0,0])
+    return @take_samples(0, 0, [0,0,0])
   end
   return list:map(list:zip(list:range(width), precomp), render_pixel)
 end
@@ -510,8 +545,8 @@ def _entry([])
   utils:load_module('scenes')
   [width, height] = core:request(core:io_pid(), $get_console_size)
   scene = scenes:make_room()
-  --[meh, _] =scene
-  --render(height*2,height, [meh, []])
+  -- [meh, _] =scene
+  -- render(height*2,height, [meh, []])
   render(height*2,height, scene)
   return $ok
 end
@@ -565,5 +600,79 @@ def _test()
     ],
   ]
   return testing:run_suite('Trace', suite)
+end
+
+def segment_by_id([], current_type, current_segment, res)
+  return [<<res>>, [current_type, current_segment]]
+end
+
+def segment_by_id([stuff, <<rest>>], current_type, current_segment, res)
+  [type, p] = stuff
+  if type == current_type
+    return segment_by_id(rest, current_type, [<<current_segment>>, p], res)
+  end
+  return segment_by_id(rest, type, [p], [<<res>>, [current_type, [<<current_segment>>]]])
+end
+
+def smooth_yoda(ids, pixels)
+
+  [meh_id, <<id_rest>>] = ids
+  [meh_pixel, <<pixel_rest>>] = pixels
+
+  smoothify = def (segments, res)
+    match segments
+      [] -> return res end
+      [meh, <<rest>>] ->
+        [type, segment] = meh
+        match type
+          [$plain, _] ->
+            [samples, colors] = list:unzip(segment)
+            return @smoothify(rest, [<<res>>, <<list:zip(samples, window_3_avg(colors))>>])
+          end
+          whatever ->
+            return @smoothify(rest, [<<res>>, <<segment>>])
+          end
+        end
+      end
+      kuken ->
+        io:debug_raw(kuken)
+        return $kuken
+      end
+    end
+  end
+  seg = segment_by_id(list:zip(id_rest, pixel_rest), meh_id, [meh_pixel] , [])
+  return @smoothify(seg, [])
+end
+
+def window_3_avg(l)
+  return window_3_avg([], l, [])
+end
+
+def window_3_avg(_, [], res)
+  return res
+end
+
+def window_3_avg([], [a], res)
+  return [a]
+end
+
+def window_3_avg([], [a, b], res)
+  avg = vec3:mul(vec3:add(a,b),5)
+  return [avg, avg]
+end
+
+def window_3_avg([], [a, b, c, <<rest>>], res)
+  new_a =  vec3:mul(vec3:add(a, b), .5)
+  new_b =  vec3:mul(vec3:add(a, vec3:add(b, c)), 1/3)
+  return window_3_avg([b, a], [c, <<rest>>], [<<res>>, new_a, new_b])
+end
+
+def window_3_avg([a, <<meh>>], [b, c, <<rest>>], res)
+  new_b =  vec3:mul(vec3:add(a, vec3:add(b, c)), 1/3)
+  return window_3_avg([b, a, <<meh>>], [c, <<rest>>], [<<res>>, new_b])
+end
+def window_3_avg([a, <<meh>>], [b, <<rest>>], res)
+  new_b =  vec3:mul(vec3:add(a, b), .5)
+  return window_3_avg([b, a, <<meh>>], [<<rest>>], [<<res>>, new_b])
 end
 

@@ -65,29 +65,29 @@ def diffuse_shadow_test()
         [[1, 1, 1], 0, 1, 0],
         0
       ],
-      -- [-- light
-      --   $triangle,
-      --   [
-      --     [20, 1, max_depth],
-      --     [20, 1, min_depth],
-      --     [-20, 1, min_depth],
-      --   ],
-      --   [[1, 1, 1], 1, 0, 0]
-      -- ],
+      [--light
+        $triangle,
+        [
+          [.7, lamp_height, .7],
+          [.7, lamp_height, -.7],
+          [-.7, lamp_height, -.7],
+        ],
+        [[1, 1, 1], 0, 1, 0],
+        0
+      ],
       [
        $sphere,
        [
-         [0,-.1,base_z],
+         [0,base_y + .2 +.2,base_z],
          .2
        ],
-       [[1, 1, 1], 1, 0 , 0],
+       [[0, 0, 1], 1, 0 , 0],
        0
       ],
-      ],
-      []
-    --[
-    --  [[0,lamp_height, 0], 0]
-    --]
+    ],
+    [
+      [[0,lamp_height, 0], 0]
+    ]
   ]
 end
 
