@@ -104,6 +104,7 @@ class Vm {
         this.spawnProcess(Pid.toPid(pid), toJsString(module), toJsString(entryPoint), args, bindings)
         return
       } else if (message.secret === 'kill') {
+        console.log('Killing ', pid, ' by force')
         const [pid] = message.payload
         this.killProcess(pid)
         return
@@ -116,11 +117,7 @@ class Vm {
 
   dispatchMessage(message, skipCount) {
     this.messagesSent += 1
-    if (message.recipient && message.recipient.instance === this.instance) {
-      this.handleMessage(message)
-    } else {
-      this.sendExternal(message)
-    }
+    this.sendExternal(message)
     if (!skipCount) {
       // The sender might have died
       if (this.processes[Pid.toPid(message.sender)]) {
