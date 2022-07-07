@@ -203,6 +203,10 @@ class Coordinator {
           time: Math.floor(current.time + payload.time)
         }
       })
+      const sorted = Object.entries(this.metrics.calls.breakdown).sort((a, b) => {
+        return a[1].time - b[1].time
+      })
+      this.metrics.calls.breakdown_sorted = sorted
     }
     console.log(this.metrics)
   }

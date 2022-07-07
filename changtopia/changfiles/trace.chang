@@ -24,7 +24,7 @@ end
 --  Viewport centered at origin and having width and height 1
 --  FOV = 90deg
 def get_pixel_ray(p_x, p_y, x_count, y_count)
-  pixel_vec = vec3:norm([
+  pixel_vec = core:vec3_norm([
     p_x/x_count - 1 / 2,
     p_y/y_count - 1 / 2,
     1
@@ -43,20 +43,31 @@ def random_reflection(normal, spread)
     true -> diff = [1,0,0] end
     false -> diff = [0,1,0] end
   end
-  b1 = vec3:norm(vec3:cross(b3, diff))
-  b2 = vec3:cross(b1, b3)
+  b1 = core:vec3_norm(core:vec3_cross(b3, diff))
+  b2 = core:vec3_cross(b1, b3)
 
   z = core:rand_range(core:cos(core:pi() * spread), 1)
   r = core:sqrt(1-z*z)
   theta = core:rand_range(-1*core:pi(), core:pi())
   x = r * core:cos(theta)
   y = r * core:sin(theta)
-  return vec3:norm(vec3:add(vec3:add(vec3:mul(b1, x), vec3:mul(b2, y)), vec3:mul(b3, z)))
+  return core:vec3_norm(core:vec3_add(core:vec3_add(core:vec3_mul(b1, x), core:vec3_mul(b2, y)), core:vec3_mul(b3, z)))
 end
 
 def reflect(normal, direction)
   -- r = d -2(n.d)n
-  return vec3:sub(direction, vec3:mul(normal, vec3:dot(normal, direction) * 2))
+  return core:vec3_sub(direction, core:vec3_mul(normal, core:vec3_dot(normal, direction) * 2))
+end
+
+def refract(normal, direction, ior_out, ior_in)
+  --https://www.flipcode.com/archives/reflection_transmission.pdf
+  q = ior_out / ior_in
+  cossy = core:vec3_dot(direction, normal)
+  sinny = q*q * (1 - (cossy * cossy))
+  if sinny > 1
+    return core:vec3_sub(direction, core:vec3_mul(normal, core:vec3_dot(normal, direction) * 2))
+  end
+  return core:vec3_sub(core:vec3_mul(direction, q), core:vec3_mul(normal, q*cossy + core:sqrt(1 - sinny)))
 end
 
 
@@ -67,39 +78,36 @@ def triangle_intersect_test(ray, triangle)
   [v0, v1, v2] = triangle
   [start, direction] = ray
 
-  v0v1 = vec3:sub(v1, v0)
-  v0v2 = vec3:sub(v2, v0)
-  pvec = vec3:cross(direction, v0v2)
-  det = vec3:dot(v0v1, pvec)
-  if core:abs(det) <= 0.0000001
+  epsilon = 0.000001
+
+  v0v1 = core:vec3_sub(v1, v0)
+  v0v2 = core:vec3_sub(v2, v0)
+  pvec = core:vec3_cross(direction, v0v2)
+  det = core:vec3_dot(v0v1, pvec)
+  if core:abs(det) <= epsilon
+    -- io:debug('Determinant sero')
     return $miss
   end
 
   inv_det = 1 / det
 
-  tvec = vec3:sub(start, v0)
-  u = vec3:dot(pvec, tvec) * inv_det
-  if u < 0
+  tvec = core:vec3_sub(start, v0)
+  u = core:vec3_dot(pvec, tvec) * inv_det
+  if u < -1*epsilon || u > 1 - epsilon
+    --io:debug_raw([$u_silly, u])
     return $miss
   end
 
-  if u > 1
+  qvec = core:vec3_cross(tvec, v0v1)
+  v = core:vec3_dot(direction, qvec) * inv_det
+
+  if v < -1*epsilon || u + v > 1 - epsilon
+    --io:debug('v silly')
     return $miss
   end
 
-  qvec = vec3:cross(tvec, v0v1)
-  v = vec3:dot(direction, qvec) * inv_det
-
-  if v < 0
-    return $miss
-  end
-
-  if  u + v > 1
-    return $miss
-  end
-
-  t = vec3:dot(v0v2, qvec) * inv_det
-  if t <= 0.00000001
+  t = core:vec3_dot(v0v2, qvec) * inv_det
+  if t < epsilon
     return $miss
   end
   return t
@@ -107,17 +115,17 @@ end
 
 def triangle_normal(triangle)
   [v0, v1, v2] = triangle
-  v0v1 = vec3:sub(v1, v0)
-  v0v2 = vec3:sub(v2, v0)
-  return vec3:norm(vec3:cross(v0v1,v0v2))
+  v0v1 = core:vec3_sub(v1, v0)
+  v0v2 = core:vec3_sub(v2, v0)
+  return core:vec3_norm(core:vec3_cross(v0v1,v0v2))
 end
 
 def sphere_intersect_test(ray, sphere)
   [start, direction] = ray
   [center, radius] = sphere
-  l = vec3:sub(start, center) --thing from start to center
-  thing = vec3:dot(direction, l)
-  mag_l = vec3:mag(l)
+  l = core:vec3_sub(start, center) --thing from start to center
+  thing = core:vec3_dot(direction, l)
+  mag_l = core:vec3_mag(l)
   disc = thing*thing - (mag_l * mag_l - radius * radius)
   if disc < 0
     return $miss
@@ -131,7 +139,7 @@ end
 
 def sphere_normal(sphere, point)
   [center, radius] = sphere
-  return vec3:norm(vec3:sub(point, center))
+  return core:vec3_norm(core:vec3_sub(point, center))
 end
 
 def get_normal([_, $triangle, geo, <<_>>], _)
@@ -177,14 +185,14 @@ def find_nearest(objects, ray)
 end
 
 def trace(objects, ray, nearest)
-  return trace(objects, ray, nearest, 5, true)
+  return trace(objects, ray, nearest, 5, true, 1)
 end
 
-def trace(objects, ray, _, 0, _)
-  return [0,0,0]
+def trace(objects, ray, _, 0, _, _)
+  return $out_of_bounce
 end
 
-def trace(objects, ray, nearest, bounce, first)
+def trace(objects, ray, nearest, bounce, first, incoming_ior)
   [solids, hints] = objects
   if nearest == $unkown
     nearest = find_nearest(solids, ray)
@@ -194,44 +202,115 @@ def trace(objects, ray, nearest, bounce, first)
   end
   [t, obj] = nearest
   [_id, _type, _meh, mat, <<_>>] = obj
-  [color, diffuse_reflexivity, emittance, direct_reflexivity] = mat
-  emitted_color = vec3:mul(color, emittance)
+  match mat-- Relying the buggy lack of scoping here :P
+    [color, diffuse_reflexivity, emittance, direct_reflexivity, transparency, ior] -> _ = 1 end
+    [color, diffuse_reflexivity, emittance, direct_reflexivity] ->
+      transparency = 0
+      ior = 1
+    end
+  end
+  emitted_color = core:vec3_mul(color, emittance)
 
   if emittance > 0.95
     --not affected by incoming light
-    return vec3:mul(emitted_color, emittance)
+    return core:vec3_mul(emitted_color, emittance)
   end
 
   [origin, direction] = ray
-  point = vec3:add(origin, vec3:mul(direction, t))
+  point = core:vec3_add(origin, core:vec3_mul(direction, t))
 
   normal = get_normal(obj, point)
+  -- if core:vec3_dot(normal, direction) > 0
+  --  -- hitting from behing, flip normal
+  --  normal = core:vec3_mul(normal, -1)
+  --end
 
   -- HINT STEP
 
   [x, <<_>>] = direction
+  hint_color = [0,0,0]
 
+  -- DIFUSE STEP
+
+  diffuse_color = [0, 0, 0]
+  if diffuse_reflexivity > 0.01
+    new_ray = random_reflection(normal)
+    incoming = trace(objects, [point , new_ray], $unkown, bounce - 1, false, incoming_ior)
+    match incoming
+      $out_of_bounce ->
+        diffuse_color = hinting(point, normal, solids, hints, diffuse_reflexivity)
+      end
+      c ->
+        thing = core:vec3_dot(new_ray, normal) * diffuse_reflexivity
+        diffuse_color = core:vec3_mul(incoming, thing)
+        if core:vec3_mag(c) < 0.5
+          hint = hinting(point, normal, solids, hints, diffuse_reflexivity)
+          if hint != [0,0,0]
+            diffuse_color = core:vec3_add(diffuse_color, hint)
+          end
+        end
+      end
+    end
+  end
+
+  -- DIRECT STEP
+
+  direct_color = [0, 0, 0]
+  if direct_reflexivity > 0
+    new_ray = reflect(normal, direction)
+    incoming = trace(objects, [point , new_ray], $unkown, bounce - 1, false, incoming_ior)
+    match incoming
+      $out_of_bounce -> direct_color = [0,0,0] end
+      _ ->
+        direct_color = core:vec3_mul(incoming, direct_reflexivity)
+      end
+    end
+  end
+
+  -- TRANSPARENT STEP
+
+  transparent_color = [0, 0, 0]
+  if transparency > 0
+    new_ray = refract(normal, direction, incoming_ior, ior)
+    incoming = trace(objects, [point , new_ray], $unkown, bounce - 1, false, ior)
+    match incoming
+      $out_of_bounce -> transparent_color = [0,0,0] end
+      _ ->
+        transparent_color = core:vec3_mul(incoming, transparency)
+      end
+    end
+  end
+
+  total_traced_color = core:vec3_add(core:vec3_add(diffuse_color, direct_color), transparent_color)
+  if total_traced_color == [0,0,0] || core:vec3_mag(total_traced_color) < 0.01
+    return $out_of_bounce
+  end
+
+  return core:vec3_mul(core:vec3_proj(color, total_traced_color), core:vec3_mag(total_traced_color))
+end
+
+def hinting(point, normal, solids, hints, diffuse_reflexivity)
   find_light_paths = def (hints, rays)
     match hints
       [] -> return rays end
       [hint, <<rest>>] ->
         [pos, id] = hint
-        light_dir = vec3:sub(pos, point)
-        if vec3:dot(light_dir, normal) < 0
+        light_dir = core:vec3_sub(pos, point)
+        if core:vec3_dot(light_dir, normal) < 0
           return @find_light_paths(rest, rays)
         end
         if light_dir == [0,0,0]
           return @find_light_paths(rest, rays)
         end
-        distance_to_light = vec3:mag(light_dir)
-        light_dir = vec3:norm(light_dir)
+        distance_to_light = core:vec3_mag(light_dir)
+        light_dir = core:vec3_norm(light_dir)
         match find_nearest(solids, [point, light_dir], $miss, id)
           $miss ->
             return @find_light_paths(rest, [<<rays>>, [light_dir, id]])
           end
           [t, obj] ->
-            point_of_intersection = vec3:add(point, vec3:mul(light_dir, t))
-            distance_to_intersection = vec3:mag(vec3:sub(point_of_intersection, point))
+            point_of_intersection = core:vec3_add(point, core:vec3_mul(light_dir, t))
+            distance_to_intersection = core:vec3_mag(core:vec3_sub(point_of_intersection, point))
             if distance_to_intersection > distance_to_light
               return @find_light_paths(rest, [<<rays>>, [light_dir, id]])
             end
@@ -244,11 +323,21 @@ def trace(objects, ray, nearest, bounce, first)
 
   hint_vectors = @find_light_paths(hints, [])
 
-  drop_by_id = def(obj, id)
-    match obj
-      [_, _, _, _] -> return false end
-      [_, _, _, _, hint_id] -> return hint_id == id end
-      _ -> return false end
+  drop_by_id = def(objects, id, acc)
+    match objects
+      [] -> return acc end
+      [obj, <<rest>>] ->
+        match obj
+          [_, _, _, _] -> return @drop_by_id(rest, id, [<<acc>>, obj]) end
+          [_, _, _, _, hint_id] ->
+            if hint_id == id
+              return @drop_by_id(rest, id, acc)
+            end
+            return @drop_by_id(rest, id, [<<acc>>, obj])
+          end
+          _ -> return @drop_by_id(rest, id, [<<acc>>, obj]) end
+        end
+      end
     end
   end
 
@@ -259,63 +348,26 @@ def trace(objects, ray, nearest, bounce, first)
       [] -> return light end
       [hint, <<rest>>] ->
         [vector, id] = hint
-        new_ray = random_reflection(vector, 0.1)
+        new_ray = random_reflection(vector, 0.05)
         --new_ray = vector
-        if vec3:dot(new_ray, normal) < 0
+        if core:vec3_dot(new_ray, normal) < 0.001
           -- Casting ray behind object
           return @trace_hints(rest, light)
         end
-        match find_nearest(list:filter(solids, def (obj) return @drop_by_id(obj, id) end), [point, vector])
+        match find_nearest(@drop_by_id(solids, id, []), [point, vector])
           $miss -> return @trace_hints(rest, light) end
           [t, obj] ->
             [_, _, _, mat, <<_>>] = obj
             [light_color, _, hint_emittance, _hint_reflextivity] = mat
-            thing = vec3:dot(new_ray, normal) * diffuse_reflexivity
-            emitted_hint_light = vec3:mul(light_color, hint_emittance)
-            return @trace_hints(rest, vec3:add(light, vec3:mul(emitted_hint_light, thing)))
+            thing = core:vec3_dot(new_ray, normal) * diffuse_reflexivity
+            emitted_hint_light = core:vec3_mul(light_color, hint_emittance)
+            return @trace_hints(rest, core:vec3_add(light, core:vec3_mul(emitted_hint_light, thing)))
           end
         end
       end
     end
   end
-
-  hint_color = vec3:mul(@trace_hints(hint_vectors, [0,0,0]),1)
-
-  -- DIFUSE STEP
-
-  diffuse_color = [0, 0, 0]
-  if diffuse_reflexivity > 0.01
-    new_ray = random_reflection(normal)
-    incoming = trace(objects, [point , new_ray], $unkown, bounce - 1, false)
-    match incoming
-      [0,0,0] -> diffuse_color = [0,0,0] end
-      _ ->
-        thing = vec3:dot(new_ray, normal) * diffuse_reflexivity
-        diffuse_color = vec3:mul(incoming, thing)
-      end
-    end
-  end
-
-  -- DIRECT STEP
-
-  direct_color = [0, 0, 0]
-  if direct_reflexivity > 0
-    new_ray = reflect(normal, direction)
-    incoming = trace(objects, [point , new_ray], $unkown, bounce - 1, false)
-    match incoming
-      [0,0,0] -> direct_color = [0,0,0] end
-      _ ->
-        direct_color = vec3:mul(incoming, direct_reflexivity)
-      end
-    end
-  end
-
-  total_traced_color = vec3:add(vec3:add(hint_color, diffuse_color), direct_color)
-  if total_traced_color == [0,0,0]
-    return [0,0,0]
-  end
-
-  return vec3:mul(vec3:proj(color, total_traced_color), vec3:mag(total_traced_color))
+  return core:vec3_mul(@trace_hints(hint_vectors, [0,0,0]),1)
 end
 
 -- ============ RENDERING =================
@@ -363,13 +415,15 @@ def render(width, height, _scene)
   sampels_per_pass = 10
 
   workers = list:map(list:range(core:send(core:io_pid(), $cpu_count)), def (_)
-    return core:spawn(['trace', 'worker'], width, height, core:my_pid(), scene, data, sampels_per_pass)
+    kid = core:spawn(['trace', 'worker'], width, height, core:my_pid(), scene, ids, data, sampels_per_pass)
+    core:link(kid)
+    return kid
   end)
 
   listener = def (pixels, n, sender, payload)
     match payload
       [$render_results, y, samples] ->
-        core:send(sender, [$render, select_next_row(n, height)])
+        start = core:time()
         match list:get(pixels, y)
           [] ->
             prev_samples = 0
@@ -378,7 +432,7 @@ def render(width, height, _scene)
               if samples == 0
                 return [0, color]
               end
-              return [samples, vec3:mul(color, 1 / samples)]
+              return [samples, core:vec3_mul(color, 1 / samples)]
             end)
           end
           row ->
@@ -390,19 +444,19 @@ def render(width, height, _scene)
                 return [old_samples, old_color]
               end
               return [
-                old_samples + (new_samples/2),
-                vec3:mul(vec3:add(vec3:mul(old_color, old_samples), new_color), 1/(old_samples+new_samples))
+                old_samples + 1,
+                core:vec3_mul(core:vec3_add(core:vec3_mul(old_color, old_samples), new_color), 1/(old_samples+new_samples))
               ]
             end)
           end
         end
-
         draw_line(y, width, new_row)
         new_pixels = list:set(pixels, y, new_row)
-        return [$rendered, new_pixels, n + 1]
+        return [$rendered, new_pixels, sender]
       end
       [$error, <<_>>] ->
         io:print_string(io:format_error(payload))
+        list:map(workers, def (pid) core:send(core:io_pid(), $kill, pid) end)
         return $quit
       end
     end
@@ -410,7 +464,11 @@ def render(width, height, _scene)
 
   handler = def (pixels, n)
     match core:listen(listener, pixels, n)
-      [$rendered, new_pixels, n] -> return @handler(new_pixels, n) end
+      [$rendered, new_pixels, sender] ->
+        new_n = select_next_row(n, height)
+        core:send(sender, [$render, new_n])
+        return @handler(new_pixels, new_n)
+      end
       $quit -> return $ok end
     end
   end
@@ -422,35 +480,44 @@ def render(width, height, _scene)
 end
 
 def select_next_row(n, height)
-  return n % (height - 1)
-  -- return core:floor(height / 2)
-  -- return core:floor(core:rand_range(0, height-1))
-  -- return core:floor(core:rand_range(10, 15))
-  -- return 10
+  return (n + 1) % (height - 1)
 end
 
 
-def worker(width, height, parent, scene, data, sampels_per_pass)
+def worker(width, height, parent, scene, ids, data, sampels_per_pass)
+  mark_row = def (y, color)
+    io:print_string([
+      <<core:ansi_cursor_to(width, y)>>,
+      <<colors:get_color(color)>>,
+      <<core:pid_to_string(core:my_pid())>>,
+      <<core:ansi_color_reset()>>]
+      )
+  end
   core:link(parent)
   io:print_string('Worker started\n')
-  listener = def (sender, payload)
+  listener = def (idle_start, sender, payload)
+    -- io:debug_raw([$idle_time, core:time() - idle_start])
     match payload
       [$render, y] ->
+        @mark_row(y, 'green')
+        start = core:time()
         pixels = render_line(y, width, height, list:get(data, y), scene, sampels_per_pass)
         core:send(sender,[$render_results, y, pixels])
-        return $ok
+        @mark_row(y, 'yellow')
+        -- io:debug_raw([$render_time, core:time() - start])
+        return core:time()
       end
       [$quit] -> return $quit end
     end
-    return $ok
+    return $quit
   end
-  handler = def ()
-    match core:listen(listener)
-      $ok -> return @handler() end
+  handler = def (idle_start)
+    match core:listen(listener, idle_start)
       $quit -> return $ok end
+      idle_start -> return @handler(idle_start) end
     end
   end
-  @handler()
+  @handler(0)
 end
 
 def pre_compute(width, height, scene)
@@ -496,13 +563,13 @@ def draw_line(y, width, pixels)
         [r, g, b] = color
         return @make_pixel(rest, count + samples, [<<res>>,
           <<core:ansi_color(@f(r), @f(g), @f(b))>>,
-          <<'█'>>
+          <<'█'>>,
           ])
       end
     end
   end
   [count, string] = @make_pixel(pixels, 0, [])
-  string = [<<core:ansi_cursor_to(0, y)>>, <<string>>, <<core:ansi_color_reset()>>, <<core:cast(count, 'string')>>]
+  string = [<<core:ansi_cursor_to(0, y)>>, <<string>>, <<core:ansi_color_reset()>>, <<core:cast(count, 'string')>>, <<core:ansi_erase_end_line()>>]
   io:print_string(string)
 end
 
@@ -518,17 +585,17 @@ def render_line(y, width, height, precomp, scene, samples)
     [color, _, emittance, <<_>>] = mat
     if emittance > 0.95
       -- Blackbody
-      return [0, vec3:mul(color, emittance)]
+      return [0, core:vec3_mul(color, emittance)]
     end
     take_samples = def (n, cool_bois ,res)
       if n == samples
         return [cool_bois, res]
       end
       color = trace(scene, ray, nearest)
-      if color == [0,0,0]
+      if color == [0,0,0] || color == $out_of_bounce
         return @take_samples(n + 1, cool_bois, res)
       end
-      return @take_samples(n + 1, cool_bois + 1, vec3:add(res, color))
+      return @take_samples(n + 1, cool_bois + 1, core:vec3_add(res, color))
     end
     return @take_samples(0, 0, [0,0,0])
   end
@@ -561,7 +628,7 @@ def _test()
         ray = [[0,0,0], [1,0,0]]
         intersect = sphere_intersect_test(ray, sphere)
         testing:assert(superv, 'does not miss', intersect != $miss)
-        testing:assert(superv, 'Hits at [4 0 0]', [4, 0, 0], vec3:mul([1,0,0], intersect))
+        testing:assert(superv, 'Hits at [4 0 0]', [4, 0, 0], core:vec3_mul([1,0,0], intersect))
       end
     ],
     ['sphere_intersect_test miss',
@@ -575,7 +642,7 @@ def _test()
     ['random_ref',
       def (superv)
         norm = [core:rand_range(-1,1), core:rand_range(-1,1) , core:rand_range(-1,1)]
-        testing:assert(superv, 'n·random(n) > 0', vec3:dot(random_reflection(norm),norm) > 0)
+        testing:assert(superv, 'n·random(n) > 0', core:vec3_dot(random_reflection(norm),norm) > 0)
       end
     ],
     ['triangle intersection test',
@@ -588,7 +655,7 @@ def _test()
         ray = [[0,0,-1], [0,0,1]]
         testing:assert(superv, 'hits at 1', triangle_intersect_test(ray, triangle), 1)
         ray = [[0,0,-1], [0,0,-1]]
-        testing:assert(superv, 'reversed misses', triangle_intersect_test(ray, triangle), $miss)
+        testing:assert(superv, 'reversed misses', $miss, triangle_intersect_test(ray, triangle))
       end
     ],
     ['reflect',
@@ -657,22 +724,22 @@ def window_3_avg([], [a], res)
 end
 
 def window_3_avg([], [a, b], res)
-  avg = vec3:mul(vec3:add(a,b),5)
+  avg = core:vec3_mul(core:vec3_add(a,b),5)
   return [avg, avg]
 end
 
 def window_3_avg([], [a, b, c, <<rest>>], res)
-  new_a =  vec3:mul(vec3:add(a, b), .5)
-  new_b =  vec3:mul(vec3:add(a, vec3:add(b, c)), 1/3)
+  new_a =  core:vec3_mul(core:vec3_add(a, b), .5)
+  new_b =  core:vec3_mul(core:vec3_add(a, core:vec3_add(b, c)), 1/3)
   return window_3_avg([b, a], [c, <<rest>>], [<<res>>, new_a, new_b])
 end
 
 def window_3_avg([a, <<meh>>], [b, c, <<rest>>], res)
-  new_b =  vec3:mul(vec3:add(a, vec3:add(b, c)), 1/3)
+  new_b =  core:vec3_mul(core:vec3_add(a, core:vec3_add(b, c)), 1/3)
   return window_3_avg([b, a, <<meh>>], [c, <<rest>>], [<<res>>, new_b])
 end
 def window_3_avg([a, <<meh>>], [b, <<rest>>], res)
-  new_b =  vec3:mul(vec3:add(a, b), .5)
+  new_b =  core:vec3_mul(core:vec3_add(a, b), .5)
   return window_3_avg([b, a, <<meh>>], [<<rest>>], [<<res>>, new_b])
 end
 

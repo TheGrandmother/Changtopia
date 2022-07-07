@@ -2,35 +2,52 @@ module scenes
 
 -- Stupid scenes for the stupid raytracer
 
--- -- Creates a plane spanned from a to b
--- -- going counter clockwise from a to b
--- def make_plane(a, b, mat)
---   [ax, ay, az] = a
---   [bx, by, bz] = b
---   return [
---       [-- bottom wall 1
---         $triangle,
---         [
---           [2, 2, max_depth],
---           [-2, 2, max_depth],
---           [-2, 2, min_depth],
---         ],
---         [[1, 1, 1], 1, 0, 0]
---       ],
---       [-- bottom wall 2
---         $triangle,
---         [
---           [-2, 2, min_depth],
---           [2, 2, min_depth],
---           [2, 2, max_depth],
---         ],
---         [[1, 1, 1], 1, 0, 0]
---       ]
---   ]
--- end
+-- Creates a plane spanned from a to b
+-- going counter clockwise from a to b
+def make_plane(a, b, mat)
+  [ax, ay, az] = a
+  [bx, by, bz] = b
+  return [
+      [-- bottom wall 1
+        $triangle,
+        [
+          [ax, ay, az],
+          [bx, ay, az],
+          [bx, by, az],
+        ],
+        mat
+      ],
+      [-- bottom wall 2
+        $triangle,
+        [
+          [bx, by, bz],
+          [ax, by, bz],
+          [ax, ay, bz],
+        ],
+        mat
+      ]
+  ]
+end
+
+def simple_transp_test()
+  return [
+    [
+      --<<make_plane([-1.5,-1,5], [0,1,5], [[1,1,1],0,1,0])>>,
+      [
+       $sphere,
+       [
+         [0,0,2],
+         .5
+       ],
+       [[1, 1, 1], 0, 0, 0, 1, 1.3]
+      ],
+    ],
+    []
+  ]
+end
 
 def diffuse_shadow_test()
-  max_depth = 10
+  max_depth = 10.01
   min_depth = -10
   base_y = -1
   base_z = 1
@@ -314,15 +331,6 @@ def make_room()
       [
        $sphere,
        [
-         [-.5,0,4],
-         .3
-       ],
-       [[1, 0, .5], .3, .5, 0],
-       1
-      ],
-      [
-       $sphere,
-       [
          [.5,-.8,4],
          .6
        ],
@@ -344,13 +352,189 @@ def make_room()
        ],
        [[1, .7, .5], .3, 0, .9]
       ],
+      --[
+      -- $sphere,
+      -- [
+      --   [-.1,-1.8,4.8],
+      --   .4
+      -- ],
+      -- [[1, 1, 1], 0, 0, .75]
+      --],
       [
        $sphere,
        [
-         [-.1,-1.8,4.8],
-         .4
+         [.3,-.1,3],
+         .7
        ],
-       [[1, 1, 1], 0, 0, .75]
+       [[.75, .8, 1], 0, 0, .5, 1, 1.4]
+      ],
+    ],
+    [
+      [[0, 1.9, 3.5], 0],
+    ]
+  ]
+end
+
+def make_transp_room()
+  max_depth = 5
+  min_depth = -1.1
+  return [
+     [
+      [-- Backwall 1
+        $triangle,
+        [
+          [2, -2, max_depth],
+          [-2, -2, max_depth],
+          [-2, 2, max_depth],
+        ],
+        [[1, 1, 1], .85, 0, 0]
+      ],
+      [-- Backwall 2
+        $triangle,
+        [
+          [2, 2, max_depth],
+          [2, -2, max_depth],
+          [-2, 2, max_depth],
+        ],
+        [[1, 1, 1], .85, 0, 0]
+      ],
+      [-- front wall 1
+        $triangle,
+        [
+          [-2, 2, min_depth],
+          [-2, -2, min_depth],
+          [2, -2, min_depth],
+        ],
+        [[1, 1, 1], .85, 0, 0]
+      ],
+      [-- front wall 2
+        $triangle,
+        [
+          [-2, 2, min_depth],
+          [2, -2, min_depth],
+          [2, 2, min_depth],
+        ],
+        [[1, 1, 1], .85, 0, 0]
+      ],
+      [-- Left wall 1
+        $triangle,
+        [
+          [-2, 2, max_depth],
+          [-2, -2, max_depth],
+          [-2, -2, min_depth],
+        ],
+        [[.1, .9, .1], .85, 0, 0]
+      ],
+      [-- Left wall 2
+        $triangle,
+        [
+          [-2, -2, min_depth],
+          [-2, 2, min_depth],
+          [-2, 2, max_depth],
+        ],
+        [[.1, .9, .1], .85, 0, 0]
+      ],
+      [-- right wall 1
+        $triangle,
+        [
+          [2, -2, min_depth],
+          [2, -2, max_depth],
+          [2, 2, max_depth],
+        ],
+        [[.9, .1, .1], .85, 0, 0]
+      ],
+      [-- right wall 2
+        $triangle,
+        [
+          [2, 2, min_depth],
+          [2, -2, min_depth],
+          [2, 2, max_depth],
+        ],
+        [[.9, .1, .1], .85, 0, 0]
+      ],
+      [-- bottom wall 1
+        $triangle,
+        [
+          [2, 2, max_depth],
+          [-2, 2, max_depth],
+          [-2, 2, min_depth],
+        ],
+        [[1, 1, 1], .85, 0, 0]
+      ],
+      [-- bottom wall 2
+        $triangle,
+        [
+          [-2, 2, min_depth],
+          [2, 2, min_depth],
+          [2, 2, max_depth],
+        ],
+        [[1, 1, 1], .85, 0, 0]
+      ],
+      [-- top wall 1
+        $triangle,
+        [
+          [-2, -2, max_depth],
+          [2, -2, max_depth],
+          [-2, -2, min_depth],
+        ],
+        [[1, 1, 1], .85, 0, 0]
+      ],
+      [-- top wall 2
+        $triangle,
+        [
+          [-2, -2, min_depth],
+          [2, -2, max_depth],
+          [2, -2, min_depth],
+        ],
+        [[1, 1, 1], .85, 0, 0]
+      ],
+      [-- Lamp 1
+        $triangle,
+        [
+          [-1, 1.9, 1],
+          [-1, 1.9, 4],
+          [1, 1.9, 4],
+        ],
+        [[1, 1, 1], 0, 1, 0],
+        0
+      ],
+      [-- Lamp 2
+        $triangle,
+        [
+          [1, 1.9, 4],
+          [1, 1.9, 1],
+          [-1, 1.9, 1],
+        ],
+        [[1, 1, 1], 0, 1, 0],
+        0
+      ],
+      [-- Lamp 1
+        $triangle,
+        [
+          [-1, 1.85, 1],
+          [-1, 1.85, 4],
+          [1, 1.85, 4],
+        ],
+        [[1, 1, 1], 0, 1, 0],
+        0
+      ],
+      [-- Lamp 2
+        $triangle,
+        [
+          [-1, 1.85, 1],
+          [1, 1.85, 1],
+          [1, 1.85, 4],
+        ],
+        [[1, 1, 1], 0, 1, 0],
+        0
+      ],
+      [
+       $sphere,
+       [
+         [-1,-1,4],
+         .8
+       ],
+       [[1, 1, 1], 0, 0, 0, 1, 1.8]
       ],
     ],
     [
