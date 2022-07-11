@@ -104,8 +104,8 @@ class Vm {
         this.spawnProcess(Pid.toPid(pid), toJsString(module), toJsString(entryPoint), args, bindings)
         return
       } else if (message.secret === 'kill') {
-        console.log('Killing ', pid, ' by force')
         const [pid] = message.payload
+        console.log('Killing ', pid, ' by force')
         this.killProcess(pid)
         return
       } else {

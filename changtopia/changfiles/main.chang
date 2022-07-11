@@ -11,7 +11,8 @@ def core_modules()
     'set',
     'testing',
     'map',
-    'vec3'
+    'vec3',
+    'ot'
   ]
 end
 
@@ -52,6 +53,7 @@ def _entry()
   list:_test()
   map:_test()
   vec3:_test()
+  ot:_test()
 
   shell_pid = core:spawn(['shell', '_entry'], core:my_pid())
   core:listen(['main', 'listener'])

@@ -327,6 +327,7 @@ end
 
 def zip(list1, list2)
   if core:length(list1) != core:length(list2)
+    _ = 1/0
     return [$error, $zip_length_missmatch, 'Zipping lists of different lengths is silly.', '']
   end
   return zip(list1, list2, [])
@@ -504,6 +505,14 @@ def sort(list, fn)
   end
 
   return @merge(left, right, [])
+end
+
+def fold_l([], acc, fn)
+  return acc
+end
+
+def fold_l([x, <<rest>>], acc, fn)
+  return fold_l(rest, @fn(acc, x), fn)
 end
 
 def _test()

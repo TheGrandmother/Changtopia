@@ -1,0 +1,486 @@
+module ot
+
+def minsize()
+  return 0.001
+end
+
+def min_count()
+  return 1
+end
+
+def get_path(origin, point)
+  [ox, oy, oz] = origin
+  [px, py, pz] = point
+  return [px <= ox, py <= oy, pz <= oz]
+end
+
+def get_reversed_origin(old_origin, old_size, point)
+  [is_left, is_down, is_near] = get_path(point, old_origin)
+  [ox, oy, oz] = old_origin
+  match is_left
+    true -> nx = ox + old_size / 2 end
+    false -> nx = ox - old_size / 2 end
+  end
+  match is_down
+    true -> ny = oy + old_size / 2 end
+    false -> ny = oy - old_size / 2 end
+  end
+  match is_near
+    true -> nz = oz + old_size / 2 end
+    false -> nz = oz - old_size / 2 end
+  end
+  return [nx, ny, nz]
+end
+
+
+def midpoint([p1, p2, p3])
+  return core:vec3_mul(core:vec3_add(core:vec3_add(p1, p2), p3), 1/3)
+end
+
+def midpoint()
+  return $derp
+end
+
+def span([p1, p2, p3], midpoint)
+  dp1 = core:vec3_mag(core:vec3_sub(p1, midpoint))
+  dp2 = core:vec3_mag(core:vec3_sub(p2, midpoint))
+  dp3 = core:vec3_mag(core:vec3_sub(p3, midpoint))
+  return core:max(dp1, core:max(dp2, dp3))
+end
+
+def span()
+  return $derp
+end
+
+def from_list(l)
+  return list:fold_l(l, octree(), ['ot', 'add'])
+end
+
+def from_list()
+  return $derp
+end
+
+def octree()
+  return []
+end
+
+def octree([$point, point, <<rest>>])
+  return grow_tree([$leaf, point, minsize() * 2, set:from_list([[$point, point, <<rest>>]])])
+end
+
+def octree([$sphere, [point, r], <<rest>>])
+  smol = minsize()/10
+  -- Whe should essentially never add anything trough the origin.
+  origin = core:vec3_sub(core:vec3_sub(point, [r, r, r]), [smol,smol, smol])
+  return [$leaf, origin, (core:floor(((r*2) / minsize()))) * minsize(), set:from_list([[$sphere, [point, r], <<rest>>]])]
+end
+
+def octree([$triangle, points, <<rest>>])
+  center = midpoint(points)
+  io:debug_raw(center)
+  size = span(points, center)
+  return [$leaf, center, (core:floor((size / minsize())) + 1) * minsize() * 2, set:from_list([[$triangle, points, <<rest>>]])]
+end
+
+def octree($internal, origin, size, objects)
+  return [$internal, origin, size, objects, map:new()]
+end
+
+def octree($internal, origin, size, objects, nodes)
+  return [$internal, origin, size, objects, nodes]
+end
+
+def octree(origin, size, objects)
+  return [$leaf, origin, size, set:from_list(objects)]
+end
+
+def get_all_elements(octree)
+  return get_all_elements(octree, [])
+end
+
+def get_all_elements([], acc)
+  return acc
+end
+
+def get_all_elements([$leaf, _, _, objects], acc)
+  return [<<acc>>, <<objects>>]
+end
+
+def get_all_elements([$internal, _, _, objects, nodes], acc)
+  recurse = list:flatten(list:map(map:values(nodes), def (n) return get_all_elements(n, []) end))
+  return [<<acc>>, <<objects>>, <<recurse>>]
+end
+--Arbitrarily grow the tree for performance
+def grow_tree([type, origin, size, <<stuff>>])
+  return grow_tree([type, origin, size, <<stuff>>], core:vec3_add(origin, [1,1,1]))
+end
+
+def grow_tree([type, origin, size, objects, <<stuff>>], point)
+  new_size = size * 2
+  new_origin = get_reversed_origin(origin, size, point)
+  path_to_old = get_path(new_origin, origin)
+  new_tree = octree($internal, new_origin, new_size, set:set(), map:insert(map:new(), path_to_old, [type, origin, size, set:set(), <<stuff>>]))
+  return list:fold_l(objects, new_tree, ['ot', 'add'])
+end
+
+def grow_tree()
+  return $ok
+end
+
+def add([], thing)
+  return octree(thing)
+end
+
+def add([$leaf, origin, size, objects], thing)
+  match get_uncontained_point(origin, size, thing)
+    $contained -> _ = 0 end
+    p ->
+      return add(grow_tree([$leaf, origin, size, objects], p), thing)
+    end
+  end
+  if size/2 < minsize()
+    return [$leaf, origin, size, set:add_element(objects, thing)]
+  end
+  return list:fold_l([<<objects>>], octree($internal, origin, size, [thing]), ['ot', 'add'])
+end
+
+def add([$internal, origin, size, objects, nodes], thing)
+  match get_uncontained_point(origin, size, thing)
+    $contained ->
+      match get_containing_path(origin, size, thing)
+        $fuckall ->
+          -- No child can fully contain the object
+          return octree($internal, origin, size, set:add_element(objects, thing), nodes)
+        end
+        path ->
+          match map:get(nodes, path)
+            $fuckall ->
+              -- We need tro add a new node for this path
+              --io:debug_raw([$creating_child, thing])
+              new_node = add(octree(new_origin(origin, path, size / 2), size/2, []), thing)
+              --io:debug_raw(new_node)
+              return octree($internal, origin, size, objects, map:insert(nodes, path, new_node))
+            end
+            node ->
+              --io:debug_raw([$adding_to_child, thing])
+              --io:debug_raw(node)
+              return octree($internal, origin, size, objects, map:insert(nodes, path, add(node, thing)))
+            end
+          end
+        end
+      end
+    end
+    p ->
+      return add(grow_tree([$internal, origin, size, objects, nodes], p), thing)
+    end
+  end
+  return $ok
+end
+
+def new_origin(origin, path, size)
+  [is_left, is_down, is_near] = path
+  [ox, oy, oz] = origin
+  match is_left
+    true -> nx = ox - size / 2 end
+    false -> nx = ox + size / 2 end
+  end
+  match is_down
+    true -> ny = oy - size / 2 end
+    false -> ny = oy + size / 2 end
+  end
+  match is_near
+    true -> nz = oz - size / 2 end
+    false -> nz = oz + size / 2 end
+  end
+  return [nx, ny, nz]
+end
+
+def get_containing_path(origin, size, thing)
+  paths = [
+    [false, false, false],
+    [false, false, true],
+    [false, true,  false],
+    [false, true,  true],
+    [true,  false, false],
+    [true,  false, true],
+    [true,  true,  false],
+    [true,  true,  true],
+  ]
+  get_containing = def (path)
+    match path
+      [] -> return $fuckall end
+      [p, <<rest>>] ->
+        if get_uncontained_point(new_origin(origin, p, size / 2), size / 2, thing) == $contained
+          return p
+        end
+        return @get_containing(rest)
+      end
+    end
+  end
+  return @get_containing(paths)
+end
+
+def get_uncontained_point(origin, size, [$point, [x, y, z], <<rest>>])
+  [ox,oy,oz] = origin
+  inside = def (min, p, max)
+    return p > min && p < max
+  end
+  if @inside(ox - size / 2, x, ox + size / 2) != true return [x,y,z] end
+  if @inside(oy - size / 2, y, oy + size / 2) != true return [x,y,z] end
+  if @inside(oz - size / 2, z, oz + size / 2) != true return [x,y,z] end
+  return $contained
+end
+
+def get_uncontained_point(origin, size, [$triangle, [p1, p2, p3], <<rest>>])
+  p = get_uncontained_point(origin, size, [$point, p1])
+  if p != $contained
+    return p
+  end
+  p = get_uncontained_point(origin, size, [$point, p2])
+  if p != $contained
+    return p
+  end
+  p = get_uncontained_point(origin, size, [$point, p3])
+  if p != $contained
+    return p
+  end
+  return $contained
+end
+
+def get_uncontained_point(origin, size, [$sphere, [[x,y,z], r], <<rest>>])
+  points = [
+    [x + r, y, z],
+    [x - r, y, z],
+    [x, y + r, z],
+    [x, y - r, z],
+    [x, y, z + r],
+    [x, y, z - r],
+  ]
+
+  get_uncontained = def (points)
+    match points
+      [] -> return $contained end
+      [point, <<rest>>] ->
+        match get_uncontained_point(origin, size, [$point, point])
+          $contained -> return @get_uncontained(rest) end
+          p -> return p end
+        end
+      end
+    end
+  end
+
+  return @get_uncontained(points)
+end
+
+def cast_ray(octree, ray)
+  return cast_ray(octree, ray, [])
+end
+
+def cast_ray([$leaf, origin, size, objects], ray, relevant_objects)
+  if box_intersect(ray, origin, size)
+    -- io:debug('Found objects in leaf')
+    return [<<relevant_objects>>, <<objects>>]
+  end
+  return relevant_objects
+end
+
+def cast_ray([$internal, origin, size, objects, nodes], ray, relevant_objects)
+  if box_intersect(ray, origin, size)
+    recurse = list:flatten(list:map(nodes, def (n)
+      [key, node] = n
+      -- io:debug_raw([$trraversing, key])
+      return cast_ray(node, ray, [])
+    end))
+    return [<<relevant_objects>>, <<objects>>, <<recurse>>]
+  end
+  -- io:debug_raw([$ray_misses])
+  return relevant_objects
+end
+
+def _entry([])
+  _test()
+  return $ok
+end
+
+--Very special casy for this case
+def ray_intersect_cardinal_plane([ray_orig, direction], plane)
+  p0r0 = core:vec3_sub(plane, ray_orig)
+  n = core:vec3_norm(plane)
+  denom = core:vec3_dot(n, direction)
+  if denom == 0
+    return $palla
+  end
+  t = core:vec3_dot(p0r0, n) / denom
+  if t > 0
+    return t
+  end
+  return $miss
+end
+
+
+def ray_intersect_cardinal_plane()
+  return $derp
+end
+
+def box_intersect(ray, [ox, oy, oz], size)
+  [ray_orig, direction] = ray
+  [rox, roy, roz] = ray_orig
+  [dx, dy, dz] = direction
+  meh = def (plane)
+    return ray_intersect_cardinal_plane(ray, plane)
+  end
+  inside = def (min, p, max)
+    return p >= min && p <= max
+  end
+  match [@meh([ox-size, 0, 0]), @meh([ox+size, 0, 0])]
+    [$miss, $miss] -> _ = 0 end
+    [$palla, $palla] ->
+      if @inside(ox - size, rox, ox + size) != true return false end
+    end
+    [t0, t1] ->
+      if t0 != $miss && @inside(ox - size, rox + dx*t0, ox + size) return true end
+      if t1 != $miss && @inside(ox - size, rox + dx*t1, ox + size) return true end
+    end
+  end
+  match [@meh([0, oy-size, 0]), @meh([0, oy+size, 0])]
+    [$miss, $miss] -> _ = 0 end
+    [$palla, $palla] ->
+      if @inside(oy - size, roy, oy + size) != true return false end
+    end
+    [t0, t1] ->
+      if t0 != $miss && @inside(oy - size, roy + dy*t0, oy + size) return true end
+      if t1 != $miss && @inside(oy - size, roy + dy*t1, oy + size) return true end
+    end
+  end
+  match [@meh([0, 0, oz-size]), @meh([0, 0, oz+size])]
+    [$miss, $miss] -> _ = 0 end
+    [$palla, $palla] ->
+      if @inside(oz - size, roz, oz + size) != true return false end
+    end
+    [t0, t1] ->
+      if t0 != $miss && @inside(oz - size, roz + dz*t0, oz + size) return true end
+      if t1 != $miss && @inside(oz - size, roz + dz*t1, oz + size) return true end
+    end
+  end
+
+  return false
+end
+
+def box_intersect()
+  return $derp
+end
+
+--Does not count intersections behind the ray origin
+def test_instersect([ray_orig, direction], [ox, oy, oz], size)
+  a = 1/0
+end
+
+def test_instersect($derp)
+  return $ok
+end
+
+def _test()
+  utils:load_module('testing')
+  utils:load_module('map')
+  utils:load_module('set')
+  suite = [
+    ['basic_insert',
+      def (superv)
+        triangle = [$triangle, [[0.5, 0.5, 0.5], [-0.5, 0.5, 0.5], [0, -0.5, 0.5]]]
+        octree = add(octree(), triangle)
+        io:debug_raw(octree)
+        [_, origin, size, <<_>>] = octree
+        testing:assert(superv, 'Point should be contained', $contained, get_uncontained_point(origin, size, triangle))
+      end
+    ],
+   --  ['growing',
+   --    def (superv)
+   --      octree = add(octree(), [$point, [2,2,0]])
+   --      octree = add(octree, [$point, [-7,-7,0]])
+   --      testing:assert(superv, 'All objects exists in tree', 2, core:length(get_all_elements(octree)))
+   --    end
+   --  ],
+   --  ['add_triangle',
+   --    def (superv)
+   --      octree = add(octree(), [$triangle, [[1,1,1], [1,2,1], [1,2,2]]])
+   --      octree = add(octree, [$triangle, [[6,1,1], [8,1,0], [1,-5,2]]])
+   --      testing:assert(superv, 'All objects exists in tree', 2, core:length(get_all_elements(octree)))
+   --    end
+   --  ],
+   --  ['add_sphere',
+   --    def (superv)
+   --      octree = add(octree(), [$sphere, [[1,1,1], 3]])
+   --      octree = add(octree, [$sphere, [[0,-1,7], 6]])
+   --      octree = add(octree, [$sphere, [[2,-1,3.1], .5]])
+   --      testing:assert(superv, 'All objects exists in tree', 3, core:length(get_all_elements(octree)))
+   --    end
+   --  ],
+   --  ['Test grow tree',
+   --    def (superv)
+   --      sphere = [$sphere, [[0,0,1], .5], $sphere1]
+   --      sphere2 = [$sphere, [[3,0,1], .5], $sphere2]
+   --      octree = add(octree(), sphere)
+   --      octree = grow_tree(octree, [3, 0, 1])
+   --   end
+   -- ],
+    ['test_cast basic',
+      def (superv)
+        -- sphere = [$sphere, [[0,0,1], .5], $sphere1]
+        -- sphere2 = [$sphere, [[3,0,1], .5], $sphere2]
+        -- octree = add(octree(), sphere)
+        -- octree = add(octree, sphere2)
+        -- -- io:debug_raw(octree)
+        -- collected = cast_ray(octree,[[0,0,-1], [0,0,1]])
+        -- testing:assert(superv, 'Collides when nice', [sphere], collected)
+        -- collected = cast_ray(octree,[[0,0,-1], [0,1,0]])
+        -- testing:assert(superv, 'No collide when cast to hell', [], collected)
+        -- collected = cast_ray(octree,[[0,0,-1], [0,0,-1]])
+        -- testing:assert(superv, 'No collide when behind', [], collected)
+         a = 1
+      end
+    ],
+    ['Test ray test',
+      def (superv)
+        ray = [[4,0,-1], [0,0,1]]
+        -- box_origin = [4.4999, 0.4999, 1.4999]
+        -- box_size = 2
+        -- testing:assert(superv, 'Kinda obvi case should hit', true, box_intersect(ray, box_origin, box_size))
+
+        -- ray = [[0,0,-1], [0,0,1]]
+        -- box_origin = [4.4999, 0.4999, 1.4999]
+        -- box_size = 2
+        -- testing:assert(superv, 'Kinda obvi case should miss', false, box_intersect(ray, box_origin, box_size))
+
+      end
+    ],
+    ['contained test',
+      def (superv)
+        a = 1
+        --triangle = [$triangle, [[-0.7,0.3, 1.3],[-0.7,0.3,2.7],[0.7,0.3,2.7]]]
+        --origin = [-6.666946146419619, -1.0002794797529475, 3.3397205202470523]
+        --size = 27.48
+        --testing:assert(superv, 'Known stupid case should be contained', $contained, get_uncontained_point(origin, size, triangle))
+
+        --triangle = [$triangle, [[-0.7,0.3, 1.3],[-0.7,0.3,2.7],[0.7,0.3,2.7]]]
+        --origin = [0.20505385358038097, 5.871720520247052, -3.5322794797529475]
+        --size = 13.744
+        --testing:assert(superv, 'Known stupid case should be contained', $contained, get_uncontained_point(origin, size, triangle))
+
+      end
+    ],
+    ['containing node test',
+      def (superv)
+        triangle = [$triangle, [[-0.7,0.3, 1.3],[-0.7,0.3,2.7],[0.7,0.3,2.7]]]
+        -- origin = [-6.666946146419619, -1.0002794797529475, 3.3397205202470523]
+        -- size = 27.48
+        -- path = get_containing_path(origin, size, triangle)
+        -- new_node = octree(new_origin(origin, path, size / 2), size/2, [])
+        -- io:debug_raw(get_uncontained_point(new_origin(origin, path, size / 2), size/2, triangle))
+        -- io:debug_raw(new_node)
+        -- testing:assert(superv, 'Known stupid case should be contained', $contained, get_uncontained_point(origin, size, triangle))
+
+      end
+    ],
+  ]
+  testing:run_suite('Octree', suite)
+end

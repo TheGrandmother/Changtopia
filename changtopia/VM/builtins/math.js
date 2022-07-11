@@ -1,9 +1,30 @@
 const math = [
   {
+    functionId: 'min',
+    core: true,
+    exec: (_, __ , a, b) => {
+      return a <= b ? a : b
+    }
+  },
+  {
+    functionId: 'max',
+    core: true,
+    exec: (_, __ , a, b) => {
+      return a >= b ? a : b
+    }
+  },
+  {
     functionId: 'sin',
     core: true,
     exec: (_, __ , a) => {
       return Math.sin(a)
+    }
+  },
+  {
+    functionId: 'max_value',
+    core: true,
+    exec: () => {
+      return Number.MAX_VALUE
     }
   },
   {

@@ -1,8 +1,8 @@
 module map
 
--- This is a module for a shitty implemenbtation of an associative map :)
+-- This is a module for a shitty implementation of an associative map :)
 -- Only feasible for maps with few keys
--- order is not preserved due to anaive assumption of temporal proximity
+-- order is not preserved due to a naive assumption of temporal proximity
 
 def new()
   return []
@@ -14,7 +14,7 @@ def insert(map, new_key, new_value)
       [] -> return [<<acc>>, [new_key, new_value]] end
       [[key , value], <<rest>>] ->
         if key == new_key
-          return [[key, new_value], <<map>>, <<acc>>]
+          return [[key, new_value], <<rest>>, <<acc>>]
         end
         return @update(rest, [[key, value], <<acc>>])
       end
@@ -63,6 +63,10 @@ def delete(map, key)
   return @_delete(map, [])
 end
 
+def values(map)
+  [_, values] = list:unzip(map)
+  return values
+end
 
 def _test()
   utils:load_module('testing')
@@ -83,6 +87,7 @@ def _test()
       def (superv)
         map = insert(new(), 'a', 420)
         testing:assert(superv, 'Wrong value returned', 420, get(map, 'a'))
+        testing:assert(superv, 'Wrong value returned', $fuckall, get(map, '7'))
       end
     ],
     ['simple exists',
@@ -102,6 +107,13 @@ def _test()
         map = insert(insert(new(), 'a', 420), 'b', 69)
         testing:assert(superv, 'Wrong value returned for key a', 420, get(map, 'a'))
         testing:assert(superv, 'Wrong value returned for key b', 69, get(map, 'b'))
+      end
+    ],
+    ['Multiple inserts does not dupe entry',
+      def (superv)
+        map = insert(insert(new(), 'a', 420), 'a', 69)
+        testing:assert(superv, 'Wrong value returned for key b', 69, get(map, 'a'))
+        testing:assert(superv, 'Only one dude in the map', 1, core:length(map))
       end
     ],
     ['Multiple inserts and delete',

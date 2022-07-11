@@ -35,3 +35,27 @@ def remove_element(set, element)
   end
   return @remove(set, [])
 end
+
+def count(set)
+  return core:length(set)
+end
+
+def set()
+  return []
+end
+
+def from_list([])
+  return []
+end
+
+def from_list(l)
+  return from_list(l, [])
+end
+
+def from_list([], acc)
+  return acc
+end
+
+def from_list([x, <<rest>>], acc)
+  return from_list(rest, add_element(acc, x))
+end
