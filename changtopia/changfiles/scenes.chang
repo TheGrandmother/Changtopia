@@ -50,16 +50,16 @@ def diffuse_shadow_test()
   max_depth = 10.01
   min_depth = -10
   base_y = -1
-  base_z = 2
+  base_z = 1.5
   lamp_height = .3
   return [
     [
       [-- bottom wall 1
         $triangle,
         [
-          [-20, base_y, min_depth],
-          [-20, base_y, max_depth],
-          [20, base_y, max_depth],
+          [-10, base_y, min_depth],
+          [-10, base_y, max_depth],
+          [10, base_y, max_depth],
         ],
         [[1, 1, 1], 1, 0, 0]
       ],
@@ -375,14 +375,14 @@ def make_room()
        ],
        [[1, .7, .5], .3, 0, .9]
       ],
-      --[
-      -- $sphere,
-      -- [
-      --   [-.1,-1.8,4.8],
-      --   .4
-      -- ],
-      -- [[1, 1, 1], 0, 0, .75]
-      --],
+      [
+       $sphere,
+       [
+         [-.1,-1.8,4.8],
+         .4
+       ],
+       [[1, 1, 1], 0, 0, .75]
+      ],
       [
        $sphere,
        [
@@ -395,5 +395,50 @@ def make_room()
     [
       [[0, 1.9, 3.5], 0],
     ]
+  ]
+end
+
+def a_friend_of_spt()
+  max_depth = 10.01
+  min_depth = -10
+  base_y = -1
+  base_z = 1.5
+  lamp_height = .3
+  return [
+    [
+      [
+       $sphere,
+       [
+         [-.5,0,base_z],
+         .1
+       ],
+       [[1, .5, .5], 0.5, 0 , 1]
+      ],
+      [
+       $sphere,
+       [
+         [-.45,0,base_z],
+         .1
+       ],
+       [[1, .5, .5], 0, 1 , 0]
+      ],
+      [
+       $sphere,
+       [
+         [.5,0,base_z],
+         .1
+       ],
+       [[1, .5, .5], .5, 0 , 1]
+      ],
+      [
+       $sphere,
+       [
+         [.45,0,base_z],
+         .1
+       ],
+       [[1, .5, .5], 0, 1 , 0]
+      ],
+    ],
+    []
   ]
 end

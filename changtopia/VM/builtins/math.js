@@ -3,14 +3,22 @@ const math = [
     functionId: 'min',
     core: true,
     exec: (_, __ , a, b) => {
-      return a <= b ? a : b
+      if (!Array.isArray(a)) {
+        return a <= b ? a : b
+      } else {
+        return Math.min(...a)
+      }
     }
   },
   {
     functionId: 'max',
     core: true,
     exec: (_, __ , a, b) => {
-      return a >= b ? a : b
+      if (!Array.isArray(a)) {
+        return a >= b ? a : b
+      } else {
+        return Math.max(...a)
+      }
     }
   },
   {

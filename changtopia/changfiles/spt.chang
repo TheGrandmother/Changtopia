@@ -1,0 +1,388 @@
+module spt
+
+--Space partitioning tree that I am way to fucking retarded to write
+
+def max_vec()
+  return [core:max_value(), core:max_value(), core:max_value()]
+end
+
+def min_vec()
+  return [-1 * core:max_value(), -1 * core:max_value(), -1 * core:max_value()]
+end
+
+def get_bounding_box([$sphere, [[x,y,z], r], <<_>>])
+  return [[x - r, y - r, z - r], [x + r, y + r, z + r]]
+end
+
+def get_bounding_box([$triangle, points, <<_>>])
+  return get_bounding_box(points, max_vec(), min_vec())
+end
+
+def get_bounding_box([$box, point, <<_>>])
+  return get_bounding_box(points, max_vec(), min_vec())
+end
+
+def get_bounding_box(points)
+  return get_bounding_box(points, max_vec(), min_vec())
+end
+
+def get_bounding_box([], min, max)
+  return [min, max]
+end
+
+def get_bounding_box([[x, y, z], <<rest>>], [lx, ly, lz], [rx, ry, rz])
+  return get_bounding_box(rest,
+    [core:min(x, lx), core:min(y, ly), core:min(z, lz)],
+    [core:max(x, rx), core:max(y, ry), core:max(z, rz)])
+end
+
+def area_of_box(box)
+  [r, l] = box
+  [rx, ry, rz] = r
+  [lx, ly, lz] = l
+  return 2 * ((rx - lx)*(ry - ly) + (rx - lx)*(rz - lz) + (ry - ly)*(rz - lz))
+end
+
+def merge_box(points1, points2)
+  return get_bounding_box([<<points1>>, <<points2>>])
+end
+
+def merge_nodes([$box, points1, <<_b1>>], [$box, points2, <<_b2>>])
+  box = get_bounding_box([<<points1>>, <<points2>>])
+  size = area_of_box(box)
+  return [$box, box, size, [[$box, points1, <<_b1>>], [$box, points2, <<_b2>>]]]
+end
+
+def merge_nodes()
+  return $dewrp
+end
+
+def make_node(obj)
+  box = get_bounding_box(obj)
+  size = area_of_box(box)
+  return [$box, box, size, [obj]]
+end
+
+def make_node([$box, points1, <<_b1>>], [$box, points2, <<_b2>>])
+  box = get_bounding_box([<<points1>>, <<points2>>])
+  size = area_of_box(box)
+  return [$box, box, size, [[$box, points1, <<_b1>>], [$box, points2, <<_b2>>]]]
+end
+
+def make_smallest_node(node, [bob, <<rest>>])
+  combined_size = area_of_box(merge_box(list:get(node,1), list:get(bob,1)))
+  return make_smallest_node(node, rest, bob, combined_size, [])
+end
+
+def make_smallest_node(node, [], champion_node, _, acc)
+  return [make_node(node, champion_node), <<acc>>]
+end
+
+def make_smallest_node([$box, points, <<meh>>], [[$box, c_points, <<c_meh>>], <<rest>>], champion_node, champion_size, acc)
+  combined_size = area_of_box(merge_box(points, c_points))
+  if combined_size < champion_size
+    return make_smallest_node([$box, points, <<meh>>], rest, [$box, c_points, <<c_meh>>], combined_size, [champion_node, <<acc>>])
+  end
+  return make_smallest_node([$box, points, <<meh>>], rest, champion_node, champion_size, [[$box, c_points, <<c_meh>>], <<acc>>])
+end
+
+def new_spt(objects)
+  nodes = list:map(objects, ['spt', 'make_node'])
+  return make_spt(nodes)
+end
+
+def batshit_spt(objects)
+  nodes = list:map(objects, ['spt', 'make_node'])
+  return batshit_smallest(nodes)
+end
+
+def make_spt([node])
+  return node
+end
+
+def make_spt(nodes)
+  sort_fn = def (a, b)
+    [_, _, sa, <<_>>] = a
+    [_, _, sb, <<_>>] = b
+    return sa - sb
+  end
+  sorted_nodes = list:sort(nodes, sort_fn)
+  [mini_node, <<rest>>] = sorted_nodes
+  return make_spt(make_smallest_node(mini_node, rest))
+end
+
+def get_smallest([x, <<rest>>])
+  return get_smallest(rest, x)
+end
+
+def get_smallest([], b)
+  return b
+end
+
+def get_smallest([a, <<rest>>], b)
+  [[_, _, sa, <<_>>], <<_>>] = a
+  [[_, _, sb, <<_>>], <<_>>] = b
+  if sa < sb
+    return get_smallest(rest, a)
+  end
+  return get_smallest(rest, b)
+end
+
+def batshit_smallest([node])
+  return node
+end
+
+def batshit_smallest(nodes)
+  indexed_nodes = list:zip(nodes, list:range(core:length(nodes)))
+  find_smallest_combo = def (n)
+    [n, i] = n
+    no_me = list:filter(indexed_nodes, def (m) return list:get(m, 1) != i end)
+    merged_nodes = list:map(no_me, def (m)
+      [m, j] = m
+      return [merge_nodes(n, m), i, j]
+    end)
+    return get_smallest(merged_nodes)
+  end
+
+  [new_node, i, j] = get_smallest(list:map(indexed_nodes, find_smallest_combo))
+  no_merged = list:filter(indexed_nodes, def (n)
+    [_, x] = n
+    return x != i && x != j
+  end)
+  [remaining_nodes, _] =list:unzip(no_merged)
+  return batshit_smallest([new_node, <<remaining_nodes>>])
+end
+
+def t(o, d, p)
+  if d == 0
+    return 0
+  end
+  return (p - o) / d
+end
+
+def box_intersect(ray, box)
+  [ray_orig, direction] = ray
+  [rox, roy, roz] = ray_orig
+  [dx, dy, dz] = direction
+  [min, max] = box
+  [lx, ly, lz] = min
+  [rx, ry, rz] = max
+  large = 10000000
+
+  valid  = def (t, min, p, max)
+    if t < 0
+      return large
+    end
+    if p >= (min - 0.000001) && p <= (max + 0.000001)
+      return t
+    end
+    return large
+  end
+
+  [tx0, tx1] = [t(rox, dx, lx), t(rox, dx, rx)]
+  if tx0 < 0 && tx1 < 0
+    return false
+  end
+  tx = core:min(@valid(tx0, lx, rox + dx*tx0, rx), @valid(tx1, lx, rox + dx*tx1, rx))
+  if tx >= large
+    return false
+  end
+
+  [ty0, ty1] = [t(roy, dy, ly), t(roy, dy, ry)]
+  if ty0 < 0 && ty1 < 0
+    return false
+  end
+  ty = core:min(@valid(ty0, ly, roy + dy*ty0, ry), @valid(ty1, ly, roy + dy*ty1, ry))
+  if ty >= large
+    return false
+  end
+
+  [tz0, tz1] = [t(roz, dz, lz), t(roz, dz, rz)]
+  if tz0 < 0 && tz1 < 0
+    return false
+  end
+  tz = core:min(@valid(tz0, lz, roz + dz*tz0, rz), @valid(tz1, lz, roz + dz*tz1, rz))
+  if tz >= large
+    return false
+  end
+  return true
+end
+
+def get_max_distances(box, ray)
+  [ray_origin, <<_>>] = ray
+  [min, max] = box
+  [lx, ly, lz] = min
+  [rx, ry, rz] = max
+  comp_dist = def (a)
+    diff = core:vec3_sub(ray_origin, a)
+    return core:vec3_dot(diff, diff)
+  end
+
+  points = [
+    [lx, ly, lz],
+    [rx, ly, lz],
+    [lx, ry, lz],
+    [rx, ry, lz],
+    [lx, ry, rz],
+    [rx, ry, rz],
+  ]
+
+  distances = list:map(points, comp_dist)
+  return [core:min(distances), core:max(distances)]
+
+end
+
+def cast_ray([$box, box, _, kids], ray)
+  hits = box_intersect(ray, box)
+  if hits
+    -- io:debug_raw(core:flatten(list:map(kids, def (k) return cast_ray(k, ray, []) end))>>)
+    return core:flatten(list:map(kids, def (k) return cast_ray(k, ray) end))
+  end
+  return []
+end
+
+def cast_ray(obj, ray)
+  return [obj]
+end
+
+def get_nearest(tree, ray)
+   nearest = get_nearest(tree, ray, $none, 0)
+   match nearest
+     $miss -> return $miss end
+     [t, obj, depth] ->
+        return [t, obj]
+      end
+   end
+end
+
+def get_nearest([$box, box, _, [k1, k2], <<_>>], ray, id, depth)
+  hits = box_intersect(ray, box)
+  if hits == false
+    return $miss
+  end
+  [k1type, b1, <<_>>] = k1
+  [k2type, b2, <<_>>] = k2
+  match [k1type, k2type]
+    [$box, $box] ->
+        [n1, f1] = get_max_distances(b1, ray)
+        [n2, f2] = get_max_distances(b2, ray)
+
+        if n1 < n2 && f1 < n2 && f1 < f2
+          test_1 = get_nearest(k1, ray, id, depth + 1)
+          if test_1 != $miss
+            return test_1
+          end
+          return get_nearest(k2, ray, id, depth + 1)
+        end
+
+        if n2 < n1 && f2 < n1 && f2 < f1
+          test_2 = get_nearest(k2, ray, id, depth + 1)
+          if test_2 != $miss
+            return test_2
+          end
+          return get_nearest(k1, ray, id, depth + 1)
+        end
+    end
+  end
+  test1 = get_nearest(k1, ray, id, depth + 1)
+  test2 = get_nearest(k2, ray, id, depth + 1)
+  if test1 == $miss
+    return test2
+  end
+  if test2 == $miss
+    return test1
+  end
+  [t1, obj1, <<_>>] = test1
+  [t2, obj2, <<_>>] = test2
+  if t1 < t2
+    return test1
+  end
+  return test2
+end
+
+def get_nearest([$box, box, _, [k], <<_>>], ray, id, depth)
+  hits = box_intersect(ray, box)
+  if hits == false
+    return $miss
+  end
+  return get_nearest(k, ray, id, depth + 1)
+end
+
+def get_nearest(obj, ray, id, depth)
+  [type, geo, mat, <<meta>>] = obj
+  match type
+    $sphere -> t = trace:sphere_intersect_test(ray, geo) end
+    $triangle -> t = trace:triangle_intersect_test(ray, geo) end
+  end
+  if t == $miss
+    return $miss
+  end
+  return [t, obj, depth]
+end
+
+def get_nearest()
+  return $derp
+end
+
+def get_all([$box, _, _, kids])
+  return core:flatten(list:map(kids, def (k) return get_all(k) end))
+end
+
+def get_all(obj)
+  return [obj]
+end
+
+
+def _test()
+  utils:load_module('testing')
+  utils:load_module('map')
+  utils:load_module('set')
+  utils:load_module('scenes')
+  suite = [
+    --['bounding box',
+    --  def (superv)
+    --    triangle = [$triangle, [[0.5, 0.5, 0.5], [-0.5, 0.5, 0.5], [0, -0.5, 0.5]]]
+    --    testing:assert(superv, 'Point should be contained', [[-.5,-.5,.5], [.5,.5,.5]], get_bounding_box(triangle))
+    --  end
+    --],
+    --['area',
+    --  def (superv)
+    --    box = [[0,0,0], [0,0,0]]
+    --    testing:assert(superv, 'Zero is cool', 0, area_of_box(box))
+    --    box = [[0,0,0], [1,1,1]]
+    --    testing:assert(superv, 'superbasic is cool', 6, area_of_box(box))
+    --    box = [[0,0,0], [1,1,0]]
+    --    testing:assert(superv, 'flat is all that', 2, area_of_box(box))
+    --  end
+    --],
+    --['lol',
+    --  def (superv)
+    --    objects = [
+    --      [$sphere, [[0,-1,7], 6]],
+    --      [$triangle, [[1,1,1], [1,2,1], [1,2,2]]],
+    --      [$triangle, [[6,1,1], [8,1,0], [1,-5,2]]],
+    --      [$sphere, [[1,1,1], 3]],
+    --      [$sphere, [[2,-1,3.1], .5]]
+    --    ]
+    --    lol = new_spt(objects)
+    --    testing:assert(superv, 'Nothing throws', true)
+    --    [objects, _] = scenes:make_room()
+    --    lol = new_spt(objects)
+    --  end
+    --],
+    ['ray_casting',
+      def (superv)
+        objects = [
+          [$sphere, [[-.5,1,0], .1]],
+          [$sphere, [[-.45,1,0], .1]],
+          [$sphere, [[.5,1,0], .1]],
+          [$sphere, [[.45,1,0], .1]],
+        ]
+        tree = new_spt(objects)
+        -- testing:assert(superv, 'No hit for basic case', [], cast_ray(tree,[[0,0,-1], [.001,0,1]]))
+        testing:assert(superv, 'Hit for basic case', [[$sphere,[[0.5,1,0],0.1]],[$sphere,[[0.45,1,0],0.1]]], cast_ray(tree,[[0,0,-1], core:vec3_norm([.5,1,1])]))
+      end
+    ],
+  ]
+  testing:run_suite('SPT', suite)
+end

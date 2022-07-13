@@ -150,13 +150,14 @@ def get_normal([$sphere, geo, <<_>>], point)
 end
 
 def find_nearest(objects, ray)
-  blubb = ot:cast_ray(objects, ray)
+  return spt:get_nearest(objects, ray)
+  -- blubb = spt:cast_ray(objects, ray)
   -- io:debug_raw(core:length(blubb))
-  return find_nearest(blubb, ray, $miss, $none)
+  -- return find_nearest(blubb, ray, $miss, $none)
 end
 
 def find_nearest(objects, ray, id)
-  return find_nearest(ot:cast_ray(objects, ray), ray, $miss, id)
+  return find_nearest(spt:cast_ray(objects, ray), ray, $miss, id)
 end
 
 def find_nearest([], ray, nearest, _)
@@ -190,7 +191,7 @@ def find_nearest([obj, <<rest>>], ray, nearest, id)
 end
 
 def trace(objects, ray, nearest)
-  return trace(objects, ray, nearest, 5, true, 1)
+  return trace(objects, ray, nearest, 3, true, 1)
 end
 
 def trace(objects, ray, _, 0, _, _)
@@ -386,9 +387,12 @@ end
 def render(width, height, _scene)
   [_objects, hints] = _scene
   objects = tag_objects(_objects)
-  tree = ot:from_list(objects)
+  io:print_string('Computing tree...\n')
+  tree = spt:batshit_spt(objects)
+  --tree = spt:new_spt(objects)
   io:debug_raw(tree)
-  --return $ok
+  io:debug_raw(spt:get_all(tree))
+  -- return $ok
   scene = [tree, hints]
 
   io:debug_raw([width, height])
@@ -401,7 +405,7 @@ def render(width, height, _scene)
 
   io:print_string('Starting workers...\n')
 
-  sampels_per_pass = 1
+  sampels_per_pass = 2
 
   workers = list:map(list:range(core:send(core:io_pid(), $cpu_count)), def (_)
     kid = core:spawn(['trace', 'worker'], width, height, core:my_pid(), scene, ids, data, sampels_per_pass)
@@ -615,11 +619,11 @@ def _entry([])
   io:print_string(core:ansi_clear_screen())
   utils:load_module('colors')
   utils:load_module('scenes')
-  utils:load_module('ot')
+  utils:load_module('spt')
   [width, height] = core:request(core:io_pid(), $get_console_size)
-  scene = scenes:diffuse_shadow_test()
-  -- [meh, _] =scene
-  -- render(height*2,height, [meh, []])
+  -- scene = scenes:a_friend_of_spt()
+  scene = scenes:make_room()
+  -- scene = scenes:diffuse_shadow_test()
   render(height*2,height, scene)
   return $ok
 end
