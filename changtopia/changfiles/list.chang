@@ -35,20 +35,26 @@ def set(l, n, item)
 end
 
 def set([x, <<rest>>], n, item, count, res)
-  if rest == []
-    return res
-  end
   if count == n
     return [<<res>>, item, <<rest>>]
   end
-  return set(rest, n, item, count +1, [<<res>>, x])
+  if rest == []
+    return res
+  end
+  return set(rest, n, item, count + 1, [<<res>>, x])
 end
 
 def _test_set()
   return ['set',
     def (superv)
-      testing:assert(superv, 'set([1,2,3], 1, 1337) == [1, 1337, 3]', [set([1,2,3], 1, 1337)], [1, 1337, 3])
-      testing:assert(superv, 'set([1,2,3], 1024, 1337) == [1,2,3]', [set([1,2,3], 1, 1337)], [1, 1337, 3])
+      testing:assert(superv, 'set([1,2,3], 1, 1337) == [1, 1337, 3]', set([1,2,3], 1, 1337), [1, 1337, 3])
+      testing:assert(superv, 'set([1,2,3], 1024, 1337) == [1,2,3]', set([1,2,3], 1024, 1337), [1, 2, 3])
+      otto = [1,2,3]
+      otto = set(otto, 0, 1337)
+      otto = set(otto, 1, 17)
+      otto = set(otto, 2, 42)
+      otto = set(otto, 0, 16)
+      testing:assert(superv, 'Setting isnt just wierd', [16,17,42], otto)
     end
   ]
 end
@@ -356,6 +362,17 @@ def unzip([[a, b], <<rest>>], la, lb)
   return unzip(rest, [<<la>>, a], [<<lb>>, b])
 end
 
+def _test_zip()
+  return ['pad',
+    def (superv)
+      u = unzip([[1,2], [3,4]])
+      testing:assert(superv, 'unzip([[1,2], [3,4]])', [[1,3],[2,4]], u)
+      u = unzip([[1,2]])
+      testing:assert(superv, 'unzip([[1,2]])', [[1],[2]], u)
+    end
+  ]
+end
+
 def split_at(arr, index)
   thing = def (n, tail, head)
     match tail
@@ -521,6 +538,8 @@ def _test()
     _test_range(),
     _test_partition(),
     _test_pad(),
+    _test_zip(),
+    _test_set()
   ]
   testing:run_suite('List Module', suite)
 end

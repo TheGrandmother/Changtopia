@@ -19,10 +19,6 @@ end
 
 -- ========= VECTOR STUFF ============
 
--- Simplifications:
---  Camera at [0, 0, -1] pointing [0, 0, 1]
---  Viewport centered at origin and having width and height 1
---  FOV = 90deg
 def get_pixel_ray(p_x, p_y, x_count, y_count)
   pixel_vec = core:vec3_norm([
     p_x/x_count - 1 / 2,
@@ -150,6 +146,15 @@ def get_normal([$sphere, geo, <<_>>], point)
 end
 
 def find_nearest(objects, ray)
+  match core:proc_dict_get($world_representation)
+    $bb -> return spt:get_nearest(objects, ray) end
+    $bpt -> return bpt:get_nearest(objects, ray) end
+    $naive -> return find_nearest(objects, ray, $miss, $none) end
+    x ->
+      io:debug_raw(x)
+      return 0/0
+    end
+  end
   return spt:get_nearest(objects, ray)
   -- blubb = spt:cast_ray(objects, ray)
   -- io:debug_raw(core:length(blubb))
@@ -190,25 +195,36 @@ def find_nearest([obj, <<rest>>], ray, nearest, id)
   return find_nearest(rest, ray, nearest, id)
 end
 
-def trace(objects, ray, nearest)
-  return trace(objects, ray, nearest, 3, true, 1)
+def trace(scene, ray, nearest)
+  return trace(scene, ray, nearest, core:proc_dict_get($max_bounces), true, 1)
 end
 
-def trace(objects, ray, _, 0, _, _)
+def trace(scene, _, _, 0, _, _)
   return $out_of_bounce
 end
 
-def trace(objects, ray, nearest, bounce, first, incoming_ior)
-  [solids, hints] = objects
+def get_sky_color(ray)
+        [origin, direction] = ray
+        sky_thing = 1 - core:abs(core:vec3_dot([0,1,0], direction))
+        sky_color = [1.0, 0.9, 0.7]
+        return core:vec3_mul(sky_color, sky_thing * sky_thing)
+end
+
+def trace(scene, ray, nearest, bounce, first, incoming_ior)
+  [geom, materials] = scene
+  [solids, hints] = geom
   if nearest == $unkown
     nearest = find_nearest(solids, ray)
     if nearest == $miss
+      if core:proc_dict_get($use_sky)
+        return get_sky_color(ray)
+      end
       return [0, 0, 0]
     end
   end
   [t, obj] = nearest
   [_type, _meh, mat, <<_>>] = obj
-  match mat-- Relying the buggy lack of scoping here :P
+  match map:get(materials, mat)-- Relying the buggy lack of scoping here :P
     [color, diffuse_reflexivity, emittance, direct_reflexivity, transparency, ior] -> _ = 1 end
     [color, diffuse_reflexivity, emittance, direct_reflexivity] ->
       transparency = 0
@@ -236,10 +252,10 @@ def trace(objects, ray, nearest, bounce, first, incoming_ior)
   point = core:vec3_add(origin, core:vec3_mul(direction, t))
 
   normal = get_normal(obj, point)
-  -- if core:vec3_dot(normal, direction) < 0
-  --   -- hitting from behind, flip normal
-  --   normal = core:vec3_mul(normal, -1)
-  -- end
+  if core:vec3_dot(normal, direction) > 0
+    -- hitting from behind, flip normal
+    normal = core:vec3_mul(normal, -1)
+  end
 
   -- HINT STEP
 
@@ -251,16 +267,16 @@ def trace(objects, ray, nearest, bounce, first, incoming_ior)
   diffuse_color = [0, 0, 0]
   if diffuse_reflexivity > 0.01
     new_ray = random_reflection(normal)
-    incoming = trace(objects, [point , new_ray], $unkown, bounce - 1, false, incoming_ior)
+    incoming = trace(scene, [point , new_ray], $unkown, bounce - 1, false, incoming_ior)
     match incoming
       $out_of_bounce ->
-        diffuse_color = hinting(hints, point, normal, solids, diffuse_reflexivity)
+        diffuse_color = hinting(hints, point, normal, scene, diffuse_reflexivity)
       end
       c ->
         thing = core:vec3_dot(new_ray, normal) * diffuse_reflexivity
         diffuse_color = core:vec3_mul(incoming, thing)
         if core:vec3_mag(diffuse_color) < 0.01
-          hint = hinting(hints, point, normal, solids, diffuse_reflexivity)
+          hint = hinting(hints, point, normal, scene, diffuse_reflexivity)
           if hint != [0,0,0]
             diffuse_color = core:vec3_add(diffuse_color, hint)
           end
@@ -280,10 +296,10 @@ def trace(objects, ray, nearest, bounce, first, incoming_ior)
         if core:vec3_dot(core:vec3_sub(normal, point), core:vec3_sub(normal, new_ray)) < 0
           direct_color = [0,0,0]
         end
-        incoming = trace(objects, [point , new_ray], $unkown, bounce - 1, false, incoming_ior)
+        incoming = trace(scene, [point , new_ray], $unkown, bounce - 1, false, incoming_ior)
       end
       false ->
-        incoming = trace(objects, [point , new_ray], $unkown, bounce - 1, false, incoming_ior)
+        incoming = trace(scene, [point , new_ray], $unkown, bounce - 1, false, incoming_ior)
       end
     end
     match incoming
@@ -299,7 +315,7 @@ def trace(objects, ray, nearest, bounce, first, incoming_ior)
   transparent_color = [0, 0, 0]
   if transparency > 0
     new_ray = refract(normal, direction, incoming_ior, ior)
-    incoming = trace(objects, [point , new_ray], $unkown, bounce - 1, false, ior)
+    incoming = trace(scene, [point , new_ray], $unkown, bounce - 1, false, ior)
     match incoming
       $out_of_bounce -> transparent_color = [0,0,0] end
       _ ->
@@ -316,11 +332,11 @@ def trace(objects, ray, nearest, bounce, first, incoming_ior)
   return core:vec3_mul(core:vec3_proj(color, total_traced_color), core:vec3_mag(total_traced_color))
 end
 
-def hinting(hints, point, normal, solids, diffuse_reflexivity)
-  return hinting(hints, point, normal, solids, diffuse_reflexivity, [0,0,0], 0)
+def hinting(hints, point, normal, scene, diffuse_reflexivity)
+  return hinting(hints, point, normal, scene, diffuse_reflexivity, [0,0,0], 0)
 end
 
-def hinting([], point, normal, solids, diffuse_reflexivity, hint_color, hit_count)
+def hinting([], point, normal, scene, diffuse_reflexivity, hint_color, hit_count)
   if hit_count == 0
     return [0,0,0]
   end
@@ -328,14 +344,22 @@ def hinting([], point, normal, solids, diffuse_reflexivity, hint_color, hit_coun
 end
 
 
-def hinting([hint, <<rest>>], point, normal, solids, diffuse_reflexivity, hint_color, hit_count)
+def hinting([hint, <<rest>>], point, normal, scene, diffuse_reflexivity, hint_color, hit_count)
   [pos, id] = hint
   light_dir = core:vec3_sub(pos, point)
+  -- if core:length(scene) != 2
+  --   io:debug_raw(scene)
+  -- end
+  -- [[solids, _], materials] = scene
+  match scene
+    [[solids, _], materials] -> _ = 1 end
+    solids -> return [0,0,0] end--  Something is super wrong :/
+  end
 
   new_ray = random_reflection(light_dir, 0.05)
   if core:vec3_dot(new_ray, normal) < 0.00001
     -- Hint is "behind" the object
-    return hinting(rest, point, normal, solids, diffuse_reflexivity, hint_color, hit_count)
+    return hinting(rest, point, normal, scene, diffuse_reflexivity, hint_color, hit_count)
   end
   match find_nearest(solids, [point, new_ray])
     $miss -> return hinting(rest, point, normal, solids, diffuse_reflexivity, hint_color, hit_count) end
@@ -344,14 +368,14 @@ def hinting([hint, <<rest>>], point, normal, solids, diffuse_reflexivity, hint_c
       match meta
         [hit_id, __id, <<_>>] ->
           if hit_id == id
-            [light_color, _, hint_emittance, _hint_reflextivity] = mat
+            [light_color, _, hint_emittance, _hint_reflextivity] = map:get(materials, mat)
             thing = core:vec3_dot(new_ray, normal) * diffuse_reflexivity
             emitted_hint_light = core:vec3_mul(light_color, hint_emittance)
-            return hinting(rest, point, normal, solids, diffuse_reflexivity, core:vec3_add(hint_color, vec3:mul(emitted_hint_light, thing)), hit_count + 1)
+            return hinting(rest, point, normal, scene, diffuse_reflexivity, core:vec3_add(hint_color, vec3:mul(emitted_hint_light, thing)), hit_count + 1)
           end
-          return hinting(rest, point, normal, solids, diffuse_reflexivity, hint_color, hit_count)
+          return hinting(rest, point, normal, scene, diffuse_reflexivity, hint_color, hit_count)
         end
-        whatever -> return hinting(rest, point, normal, solids, diffuse_reflexivity, hint_color, hit_count) end
+        whatever -> return hinting(rest, point, normal, scene, diffuse_reflexivity, hint_color, hit_count) end
       end
     end
   end
@@ -384,16 +408,36 @@ def tag_objects([obj, <<rest>>], n, acc)
   return tag_objects(rest, n + 1, [<<acc>>, [<<obj>>, n]])
 end
 
-def render(width, height, _scene)
-  [_objects, hints] = _scene
-  objects = tag_objects(_objects)
-  io:print_string('Computing tree...\n')
-  tree = spt:batshit_spt(objects)
-  --tree = spt:new_spt(objects)
-  io:debug_raw(tree)
-  io:debug_raw(spt:get_all(tree))
-  -- return $ok
-  scene = [tree, hints]
+def render(width, height, scene)
+  [geom, materials] = scene
+  [objects, hints] = geom
+  --tree = spt:batshit_spt(tag_objects(objects))
+  io:print_string('Taggin objects...\n')
+  objects = tag_objects(objects)
+  match core:proc_dict_get($world_representation)
+    $bb ->
+      io:print_string('Using a bounding box tree...\n')
+      io:print_string('Computing tree...\n')
+      nodes = list:map(objects, ['spt', 'make_node'])
+      tree = spt:from_octree(ot:from_list(nodes))
+      scene = [[tree, hints], materials]
+    end
+    $bpt ->
+      io:print_string('Using a binary partitioning tree...\n')
+      io:print_string('Computing tree...\n')
+      io:debug_raw(core:length(objects))
+      io:debug_raw(bpt:get_bounding_box(objects))
+      tree = bpt:bpt(objects)
+      io:debug_raw(bpt:depth(tree))
+      io:debug_raw(bpt:chonk(tree))
+      io:debug_raw(bpt:count(tree))
+      scene = [[tree, hints], materials]
+    end
+    $naive ->
+      io:print_string('Going naive on this shit...\n')
+      scene = [[objects, hints], materials]
+    end
+  end
 
   io:debug_raw([width, height])
   io:print_string('Performing precalculations...\n')
@@ -405,7 +449,7 @@ def render(width, height, _scene)
 
   io:print_string('Starting workers...\n')
 
-  sampels_per_pass = 2
+  sampels_per_pass = core:proc_dict_get($samples_per_pass)
 
   workers = list:map(list:range(core:send(core:io_pid(), $cpu_count)), def (_)
     kid = core:spawn(['trace', 'worker'], width, height, core:my_pid(), scene, ids, data, sampels_per_pass)
@@ -529,18 +573,24 @@ end
 
 def pre_compute(width, height, y, x, scene, ids, data)
   if x == width
+    io:debug_raw([y])
     return pre_compute(width, height, y - 1, 0, scene, ids, data)
   end
   pixel_direction = get_pixel_ray(x, y, width, height)
   origin = [0,0,-1]
   ray = [origin, pixel_direction]
-  [solids, hints] = scene
+  [[solids, hints], materials] = scene
   match find_nearest(solids, ray)
-    $miss -> return  pre_compute(width, height, y, x + 1, scene, [<<ids>>, $void], [<<data>>, $void]) end
+    $miss ->
+      if core:proc_dict_get($use_sky)
+        return  pre_compute(width, height, y, x + 1, scene, [<<ids>>, $void], [<<data>>, [$sky, get_sky_color(ray)]])
+      end
+      return  pre_compute(width, height, y, x + 1, scene, [<<ids>>, $void], [<<data>>, $void])
+    end
     nearest ->
       [t, obj] = nearest
       [_, _, mat, <<extra>>] = obj
-      [_, _, _, direct, <<_>>] = mat
+      [_, _, _, direct, <<_>>] = map:get(materials, mat)
       match extra
         [id] -> id = id end
         [_, id] -> id = id end
@@ -588,10 +638,14 @@ def render_line(y, width, height, precomp, scene, samples)
     if precomp == $void
       return [0, [0,0,0]]
     end
+    match precomp
+      [$sky, sky] -> return [0, sky] end
+    end
     [nearest, ray, <<meh>>] = precomp
     [_, obj] = nearest
     [_, _, mat, <<_>>] = obj
-    [color, _, emittance, <<_>>] = mat
+    [geom, materials] = scene
+    [color, _, emittance, <<_>>] = map:get(materials, mat)
     if emittance > 0.95
       -- Blackbody
       return [0, core:vec3_mul(color, emittance)]
@@ -620,10 +674,16 @@ def _entry([])
   utils:load_module('colors')
   utils:load_module('scenes')
   utils:load_module('spt')
+  utils:load_module('bpt')
   [width, height] = core:request(core:io_pid(), $get_console_size)
-  -- scene = scenes:a_friend_of_spt()
   scene = scenes:make_room()
   -- scene = scenes:diffuse_shadow_test()
+  -- scene = scenes:it_is_monki()
+  core:proc_dict_set($world_representation, $naive)
+  core:proc_dict_set($max_bounces, 3)
+  core:proc_dict_set($samples_per_pass, 10)
+  core:proc_dict_set($use_sky, true)
+  -- core:proc_dict_set($world_representation, $naive)
   render(height*2,height, scene)
   return $ok
 end

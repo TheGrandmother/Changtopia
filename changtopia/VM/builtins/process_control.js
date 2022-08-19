@@ -4,6 +4,24 @@ const Pid = require('../pid.js')
 
 const processControlFunctions = [
   {
+    functionId: 'proc_dict_get',
+    core: true,
+    exec: (process, _, key) => {
+      const val = process.processDict[key]
+      if (typeof val === 'undefined') {
+        return h('fuckall')
+      }
+      return val
+    }
+  },
+  {
+    functionId: 'proc_dict_set',
+    core: true,
+    exec: (process, _, key, val) => {
+      process.processDict[key] = val
+    }
+  },
+  {
     functionId: 'send',
     core: true,
     exec: (process, returnLocation, recipient, ...payload) => {
@@ -48,9 +66,9 @@ const processControlFunctions = [
     exec: (process, returnLocation, funcRef, ...args) => {
       const [module, functionId, ...bindings] = funcRef
       if (returnLocation === '__dump__') {
-        process.sendMessage({payload: [module, functionId, bindings, ...args], internal: 'spawn'})
+        process.sendMessage({payload: [module, functionId, bindings, process.processDict, ...args], internal: 'spawn'})
       } else {
-        process.sendMessage({payload: [module, functionId, bindings, ...args], internal: 'spawn'}, returnLocation)
+        process.sendMessage({payload: [module, functionId, bindings, process.processDict, ...args], internal: 'spawn'}, returnLocation)
       }
     }
   },

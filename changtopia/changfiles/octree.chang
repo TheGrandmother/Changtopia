@@ -1,7 +1,7 @@
 module ot
 
 def minsize()
-  return 0.001
+  return 0.00001
 end
 
 def min_count()
@@ -60,12 +60,46 @@ def from_list()
   return $derp
 end
 
+def depth(tree)
+  return depth(tree, 0)
+end
+
+def depth([$leaf, <<_>>], depth)
+  return depth + 1
+end
+
+def depth([$internal, _, _, _, []], depth)
+  return depth + 1
+end
+
+def depth([$internal, _, _, _, kids], depth)
+  return depth + core:max(list:map(map:values(kids), ['ot', 'depth'])) + 1
+end
+
+def chonk([$leaf, <<_>>])
+  return 0
+end
+
+def chonk([$internal, _, _, stuff, []])
+  return core:length(stuff)
+end
+
+def chonk([$internal, _, _, stuff, kids])
+  return core:max(core:length(stuff), core:max(list:map(map:values(kids), ['ot', 'chonk'])))
+end
+
 def octree()
   return []
 end
 
 def octree([$point, point, <<rest>>])
   return grow_tree([$leaf, point, minsize() * 2, set:from_list([[$point, point, <<rest>>]])])
+end
+
+def octree([$box, [min, max], <<rest>>])
+  origin = core:vec3_mul(core:vec3_add(min, max), .5)
+  size = core:vec3_mag(core:vec3_sub(min, max))
+  return [$leaf, origin, (core:floor(size/ minsize()) + 1) * minsize(), set:from_list([[$box, [min, max], <<rest>>]])]
 end
 
 def octree([$sphere, [point, r], <<rest>>])
@@ -241,6 +275,18 @@ def get_uncontained_point(origin, size, [$triangle, [p1, p2, p3], <<rest>>])
     return p
   end
   p = get_uncontained_point(origin, size, [$point, p3])
+  if p != $contained
+    return p
+  end
+  return $contained
+end
+
+def get_uncontained_point(origin, size, [$box, [p1, p2], <<rest>>])
+  p = get_uncontained_point(origin, size, [$point, p1])
+  if p != $contained
+    return p
+  end
+  p = get_uncontained_point(origin, size, [$point, p2])
   if p != $contained
     return p
   end

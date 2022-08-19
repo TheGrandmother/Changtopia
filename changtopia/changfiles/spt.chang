@@ -96,6 +96,64 @@ def batshit_spt(objects)
   return batshit_smallest(nodes)
 end
 
+def make_non_overlapping_nodes([])
+  return []
+end
+
+def make_non_overlapping_nodes([node])
+  return [node]
+end
+
+def make_non_overlapping_nodes(nodes)
+  return $ok
+end
+
+def funky_spt(objects)
+  nodes = list:map(objects, ['spt', 'make_node'])
+  sort_fn = def (a, b)
+    [_, _, sa, <<_>>] = a
+    [_, _, sb, <<_>>] = b
+    return sa - sb
+  end
+  sorted_nodes = list:sort(nodes, sort_fn)
+  octree = ot:from_list(sorted_nodes)
+  crazy =  batshit_smallest(nodes)
+  sorted = make_spt(sorted_nodes)
+  not_sorted = make_spt(nodes)
+  io:debug_raw(octree)
+  io:debug_raw(ot:depth(octree))
+  io:debug_raw(ot:chonk(octree))
+  io:debug_raw(core:length(objects))
+  io:debug_raw(crazy)
+  io:debug_raw(depth(crazy))
+  io:debug_raw(depth(sorted))
+  io:debug_raw(depth(not_sorted))
+  return crazy
+end
+
+def from_octree([$box, <<stuff>>])
+  return [$box, <<stuff>>]
+end
+
+def from_octree([$internal, _, _, objects, nodes])
+  sub_node = []
+  if nodes != []
+    sub_node = make_spt(list:map(list:filter(map:values(nodes), def (x) return x != [] end), ['spt', 'from_octree']))
+  end
+  match sub_node
+    [] -> return make_spt(objects) end
+    something -> return make_spt([<<objects>>, something]) end
+  end
+end
+
+def from_octree([$leaf, _, _, objects])
+  return make_spt(objects)
+end
+
+def make_spt([])
+  return []
+end
+
 def make_spt([node])
   return node
 end
@@ -108,6 +166,7 @@ def make_spt(nodes)
   end
   sorted_nodes = list:sort(nodes, sort_fn)
   [mini_node, <<rest>>] = sorted_nodes
+  --io:debug_raw(core:length(nodes))
   return make_spt(make_smallest_node(mini_node, rest))
 end
 
@@ -134,9 +193,13 @@ end
 
 def batshit_smallest(nodes)
   indexed_nodes = list:zip(nodes, list:range(core:length(nodes)))
+  io:debug_raw(core:length(nodes))
   find_smallest_combo = def (n)
     [n, i] = n
-    no_me = list:filter(indexed_nodes, def (m) return list:get(m, 1) != i end)
+    if i == core:length(nodes) - 1
+      return [[0,0,1000000000], i, i]
+    end
+    no_me = list:filter(indexed_nodes, def (m) return list:get(m, 1) > i end)
     merged_nodes = list:map(no_me, def (m)
       [m, j] = m
       return [merge_nodes(n, m), i, j]
@@ -152,6 +215,19 @@ def batshit_smallest(nodes)
   [remaining_nodes, _] =list:unzip(no_merged)
   return batshit_smallest([new_node, <<remaining_nodes>>])
 end
+
+def depth(tree)
+  return depth(tree, 0)
+end
+
+def depth([$box, _, _, kids], depth)
+  return depth + core:max(list:map(kids, ['spt', 'depth'])) + 1
+end
+
+def depth(_, depth)
+  return depth + 1
+end
+
 
 def t(o, d, p)
   if d == 0
@@ -332,13 +408,75 @@ def get_all(obj)
   return [obj]
 end
 
+def hell_raiser()
+  -- return $ok
+  utils:load_module('lool')
+  utils:load_module('ot')
+  utils:load_module('trace')
+  utils:load_module('scenes')
+  utils:load_module('bpt')
+  objects = list:slice(0, 950, lool:monki())
+  -- [objects, _] = scenes:make_room()
+
+  btree = bpt:bpt(objects)
+  io:debug_raw(btree)
+  io:debug_raw(bpt:depth(btree))
+  io:debug_raw(bpt:chonk(btree))
+  io:debug_raw(bpt:count(btree))
+
+  -- nodes = list:map(objects, ['spt', 'make_node'])
+  -- sort_fn = def (a, b)
+  --   [_, _, sa, <<_>>] = a
+  --   [_, _, sb, <<_>>] = b
+  --   return sa - sb
+  -- end
+  -- io:debug('sorting')
+  -- sorted_nodes = list:sort(nodes, sort_fn)
+  -- io:debug('making otree')
+  -- octree = ot:from_list(sorted_nodes)
+  -- io:debug('merging octree')
+  -- occyboi = from_octree(octree)
+  -- io:debug_raw(core:length(objects))
+  -- io:debug_raw(occyboi)
+  -- io:debug_raw(depth(occyboi))
+
+  test_samples = 75
+
+  -- io:debug('testing occy')
+  -- start = core:time()
+  -- occyboi_tests = list:map(list:range(0,test_samples), def (_) return get_nearest(occyboi, [[0,0,-1], trace:random_reflection([0,0,1], .25)]) end)
+  -- io:debug_raw([$oct_bb, core:time() - start])
+
+  io:debug('testing Bpt')
+  start = core:time()
+  bsp_tests = list:map(list:range(0,test_samples), def (_) return bpt:get_nearest(btree, [[0,0,-1], trace:random_reflection([0,0,1], .25)]) end)
+  io:debug_raw([$bpt, core:time() - start])
+
+  io:debug('doing the naive')
+  start = core:time()
+  derp = list:map(list:range(0,test_samples), def (_) return derp(objects, [[0,0,-1], trace:random_reflection([0,0,1], .25)]) end)
+  io:debug_raw([$naive, core:time() - start])
+  io:debug('did the naive')
+end
+
+def mean(l)
+  return list:fold_l(l, 0, def (a, b) return a + b end) / core:length(l)
+end
+
 
 def _test()
   utils:load_module('testing')
   utils:load_module('map')
   utils:load_module('set')
   utils:load_module('scenes')
+  utils:load_module('octree')
   suite = [
+    ['Crazy stacy',
+      def (superv)
+        hell_raiser()
+        testing:assert(superv, 'Point should be contained', true)
+      end
+    ],
     --['bounding box',
     --  def (superv)
     --    triangle = [$triangle, [[0.5, 0.5, 0.5], [-0.5, 0.5, 0.5], [0, -0.5, 0.5]]]
@@ -386,3 +524,115 @@ def _test()
   ]
   testing:run_suite('SPT', suite)
 end
+
+
+def __get_nearest(tree, ray)
+   match __get_nearest(tree, ray, $none, 1)
+    [_, _, d] -> return d end
+    x -> return x end
+   end
+end
+
+def __get_nearest([$box, box, _, [k1, k2], <<_>>], ray, id, depth)
+  hits = box_intersect(ray, box)
+  if hits == false
+    return depth
+  end
+  [k1type, b1, <<_>>] = k1
+  [k2type, b2, <<_>>] = k2
+  match [k1type, k2type]
+    [$box, $box] ->
+        [n1, f1] = get_max_distances(b1, ray)
+        [n2, f2] = get_max_distances(b2, ray)
+
+        if n1 < n2 && f1 < n2 && f1 < f2
+          test_1 = __get_nearest(k1, ray, id, depth + 1)
+          match test_1
+            [t1, obj1, <<_>>] ->
+              return test_1
+            end
+            x -> return __get_nearest(k2, ray, id, depth + x + 1) end
+          end
+        end
+
+        if n2 < n1 && f2 < n1 && f2 < f1
+          test_2 = __get_nearest(k2, ray, id, depth + 1)
+          match test_2
+            [t2, obj2, <<_>>] ->
+              return test_2
+            end
+            x -> return __get_nearest(k1, ray, id, depth + 1 + x) end
+          end
+        end
+    end
+  end
+
+  get_d = def (x)
+    match x
+      [_, _, d] -> return d end
+      d -> return d end
+    end
+  end
+
+  add_d = def (x, new_d)
+    match x
+      [a, b, d] -> return [a, b, d + new_d] end
+      d -> return d + new_d end
+    end
+  end
+
+  test1 = __get_nearest(k1, ray, id, depth + 1)
+  test2 = __get_nearest(k2, ray, id, depth + 1)
+  match test1
+    [t1, obj1, <<_>>] -> _ = 0 end
+    x_ -> return @add_d(test2, @get_d(test1)) end
+  end
+  match test2
+    [t2, obj2, <<_>>] -> _ = 0 end
+    x_ -> return @add_d(test1, @get_d(test2)) end
+  end
+  [t1, obj1, <<_>>] = test1
+  [t2, obj2, <<_>>] = test2
+  if t1 < t2
+    return @add_d(test1, @get_d(test2))
+  end
+  return @add_d(test2, @get_d(test1))
+end
+
+def __get_nearest([$box, box, _, [k], <<_>>], ray, id, depth)
+  hits = box_intersect(ray, box)
+  if hits == false
+    return depth
+  end
+  return __get_nearest(k, ray, id, depth + 1)
+end
+
+def __get_nearest(obj, ray, id, depth)
+  [type, geo, mat, <<meta>>] = obj
+  match type
+    $sphere -> t = trace:sphere_intersect_test(ray, geo) end
+    $triangle -> t = trace:triangle_intersect_test(ray, geo) end
+  end
+  if t == $miss
+    return depth + 1
+  end
+  return [t, obj, depth + 1]
+end
+
+def __get_nearest()
+  return $derp
+end
+
+def derp([], ray)
+  return $ok
+end
+
+def derp([obj, <<rest>>], ray)
+  [type, geo, mat, <<meta>>] = obj
+  match type
+    $sphere -> trace:sphere_intersect_test(ray, geo) end
+    $triangle -> trace:triangle_intersect_test(ray, geo) end
+  end
+  return true && derp(rest, ray)
+end
+

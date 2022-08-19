@@ -94,7 +94,7 @@ class BrowserIO extends BaseIO {
 
     this.inputStreamOwner = null
     this.registeredInputListener = false
-    this.inputListener = (d) => {console.log('penis:', d)}
+    this.inputListener = () => {}
     //process.stdin.addListener('data', (d) => { this.inputListener(d) })
   }
 

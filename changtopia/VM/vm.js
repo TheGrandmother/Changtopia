@@ -100,8 +100,8 @@ class Vm {
         }
         return
       } else if (message.secret === 'spawn') {
-        const [pid, module, entryPoint, bindings, ...args] = message.payload
-        this.spawnProcess(Pid.toPid(pid), toJsString(module), toJsString(entryPoint), args, bindings)
+        const [pid, module, entryPoint, bindings, dict, ...args] = message.payload
+        this.spawnProcess(Pid.toPid(pid), toJsString(module), toJsString(entryPoint), args, bindings, dict)
         return
       } else if (message.secret === 'kill') {
         const [pid] = message.payload
@@ -154,11 +154,11 @@ class Vm {
     }
   }
 
-  spawnProcess(pid, module, entryPoint, args, bindings) {
+  spawnProcess(pid, module, entryPoint, args, bindings, dict) {
     if (!pid) {
       pid = new Pid(this.instance, randomHash(), this.host)
     }
-    const process = new Process(this, pid)
+    const process = new Process(this, pid, dict)
     process.bindFunction(module, entryPoint, 'program_result', args, bindings)
     this.processes[pid] = process
     this.topQueue.push(pid)
@@ -234,7 +234,7 @@ class Vm {
     }
 
     if (!startInIdle) {
-      this.spawnProcess(undefined, 'main', '_entry', args)
+      this.spawnProcess(undefined, 'main', '_entry', args, undefined, {})
     }
 
     this.internalChannel.port2.postMessage(0)

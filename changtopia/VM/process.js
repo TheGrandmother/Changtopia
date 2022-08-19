@@ -16,7 +16,7 @@ const {
 } = require('../errors.js')
 
 class Process {
-  constructor (vm, pid) {
+  constructor (vm, pid, dict) {
     this.vm = vm
     this.stack = new Stack()
     this.inbox = []
@@ -39,6 +39,7 @@ class Process {
     }
     this.coreCallsSinceLastReport = 0
     this.callsSinceLastReport = 0
+    this.processDict = dict
   }
 
   getStateDescriptor() {
@@ -397,7 +398,8 @@ class Process {
       } else {
         pretty(this.pid, this.frame.functionId, this.frame.line, instruction)
         console.log('Pesant error')
-        console.log('This be our data:', this.buildErrorMessage(err.message, instruction, true))
+        console.log(this.buildErrorMessage(err.message, instruction, true))
+        console.log(err)
         throw err
       }
     }

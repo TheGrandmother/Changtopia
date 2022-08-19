@@ -1,0 +1,364 @@
+module bpt
+
+def right_side_of_plane(dim, pivot, [$triangle, [p1, p2, p3], <<_>>])
+  sp1 = right_side_of_plane(dim, pivot, p1)
+  sp2 = right_side_of_plane(dim, pivot, p2)
+  sp3 = right_side_of_plane(dim, pivot, p3)
+  if sp1 == sp2 && sp2 == sp3
+    return sp1
+  end
+  return $splits
+end
+
+def right_side_of_plane(dim, pivot, [$sphere, [[x, y, z], r], <<_>>])
+  match dim
+    0 -> p = x end
+    1 -> p = y end
+    2 -> p = z end
+  end
+  t1 = p + r > pivot
+  t2 = p - r > pivot
+  if t1 == t2
+    return t1
+  end
+  return $splits
+end
+
+def right_side_of_plane(0, pivot, [x, _, _])
+  return x > pivot
+end
+
+def right_side_of_plane(1, pivot, [_, y, _])
+  return y > pivot
+end
+
+def right_side_of_plane(2, pivot, [_, _, z])
+  return z > pivot
+end
+
+def get([a,_,_], 0)
+  return a
+end
+def get([_,b,_], 1)
+  return b
+end
+
+def get([_,_,c], 2)
+  return c
+end
+
+def follow_ray(dim, p, ray)
+  [origin, direction] = ray
+  o = get(origin, dim)
+  d = get(direction, dim)
+
+  if core:abs(d) < 0.000001
+    if o < p
+      return $l
+    end
+    return $r
+  end
+
+  t = (p - o) / d
+
+  if d > 0
+    if t > -0.000001
+      return $ltr
+    end
+    return $r
+  end
+
+  if d < 0
+    if t > -0.000001
+      return $rtl
+    end
+    return $l
+  end
+
+end
+
+def group_objects(objects, dim, pivot)
+  return group_objects(objects, dim, pivot, [], [])
+end
+
+def group_objects([], dim, pivot, left, right)
+  return [left, right]
+end
+
+def group_objects([object, <<rest>>], dim, pivot, left, right)
+  match right_side_of_plane(dim, pivot, object)
+    true -> return group_objects(rest, dim, pivot, left, [<<right>>, object]) end
+    false -> return group_objects(rest, dim, pivot, [<<left>>, object], right) end
+    $splits -> return group_objects(rest, dim, pivot, [<<left>>, object], [<<right>>, object]) end
+  end
+end
+def group_equal(objects, dim, pivot, step)
+  return group_equal(objects, dim, pivot, step, 2)
+end
+
+def group_equal(objects, dim, pivot, step, pf)
+  [left, right] = group_objects(objects, dim, pivot)
+  pain_factor = (core:length(left) + core:length(right))/core:length(objects)
+  -- if pain_factor >= pf && pain_factor > 1.9
+  --   io:debug_raw(pain_factor)
+  --   return [pivot, left, right]
+  -- end
+  if step < min_size()
+    return [pivot, left, right]
+  end
+
+  skew_factor = core:abs(core:length(left) - core:length(right))/core:length(objects)
+  if skew_factor < 0.1
+    return [pivot, left, right]
+  end
+
+  if core:length(left) > core:length(right)
+    --more to the left
+    return group_equal(objects, dim, pivot - step, step / 2, pain_factor)
+  end
+  -- more to the right
+  return group_equal(objects, dim, pivot + step, step / 2, pain_factor)
+end
+
+-- def group_equal(objects, dim, pivot, step, pf)
+--   [left, right] = group_objects(objects, dim, pivot)
+--   pain_factor = (core:length(left) + core:length(right))/core:length(objects)
+--   io:debug_raw(pain_factor)
+--   if pain_factor > pf
+--     return [pivot, left, right]
+--   end
+--   if step < min_size()
+--     return [pivot, left, right]
+--   end
+-- 
+--   skew_factor = core:abs(core:length(left) - core:length(right))/core:length(objects)
+--   if skew_factor < 0.1
+--     return [pivot, left, right]
+--   end
+-- 
+--   if core:length(left) > core:length(right)
+--     --more to the left
+--     return group_equal(objects, dim, pivot - step, step / 2)
+--   end
+--   -- more to the right
+--   return group_equal(objects, dim, pivot + step, step / 2)
+-- end
+
+def group_no_split(objects, dim, pivot, step)
+  [left, right] = group_objects(objects, dim, pivot)
+  pain_factor = (core:length(left) + core:length(right))/core:length(objects)
+  io:debug_raw(pain_factor)
+
+  if step * 10 < min_size()
+    io:debug('step to smol')
+    return [pain_factor, [pivot, left, right]]
+  end
+
+  if pain_factor > 1.1
+    io:debug('yall crackheads wanna rekurse?')
+    [pfl, l] = group_no_split(objects, dim, pivot - step, step / 2)
+    [pfr, r] = group_no_split(objects, dim, pivot + step, step / 2)
+    io:debug_raw([pfl, pfr])
+    if pfl > pfr
+      return [pfr, r]
+    end
+    return [pfl, l]
+  end
+
+  io:debug('pf cool')
+  return [pain_factor, [pivot, left, right]]
+end
+
+
+def get_bounding_box(objects)
+  boxes = list:map(objects, ['spt', 'get_bounding_box'])
+  comp_size = def (b)
+    [b0, b1] = b
+    return core:vec3_mag(core:vec3_sub(b0, b1))
+  end
+  smallest_obj = list:fold_l(list:map(boxes, comp_size), 100000, ['core', 'min'])
+  [min, max] = list:fold_l(list:tail(boxes), list:head(boxes), ['spt', 'merge_box'])
+  io:debug_raw([min, max])
+  sizes = list:map(core:vec3_sub(min, max), ['core', 'abs'])
+  center = core:vec3_mul(core:vec3_add(min, max), .5)
+  io:debug_raw(smallest_obj)
+  io:debug_raw(sizes)
+  io:debug_raw(center)
+  return 0
+end
+
+def max_depth()
+   return 10
+end
+
+def min_size()
+ return 0.5
+end
+
+def initial_size()
+   return 2
+end
+
+def bpt(objects)
+  -- return bpt(objects, [0,0,0], [initial_size(), initial_size(), initial_size()], 0, 3)
+  return bpt(objects, [0,1.59,-1], [3, 3.83, 3], 0, 3)
+end
+
+def bpt([], _, _, _, _)
+  return []
+end
+
+def bpt([x], _, _, _, _)
+  return [$leaf, [x]]
+end
+
+def bpt(objects, pivots, sizes, dim, faff)
+  p = list:get(pivots, dim)
+  s = list:get(sizes, dim)
+
+  if s < min_size()
+    return [$leaf, objects]
+  end
+
+  [np, left, right] = group_equal(objects, dim, p, s / 2)
+  -- [lol, res] = group_no_split(objects, dim, p, s / 2)
+  -- io:debug_raw([lol, res])
+  -- [np, left, right] = res
+
+  if left == right
+    if faff > 0
+      new_dim = (dim + 1) % 3
+      return bpt(objects, pivots, sizes, new_dim, faff - 1)
+    end
+  end
+
+  match np < p
+    true ->
+      lp = list:set(pivots, dim, (np + (p - s / 2)) /2)
+      rp = list:set(pivots, dim, (np + p) / 2)
+      nsr = list:set(sizes, dim, p - np)
+      nsl = list:set(sizes, dim, np - (p - s / 2))
+    end
+    false ->
+      lp = list:set(pivots, dim, (np + p) / 2)
+      rp = list:set(pivots, dim, (np + (p + s / 2)) /2)
+      nsr = list:set(sizes, dim, (p + s / 2) - np)
+      nsl = list:set(sizes, dim, np - p)
+    end
+  end
+
+  new_dim = (dim + 1) % 3
+
+  left_tree = bpt(left, lp, nsl, new_dim, 3)
+  right_tree = bpt(right, rp, nsr, new_dim, 3)
+  return [dim, p, [left_tree, right_tree]]
+end
+
+
+
+def get_nearest([], ray)
+  return $miss
+end
+
+def get_nearest([$leaf, things], ray)
+  hits = list:filter(list:map(things, def (t) return check_obj_hit(t, ray) end), def (x) return x != $miss end)
+  if hits == []
+    return $miss
+  end
+  return return_smallest(hits)
+end
+
+def get_nearest([dim, p, [left, right]], ray)
+  motion = follow_ray(dim, p, ray)
+  match motion
+    $r ->
+      return get_nearest(right, ray)
+    end
+    $l ->
+      return get_nearest(left, ray)
+    end
+    $rtl ->
+      r = get_nearest(right, ray)
+      match r
+        $miss -> return get_nearest(left, ray) end
+      end
+      return r
+    end
+    $ltr ->
+      l = get_nearest(left, ray)
+      match l
+        $miss -> return get_nearest(right, ray) end
+      end
+      return l
+    end
+  end
+end
+
+def check_obj_hit(obj, ray)
+  [type, geo, mat, <<meta>>] = obj
+  match type
+    $sphere -> t = trace:sphere_intersect_test(ray, geo) end
+    $triangle -> t = trace:triangle_intersect_test(ray, geo) end
+  end
+  if t == $miss
+    return $miss
+  end
+  return [t, obj]
+end
+
+def return_smallest([x])
+  return x
+end
+
+def return_smallest([x, <<rest>>])
+  return return_smallest(rest, x)
+end
+
+def return_smallest([], x)
+  return x
+end
+
+def return_smallest([[t1, o1], <<rest>>], [t2, o2])
+  if t1 < t2
+    return return_smallest(rest, [t1, o1])
+  end
+  return return_smallest(rest, [t1, o1])
+end
+
+
+def depth([])
+  return 0
+end
+
+def depth([$leaf, _])
+  return 1
+end
+
+def depth([_, _, [l, r]])
+  return 1 + core:max(depth(l), depth(r))
+end
+
+def chonk([])
+  return 0
+end
+
+def chonk([$leaf, x])
+  return core:length(x)
+end
+
+def chonk([_, _, [l, r]])
+  return core:max(chonk(l), chonk(r))
+end
+
+def count([])
+  return 0
+end
+
+def count([$leaf, x])
+  return core:length(x)
+end
+
+def count([_, _, [l, r]])
+  return count(l) + count(r)
+end
+
