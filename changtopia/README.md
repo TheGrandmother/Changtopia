@@ -1,6 +1,3 @@
-glhf
-
-
 # Spamming things I have forgotten
 
 ## Errors
